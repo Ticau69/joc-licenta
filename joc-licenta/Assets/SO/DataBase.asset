@@ -1,0 +1,23 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a19c2738d3b6c34381127a6fd8e272d, type: 3}
+  m_Name: DataBase
+  m_EditorClassIdentifier: Assembly-CSharp::ObjectDataBase
+  objectsData:
+  - <Name>k__BackingField: Floor
+    <ID>k__BackingField: 0
+    <Size>k__BackingField: {x: 1, y: 1}
+    <Prefab>k__BackingField: {fileID: 6373766830445648085, guid: 309c06f99627fd84a929988b36d4a217, type: 3}
+  - <Name>k__BackingField: FrigiderMare
+    <ID>k__BackingField: 1
+    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 6079445776587467677, guid: 980e0713dfa6f014088b3dd6372cad2a, type: 3}
