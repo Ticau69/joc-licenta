@@ -41,6 +41,15 @@ public class GridData
         }
         return true;
     }
+
+    public PlacementData GetPlacementDataAt(Vector3Int gridPosition)
+    {
+        if (placedObjects.ContainsKey(gridPosition))
+        {
+            return placedObjects[gridPosition];
+        }
+        return null;
+    }
 }
 
 public class PlacementData

@@ -15,4 +15,13 @@ public class ObjectPlacer : MonoBehaviour
 
         return placedGameObjects.Count - 1;
     }
+
+    public GameObject GetPlacedObject(int index)
+    {
+        if (index >= 0 && index < placedGameObjects.Count)
+        {
+            return placedGameObjects[index];
+        }
+        return null;
+    }
 }
