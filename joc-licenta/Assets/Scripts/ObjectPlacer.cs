@@ -29,7 +29,7 @@ public class ObjectPlacer : MonoBehaviour
         Vector3 localCenter = root.transform.InverseTransformPoint(bounds.center);
 
         // Aplicăm offset-ul invers pentru a centra obiectul
-        newObject.transform.localPosition = -localCenter;
+        newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);
 
         // Opțional: Dacă vrei să păstrezi Y-ul original (să nu intre în pământ dacă pivotul e jos)
         // Comentează linia de mai sus și folosește:

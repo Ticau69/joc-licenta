@@ -32,7 +32,7 @@ public class PreviewSystem : MonoBehaviour
 
         // CalculÄƒm bounds È™i centrÄƒm obiectul
         Bounds bounds = CalculateBounds(previewObject);
-        previewObject.transform.localPosition = -bounds.center;
+        previewObject.transform.localPosition = new Vector3(-bounds.center.x, 0, -bounds.center.z);
 
         PreparePreviewObject(previewObject);
 
