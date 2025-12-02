@@ -17,7 +17,9 @@ MonoBehaviour:
     <ID>k__BackingField: 0
     <Size>k__BackingField: {x: 1, y: 1}
     <Prefab>k__BackingField: {fileID: 6373766830445648085, guid: 309c06f99627fd84a929988b36d4a217, type: 3}
+    <Cost>k__BackingField: 0
   - <Name>k__BackingField: FrigiderMare
     <ID>k__BackingField: 1
     <Size>k__BackingField: {x: 2, y: 1}
-    <Prefab>k__BackingField: {fileID: 6079445776587467677, guid: 980e0713dfa6f014088b3dd6372cad2a, type: 3}
+    <Prefab>k__BackingField: {fileID: 8297112200244068997, guid: e6573f0c6b90f4a4a93210681db836e9, type: 3}
+    <Cost>k__BackingField: 0

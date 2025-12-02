@@ -30,8 +30,9 @@ public class PlacementState : IBuldingState
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
         if (selectedObjectIndex > -1)
         {
-            previewSystem.StartShowingPlacementPreview(database.objectsData[selectedObjectIndex].Prefab,
-                                                   database.objectsData[selectedObjectIndex].Size);
+            previewSystem.StartShowingPlacementPreview(
+                database.objectsData[selectedObjectIndex].Prefab,
+                database.objectsData[selectedObjectIndex].Size);
         }
         else
         {
@@ -46,32 +47,60 @@ public class PlacementState : IBuldingState
 
     public void OnAction(Vector3Int gridPosition)
     {
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
-        if (placementValidity == false)
+        Vector2Int currentSize = previewSystem.GetCurrentSize();
+
+        bool placementValidity = CheckPlacementValidity(gridPosition, currentSize);
+        if (!placementValidity)
             return;
 
-        int index = objectPlacer.PlaceObject(dataBase.objectsData[selectedObjectIndex].Prefab, grid.CellToWorld(gridPosition));
+        Quaternion currentRotation = previewSystem.GetCurrentRotation();
 
-        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0 ? floorData : furnitureData;
-        selectedData.AddObjectAt(gridPosition,
-                                dataBase.objectsData[selectedObjectIndex].Size,
-                                dataBase.objectsData[selectedObjectIndex].ID,
-                                index);
+        // 1. Luăm poziția colțului
+        Vector3 worldPosition = grid.CellToWorld(gridPosition);
 
-        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), false);
+        // 2. --- FIX: Calculăm poziția CENTRATĂ (exact ca în PreviewSystem) ---
+        Vector3 centeredPosition = new Vector3(
+            worldPosition.x + (currentSize.x / 2f),
+            worldPosition.y,
+            worldPosition.z + (currentSize.y / 2f)
+        );
+        // ---------------------------------------------------------------------
+
+        // 3. Trimitem poziția CENTRATĂ la ObjectPlacer
+        int index = objectPlacer.PlaceObject(
+            dataBase.objectsData[selectedObjectIndex].Prefab,
+            centeredPosition, // <--- AICI am schimbat din worldPosition în centeredPosition
+            currentRotation);
+
+        // ... Restul codului rămâne la fel (AddObjectAt folosește gridPosition, e corect) ...
+        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
+            ? floorData
+            : furnitureData;
+
+        selectedData.AddObjectAt(
+            gridPosition,
+            currentSize,
+            dataBase.objectsData[selectedObjectIndex].ID,
+            index,
+            currentRotation);
+
+        // Update vizual
+        previewSystem.UpdatePosition(worldPosition, false);
     }
 
-    private bool CheckPlacementValidity(Vector3Int gridPosition, int selectedObjectIndex)
+    private bool CheckPlacementValidity(Vector3Int gridPosition, Vector2Int size)
     {
-        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0 ? floorData : furnitureData;
+        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
+            ? floorData
+            : furnitureData;
 
-        return selectedData.canPlaceObjectAt(gridPosition, dataBase.objectsData[selectedObjectIndex].Size);
+        return selectedData.canPlaceObjectAt(gridPosition, size);
     }
 
     public void UpdateState(Vector3Int gridPosition)
     {
-        bool placementValidity = CheckPlacementValidity(gridPosition, selectedObjectIndex);
-
+        Vector2Int currentSize = previewSystem.GetCurrentSize();
+        bool placementValidity = CheckPlacementValidity(gridPosition, currentSize);
         previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), placementValidity);
     }
 }

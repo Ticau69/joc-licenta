@@ -8,14 +8,29 @@ public class CameraController : MonoBehaviour
     Vector2 currentMovementInput;
     Vector3 currentMovement;
     bool isMovementPressed;
+    float currentRotationInput;
 
+    Vector3 targetPosition;
+    [Header("Movement Settings")]
     public float panSpeed = 20f;
     public float scrollSpeed = 20f;
-    public float panBorderThickness = 10f;
+    public float panBorderThickness = 5f;
+    public Vector2 panLimit;
+
+    [Header("Zoom Settings")]
     public float minY = 6f;
     public float maxY = 17f;
+
+    [Header("Rotation Settings")]
+    public float rotationSpeed = 100f;
+
+    [Header("Smoothing")]
+    public float smoothTime = 0.2f;
+
     public InputAction mousePositionAction;
-    public Vector2 panLimit;
+    private Vector3 _moveVelocity = Vector3.zero;
+    private float targetRotationY;
+    private float _rotateVelocity;
 
     void Awake()
     {
@@ -24,6 +39,16 @@ public class CameraController : MonoBehaviour
         inputSystem.CameraControl.Move.started += onMovemmentInput;
         inputSystem.CameraControl.Move.canceled += onMovemmentInput;
         inputSystem.CameraControl.Move.performed += onMovemmentInput;
+
+        inputSystem.CameraControl.Rotate.started += onRotateInput;
+        inputSystem.CameraControl.Rotate.canceled += onRotateInput;
+        inputSystem.CameraControl.Rotate.performed += onRotateInput;
+    }
+
+    void Start()
+    {
+        targetPosition = transform.position;
+        targetRotationY = transform.eulerAngles.y; // Inițializăm cu rotația curentă
     }
 
     void onMovemmentInput(InputAction.CallbackContext context)
@@ -32,6 +57,11 @@ public class CameraController : MonoBehaviour
         currentMovement.x = currentMovementInput.x;
         currentMovement.z = currentMovementInput.y;
         isMovementPressed = currentMovementInput.x != 0 || currentMovementInput.y != 0;
+    }
+
+    void onRotateInput(InputAction.CallbackContext context)
+    {
+        currentRotationInput = context.ReadValue<float>();
     }
 
     void OnEnable()
@@ -54,45 +84,82 @@ public class CameraController : MonoBehaviour
         mousePositionAction.Disable();
     }
 
-    void Update()
+    void HandleRotation()
     {
-        // Read the current mouse/touch position in screen coordinates
+        // 1. Calculăm ținta rotației
+        if (currentRotationInput != 0)
+        {
+            targetRotationY += currentRotationInput * rotationSpeed * Time.deltaTime;
+        }
+
+        // 2. Aplicăm rotația fluidă pe obiect
+        float currentY = transform.eulerAngles.y;
+        // SmoothDampAngle este esențial pentru a gestiona corect trecerea de la 360 la 0 grade
+        float smoothedY = Mathf.SmoothDampAngle(currentY, targetRotationY, ref _rotateVelocity, smoothTime);
+
+        transform.rotation = Quaternion.Euler(60, smoothedY, 0);
+    }
+
+    void HandleMovement()
+    {
         Vector2 screenPos = mousePositionAction.ReadValue<Vector2>();
 
-        Vector3 pos = transform.position;
+        // Calculăm direcțiile FATA și DREAPTA relative la rotația camerei
+        // Important: Setăm y=0 pentru a nu intra în pământ când apăsăm W
+        Vector3 camForward = transform.forward;
+        camForward.y = 0;
+        camForward.Normalize();
 
-        //Move the camera based on mouse input
+        Vector3 camRight = transform.right;
+        camRight.y = 0;
+        camRight.Normalize();
+
+        Vector3 moveDir = Vector3.zero;
+
+        // Mouse Edge Scrolling
         if (screenPos.y >= Screen.height - panBorderThickness)
-        {
-            pos += Vector3.forward * panSpeed * Time.deltaTime;
-        }
+            moveDir += camForward;
         else if (screenPos.y <= panBorderThickness)
-        {
-            pos -= Vector3.forward * panSpeed * Time.deltaTime;
-        }
-        else if (screenPos.x >= Screen.width - panBorderThickness)
-        {
-            pos += Vector3.right * panSpeed * Time.deltaTime;
-        }
-        else if (screenPos.x <= panBorderThickness)
-        {
-            pos -= Vector3.right * panSpeed * Time.deltaTime;
-        }
+            moveDir -= camForward;
 
-        //Move the camera based on keyboard input
+        if (screenPos.x >= Screen.width - panBorderThickness)
+            moveDir += camRight;
+        else if (screenPos.x <= panBorderThickness)
+            moveDir -= camRight;
+
+        // Keyboard Input (WASD)
         if (isMovementPressed)
         {
-            pos += currentMovement * panSpeed * Time.deltaTime;
+            // Combinăm direcțiile relative cu inputul WASD
+            moveDir += (camForward * currentMovementInput.y) + (camRight * currentMovementInput.x);
         }
 
-        //Zoom the camera based on scroll wheel input
+        moveDir.Normalize(); // Previne viteza dublă pe diagonală
+
+        // Adăugăm la poziția țintă
+        targetPosition += moveDir * panSpeed * Time.deltaTime;
+
+        // Zoom Logic
         float scroll = inputSystem.CameraControl.Zoom.ReadValue<float>();
-        pos.y += scroll * scrollSpeed * 50f * Time.deltaTime;
+        if (scroll != 0)
+        {
+            // Normalizăm scroll-ul pentru consistență
+            float scrollDir = scroll > 0 ? 1 : -1;
+            targetPosition.y += scrollDir * scrollSpeed * 10f * Time.deltaTime;
+        }
 
-        pos.x = Mathf.Clamp(pos.x, -panLimit.x, panLimit.x);
-        pos.y = Mathf.Clamp(pos.y, minY, maxY);
-        pos.z = Mathf.Clamp(pos.z, -panLimit.y, panLimit.y);
+        // Limitări (Clamp)
+        targetPosition.x = Mathf.Clamp(targetPosition.x, -panLimit.x, panLimit.x);
+        targetPosition.z = Mathf.Clamp(targetPosition.z, -panLimit.y, panLimit.y);
+        targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
 
-        transform.position = pos;
+        // Aplicăm mișcarea finală
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref _moveVelocity, smoothTime);
+    }
+
+    void Update()
+    {
+        HandleRotation();
+        HandleMovement();
     }
 }

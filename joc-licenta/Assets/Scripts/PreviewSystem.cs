@@ -3,16 +3,17 @@ using UnityEngine;
 public class PreviewSystem : MonoBehaviour
 {
     [SerializeField] private float previewYOffset = 0.06f;
+    [SerializeField] private GameObject cellIndicator;
 
-    [SerializeField]
-    private GameObject cellIndicator;
     private GameObject previewObject;
+    private GameObject previewRoot; // ROOT pentru rotaÈ›ie
 
-    [SerializeField]
-    private Material previewMaterialPrefab;
+    [SerializeField] private Material previewMaterialPrefab;
     private Material previewMaterialInstance;
 
     private Renderer cellIndicatorRenderer;
+    private Vector2Int currentSize = Vector2Int.one;
+    private Quaternion currentRotation = Quaternion.identity;
 
     private void Start()
     {
@@ -21,20 +22,84 @@ public class PreviewSystem : MonoBehaviour
         cellIndicatorRenderer = cellIndicator.GetComponentInChildren<Renderer>();
     }
 
-    public void StartShowingPlacementPreview(GameObject prefab, Vector2Int Size)
+    public void StartShowingPlacementPreview(GameObject prefab, Vector2Int size)
     {
-        previewObject = Instantiate(prefab);
+        // CreÄƒm ROOT-ul pentru rotaÈ›ie
+        previewRoot = new GameObject("PreviewRoot");
+
+        // Instantiem obiectul ca È™i copil
+        previewObject = Instantiate(prefab, previewRoot.transform);
+
+        // CalculÄƒm bounds È™i centrÄƒm obiectul
+        Bounds bounds = CalculateBounds(previewObject);
+        previewObject.transform.localPosition = -bounds.center;
+
         PreparePreviewObject(previewObject);
-        PrepareCursor(Size);
+
+        currentSize = size;
+        currentRotation = Quaternion.identity;
+
+        PrepareCursor(size);
         cellIndicator.SetActive(true);
     }
 
-    private void PrepareCursor(Vector2Int Size)
+    public void StopShowingPreview()
     {
-        if (Size.x > 1 || Size.y > 1)
+        cellIndicator.SetActive(false);
+        if (previewRoot != null)
         {
-            cellIndicator.transform.localScale = new Vector3(Size.x, 1, Size.y);
-            cellIndicatorRenderer.material.SetVector("_Tiling", new Vector2(Size.x, Size.y));
+            Destroy(previewRoot);
+            previewRoot = null;
+        }
+        previewObject = null;
+    }
+
+    // METODÄ‚ NOUÄ‚: RoteÈ™te preview-ul
+    public void RotatePreview()
+    {
+        if (previewRoot == null) return;
+
+        // Rotim cu 90 de grade
+        currentRotation *= Quaternion.Euler(0, 90, 0);
+        previewRoot.transform.rotation = currentRotation;
+
+        // IMPORTANT: InversÄƒm dimensiunile la rotaÈ›ie
+        currentSize = new Vector2Int(currentSize.y, currentSize.x);
+        PrepareCursor(currentSize);
+    }
+
+    // METODÄ‚ NOUÄ‚: ReturneazÄƒ rotaÈ›ia curentÄƒ
+    public Quaternion GetCurrentRotation()
+    {
+        return currentRotation;
+    }
+
+    // METODÄ‚ NOUÄ‚: ReturneazÄƒ dimensiunea curentÄƒ
+    public Vector2Int GetCurrentSize()
+    {
+        return currentSize;
+    }
+
+    public void UpdatePosition(Vector3 position, bool validity)
+    {
+        // CalculÄƒm centrul pentru poziÈ›ionare
+        Vector3 centerPosition = new Vector3(
+            position.x + (currentSize.x / 2f),
+            position.y,
+            position.z + (currentSize.y / 2f)
+        );
+
+        MovePreview(centerPosition);
+        MoveCursor(position);
+        ApplyFeedback(validity);
+    }
+
+    private void PrepareCursor(Vector2Int size)
+    {
+        if (size.x > 0 && size.y > 0)
+        {
+            cellIndicator.transform.localScale = new Vector3(size.x, 1, size.y);
+            cellIndicatorRenderer.material.SetVector("_Tiling", new Vector2(size.x, size.y));
         }
     }
 
@@ -52,17 +117,18 @@ public class PreviewSystem : MonoBehaviour
         }
     }
 
-    public void StopShowingPreview()
+    private Bounds CalculateBounds(GameObject obj)
     {
-        cellIndicator.SetActive(false);
-        Destroy(previewObject);
-    }
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+        if (renderers.Length == 0)
+            return new Bounds(obj.transform.position, Vector3.zero);
 
-    public void UpdatePosition(Vector3 position, bool validity)
-    {
-        MovePreview(position);
-        MoveCursor(position);
-        ApplyFeedback(validity);
+        Bounds bounds = renderers[0].bounds;
+        for (int i = 1; i < renderers.Length; i++)
+        {
+            bounds.Encapsulate(renderers[i].bounds);
+        }
+        return bounds;
     }
 
     private void ApplyFeedback(bool validity)
@@ -80,9 +146,13 @@ public class PreviewSystem : MonoBehaviour
 
     private void MovePreview(Vector3 position)
     {
-        previewObject.transform.position = new Vector3(position.x, position.y + previewYOffset, position.z);
+        if (previewRoot != null)
+        {
+            previewRoot.transform.position = new Vector3(
+                position.x,
+                position.y + previewYOffset,
+                position.z
+            );
+        }
     }
-
-
-
 }

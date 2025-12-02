@@ -11,6 +11,7 @@ public class PlayerInput : MonoBehaviour
     [SerializeField] private LayerMask placementLayerMask;
 
     public event Action OnClick, OnExit;
+    public event Action OnRotate;
 
     void Update()
     {
@@ -23,6 +24,11 @@ public class PlayerInput : MonoBehaviour
         if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
         {
             OnExit?.Invoke();
+        }
+
+        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
+        {
+            OnRotate?.Invoke();
         }
     }
 

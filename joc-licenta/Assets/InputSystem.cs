@@ -1108,6 +1108,15 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Rotate"",
+                    ""type"": ""Button"",
+                    ""id"": ""fda9eea0-d8d4-47ac-a25f-8a7422b8564b"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -1209,6 +1218,39 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""action"": ""Zoom"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""50c29e65-93c4-4f54-a575-7d67b85b7cb9"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""93f5daa8-a7e4-40ec-9f1b-39ad695d6310"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""6a46d062-435f-4358-a78d-af20192f0672"",
+                    ""path"": ""<Keyboard>/e"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""Rotate"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
                 }
             ]
         }
@@ -1304,6 +1346,7 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         m_CameraControl_Move = m_CameraControl.FindAction("Move", throwIfNotFound: true);
         m_CameraControl_Run = m_CameraControl.FindAction("Run", throwIfNotFound: true);
         m_CameraControl_Zoom = m_CameraControl.FindAction("Zoom", throwIfNotFound: true);
+        m_CameraControl_Rotate = m_CameraControl.FindAction("Rotate", throwIfNotFound: true);
     }
 
     ~@InputSystem()
@@ -1768,6 +1811,7 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
     private readonly InputAction m_CameraControl_Move;
     private readonly InputAction m_CameraControl_Run;
     private readonly InputAction m_CameraControl_Zoom;
+    private readonly InputAction m_CameraControl_Rotate;
     /// <summary>
     /// Provides access to input actions defined in input action map "CameraControl".
     /// </summary>
@@ -1791,6 +1835,10 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "CameraControl/Zoom".
         /// </summary>
         public InputAction @Zoom => m_Wrapper.m_CameraControl_Zoom;
+        /// <summary>
+        /// Provides access to the underlying input action "CameraControl/Rotate".
+        /// </summary>
+        public InputAction @Rotate => m_Wrapper.m_CameraControl_Rotate;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -1826,6 +1874,9 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @Zoom.started += instance.OnZoom;
             @Zoom.performed += instance.OnZoom;
             @Zoom.canceled += instance.OnZoom;
+            @Rotate.started += instance.OnRotate;
+            @Rotate.performed += instance.OnRotate;
+            @Rotate.canceled += instance.OnRotate;
         }
 
         /// <summary>
@@ -1846,6 +1897,9 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @Zoom.started -= instance.OnZoom;
             @Zoom.performed -= instance.OnZoom;
             @Zoom.canceled -= instance.OnZoom;
+            @Rotate.started -= instance.OnRotate;
+            @Rotate.performed -= instance.OnRotate;
+            @Rotate.canceled -= instance.OnRotate;
         }
 
         /// <summary>
@@ -2121,5 +2175,12 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnZoom(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Rotate" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRotate(InputAction.CallbackContext context);
     }
 }

@@ -6,10 +6,12 @@ public class GridData
 {
     Dictionary<Vector3Int, PlacementData> placedObjects = new();
 
-    public void AddObjectAt(Vector3Int gridPosition, Vector2Int objectSize, int ID, int placedObjectIndex)
+    // ACTUALIZAT: Acum primește și rotația
+    public void AddObjectAt(Vector3Int gridPosition, Vector2Int objectSize, int ID, int placedObjectIndex, Quaternion rotation)
     {
         List<Vector3Int> positionToOccupy = CalculatePositions(gridPosition, objectSize);
-        PlacementData data = new PlacementData(positionToOccupy, ID, placedObjectIndex);
+        PlacementData data = new PlacementData(positionToOccupy, ID, placedObjectIndex, rotation);
+
         foreach (var pos in positionToOccupy)
         {
             if (placedObjects.ContainsKey(pos))
@@ -50,6 +52,25 @@ public class GridData
         }
         return null;
     }
+
+    // METODĂ NOUĂ: Șterge obiect
+    public void RemoveObjectAt(Vector3Int gridPosition)
+    {
+        PlacementData data = GetPlacementDataAt(gridPosition);
+        if (data == null) return;
+
+        foreach (var pos in data.occupiedPositions)
+        {
+            placedObjects.Remove(pos);
+        }
+    }
+
+    public int GetRepresentationIndex(Vector3Int gridPosition)
+    {
+        PlacementData data = GetPlacementDataAt(gridPosition);
+        if (data == null) return -1;
+        return data.PlacedObjectIndex;
+    }
 }
 
 public class PlacementData
@@ -57,11 +78,13 @@ public class PlacementData
     public List<Vector3Int> occupiedPositions;
     public int ID { get; private set; }
     public int PlacedObjectIndex { get; private set; }
+    public Quaternion Rotation { get; private set; } // ADĂUGAT
 
-    public PlacementData(List<Vector3Int> occupiedPositions, int iD, int placedObjectIndex)
+    public PlacementData(List<Vector3Int> occupiedPositions, int iD, int placedObjectIndex, Quaternion rotation)
     {
         this.occupiedPositions = occupiedPositions;
         ID = iD;
         PlacedObjectIndex = placedObjectIndex;
+        Rotation = rotation; // ADĂUGAT
     }
 }
