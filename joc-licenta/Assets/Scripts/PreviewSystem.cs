@@ -91,7 +91,8 @@ public class PreviewSystem : MonoBehaviour
 
         MovePreview(centerPosition);
         MoveCursor(position);
-        ApplyFeedback(validity);
+        ApplyFeedbackToCursor(validity);
+        ApplyFeedbackToPreview(validity);
     }
 
     private void PrepareCursor(Vector2Int size)
@@ -131,12 +132,19 @@ public class PreviewSystem : MonoBehaviour
         return bounds;
     }
 
-    private void ApplyFeedback(bool validity)
+    private void ApplyFeedbackToPreview(bool validity)
     {
         Color c = validity ? Color.white : Color.red;
-        cellIndicatorRenderer.material.color = c;
         c.a = 0.5f;
         previewMaterialInstance.color = c;
+    }
+
+    private void ApplyFeedbackToCursor(bool validity)
+    {
+        Color c = validity ? Color.white : Color.red;
+
+        c.a = 0.5f;
+        cellIndicatorRenderer.material.color = c;
     }
 
     private void MoveCursor(Vector3 position)
@@ -154,5 +162,12 @@ public class PreviewSystem : MonoBehaviour
                 position.z
             );
         }
+    }
+
+    public void StartShowingRemovePreview()
+    {
+        cellIndicator.SetActive(true);
+        PrepareCursor(Vector2Int.one);
+        ApplyFeedbackToCursor(false);
     }
 }

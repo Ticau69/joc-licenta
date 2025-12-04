@@ -21,7 +21,7 @@ public class RemovingState : IBuldingState
         this.furnitureData = furnitureData;
         this.objectPlacer = objectPlacer;
 
-        previewSystem.StopShowingPreview();
+        previewSystem.StartShowingRemovePreview();
     }
 
     public void EndState()

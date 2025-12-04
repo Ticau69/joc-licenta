@@ -16,7 +16,7 @@ public class PlacementSystem : MonoBehaviour
 
     private void Start()
     {
-        StopPlacement();
+        gridVisualization.SetActive(false);
         floorData = new();
         furnitureData = new();
     }
@@ -49,6 +49,20 @@ public class PlacementSystem : MonoBehaviour
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
         playerInput.OnRotate += RotateStructure; // ADĂUGAT - Subscribe la event
+    }
+
+    public void StartRemoving()
+    {
+        StopPlacement();
+        gridVisualization.SetActive(true);
+
+        buildingState = new RemovingState(
+            grid, previewSystem,
+            floorData, furnitureData,
+            objectPlacer);
+
+        playerInput.OnClick += PlaceStructure;
+        playerInput.OnExit += StopPlacement;
     }
 
     private void PlaceStructure()

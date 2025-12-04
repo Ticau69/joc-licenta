@@ -64,12 +64,12 @@ public class ObjectPlacer : MonoBehaviour
         return null;
     }
 
-    public void RemoveObjectAt(int index)
+    internal void RemoveObjectAt(int gameObjectIndex)
     {
-        if (index >= 0 && index < placedGameObjects.Count && placedGameObjects[index] != null)
-        {
-            Destroy(placedGameObjects[index]);
-            placedGameObjects[index] = null;
-        }
+        if (placedGameObjects.Count <= gameObjectIndex
+            || placedGameObjects[gameObjectIndex] == null)
+            return;
+        Destroy(placedGameObjects[gameObjectIndex]);
+        placedGameObjects[gameObjectIndex] = null;
     }
 }

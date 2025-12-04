@@ -54,22 +54,19 @@ public class GridData
     }
 
     // METODĂ NOUĂ: Șterge obiect
-    public void RemoveObjectAt(Vector3Int gridPosition)
+    internal void RemoveObjectAt(Vector3Int gridPosition)
     {
-        PlacementData data = GetPlacementDataAt(gridPosition);
-        if (data == null) return;
-
-        foreach (var pos in data.occupiedPositions)
+        foreach (var pos in placedObjects[gridPosition].occupiedPositions)
         {
             placedObjects.Remove(pos);
         }
     }
 
-    public int GetRepresentationIndex(Vector3Int gridPosition)
+    internal int GetRepresentationIndex(Vector3Int gridPosition)
     {
-        PlacementData data = GetPlacementDataAt(gridPosition);
-        if (data == null) return -1;
-        return data.PlacedObjectIndex;
+        if (placedObjects.ContainsKey(gridPosition) == false)
+            return -1;
+        return placedObjects[gridPosition].PlacedObjectIndex;
     }
 }
 
