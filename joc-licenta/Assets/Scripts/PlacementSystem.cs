@@ -65,7 +65,7 @@ public class PlacementSystem : MonoBehaviour
         buildingState = new RemovingState(
             grid, previewSystem,
             floorData, furnitureData,
-            objectPlacer);
+            objectPlacer, database);
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;

@@ -8,18 +8,22 @@ public class RemovingState : IBuldingState
     GridData floorData;
     GridData furnitureData;
     ObjectPlacer objectPlacer;
+    ObjectDataBase dataBase;
 
-    public RemovingState(Grid grid,
+    public RemovingState(
+                        Grid grid,
                          PreviewSystem previewSystem,
                          GridData floorData,
                          GridData furnitureData,
-                         ObjectPlacer objectPlacer)
+                         ObjectPlacer objectPlacer,
+                         ObjectDataBase dataBase)
     {
         this.grid = grid;
         this.previewSystem = previewSystem;
         this.floorData = floorData;
         this.furnitureData = furnitureData;
         this.objectPlacer = objectPlacer;
+        this.dataBase = dataBase;
 
         previewSystem.StartShowingRemovePreview();
     }
@@ -48,6 +52,17 @@ public class RemovingState : IBuldingState
         }
         else
         {
+            int objectID = selectedData.GetObjectIDAt(gridPosition);
+            var objectSettings = dataBase.objectsData.Find(x => x.ID == objectID);
+            if (objectSettings != null && objectSettings.PowerConsumption > 0)
+            {
+                // Scădem consumul din PowerManager
+                if (PowerManager.Instance != null)
+                {
+                    PowerManager.Instance.UnregisterConsumer(objectSettings.PowerConsumption);
+                }
+            }
+
             gameObjectIndex = selectedData.GetRepresentationIndex(gridPosition);
             if (gameObjectIndex == -1)
                 return;

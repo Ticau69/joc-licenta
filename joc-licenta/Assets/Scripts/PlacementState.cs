@@ -83,6 +83,16 @@ public class PlacementState : IBuldingState
             centeredPosition, // <--- AICI am schimbat din worldPosition în centeredPosition
             currentRotation);
 
+        int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
+        if (consumption > 0)
+        {
+            if (PowerManager.Instance != null)
+            {
+                Debug.Log(consumption);
+                PowerManager.Instance.RegisterConsumer(consumption);
+            }
+        }
+
         // ... Restul codului rămâne la fel (AddObjectAt folosește gridPosition, e corect) ...
         GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
             ? floorData
@@ -101,11 +111,44 @@ public class PlacementState : IBuldingState
 
     private bool CheckPlacementValidity(Vector3Int gridPosition, Vector2Int size)
     {
+        // 1. Identificăm ce fel de date folosim (Podea sau Mobilă?)
         GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
             ? floorData
             : furnitureData;
 
-        return selectedData.canPlaceObjectAt(gridPosition, size);
+        // 2. Verificarea Standard: Spațiul este liber de alte obiecte de același tip?
+        // (Ex: Nu punem scaun peste scaun)
+        if (selectedData.canPlaceObjectAt(gridPosition, size) == false)
+        {
+            return false; // E ocupat, deci invalid
+        }
+
+        // 3. --- VERIFICARE NOUĂ: Mobila are nevoie de Podea ---
+        // Dacă obiectul curent NU este podea (deci e mobilă)
+        if (dataBase.objectsData[selectedObjectIndex].ID != 0)
+        {
+            // Trebuie să verificăm fiecare pătrățel pe care îl ocupă mobila
+            for (int x = 0; x < size.x; x++)
+            {
+                for (int y = 0; y < size.y; y++)
+                {
+                    Vector3Int positionToCheck = gridPosition + new Vector3Int(x, 0, y);
+
+                    // Întrebăm floorData: "Pot plasa o podea aici?"
+                    // Dacă răspunsul este DA (true), înseamnă că e GOL -> deci NU avem podea.
+                    // Dacă răspunsul este NU (false), înseamnă că e OCUPAT -> deci AVEM podea.
+
+                    if (floorData.canPlaceObjectAt(positionToCheck, Vector2Int.one) == true)
+                    {
+                        // E gol pe jos (lipsă podea), deci nu putem pune mobila
+                        return false;
+                    }
+                }
+            }
+        }
+        // ------------------------------------------------------
+
+        return true;
     }
 
     public void UpdateState(Vector3Int gridPosition)

@@ -68,6 +68,14 @@ public class GridData
             return -1;
         return placedObjects[gridPosition].PlacedObjectIndex;
     }
+
+    public int GetObjectIDAt(Vector3Int gridPosition)
+    {
+        PlacementData data = GetPlacementDataAt(gridPosition);
+        if (data == null) return -1; // -1 înseamnă că nu e nimic acolo
+
+        return data.ID; // Returnăm ID-ul salvat (ex: 0 pentru podea, 1 pentru scaun)
+    }
 }
 
 public class PlacementData
