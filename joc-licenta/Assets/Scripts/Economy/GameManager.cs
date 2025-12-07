@@ -17,7 +17,7 @@ public class GameManager : MonoBehaviour
     // Eveniment pentru UI (ca să actualizăm textul doar când se schimbă banii)
     public event Action OnMoneyChanged;
 
-    void Start()
+    void Awake()
     {
         // Inițializăm banii
         CurrentMoney = startingMoney;

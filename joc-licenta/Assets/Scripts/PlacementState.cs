@@ -10,6 +10,7 @@ public class PlacementState : IBuldingState
     GridData floorData;
     GridData furnitureData;
     ObjectPlacer objectPlacer;
+    GameManager gameManager;
 
     public PlacementState(int iD,
                           Grid grid,
@@ -17,7 +18,8 @@ public class PlacementState : IBuldingState
                           ObjectDataBase database,
                           GridData floorData,
                           GridData furnitureData,
-                          ObjectPlacer objectPlacer)
+                          ObjectPlacer objectPlacer,
+                          GameManager gameManager)
     {
         ID = iD;
         this.grid = grid;
@@ -26,6 +28,7 @@ public class PlacementState : IBuldingState
         this.floorData = floorData;
         this.furnitureData = furnitureData;
         this.objectPlacer = objectPlacer;
+        this.gameManager = gameManager;
 
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
         if (selectedObjectIndex > -1)
@@ -52,6 +55,14 @@ public class PlacementState : IBuldingState
         bool placementValidity = CheckPlacementValidity(gridPosition, currentSize);
         if (!placementValidity)
             return;
+
+        int objectCost = dataBase.objectsData[selectedObjectIndex].Cost;
+
+        if (gameManager.TrySpendMoney(objectCost) == false)
+        {
+            Debug.Log("Nu ai suficienți bani pentru a construi acest obiect!");
+            return;
+        }
 
         Quaternion currentRotation = previewSystem.GetCurrentRotation();
 

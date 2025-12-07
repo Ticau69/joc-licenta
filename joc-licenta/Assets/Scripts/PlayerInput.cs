@@ -32,14 +32,6 @@ public class PlayerInput : MonoBehaviour
         }
     }
 
-    public void OnLeftClick(InputAction.CallbackContext context)
-    {
-        if (context.performed)
-        {
-            Debug.Log("Left mouse button clicked");
-        }
-    }
-
     public bool IsPointerOverUI()
         => EventSystem.current.IsPointerOverGameObject();
 

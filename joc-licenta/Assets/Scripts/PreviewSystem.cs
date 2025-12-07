@@ -104,6 +104,18 @@ public class PreviewSystem : MonoBehaviour
         }
     }
 
+    public void SetCursorSize(Vector2Int newSize)
+    {
+        // Modificăm scara obiectului alb
+        if (newSize.x > 0 && newSize.y > 0)
+        {
+            cellIndicator.transform.localScale = new Vector3(newSize.x, 1, newSize.y);
+
+            // Actualizăm și tiling-ul texturii ca să arate a grilă, nu a pătrat întins
+            cellIndicatorRenderer.material.SetVector("_Tiling", new Vector2(newSize.x, newSize.y));
+        }
+    }
+
     private void PreparePreviewObject(GameObject previewObject)
     {
         Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>();

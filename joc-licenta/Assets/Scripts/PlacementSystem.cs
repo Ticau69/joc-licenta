@@ -9,6 +9,7 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField] private GameObject gridVisualization;
     [SerializeField] private PreviewSystem previewSystem;
     [SerializeField] private ObjectPlacer objectPlacer;
+    [SerializeField] private GameManager gameManager;
 
     private GridData floorData, furnitureData;
     private Vector3Int lastDetectedPosition = Vector3Int.zero;
@@ -42,9 +43,14 @@ public class PlacementSystem : MonoBehaviour
         StopPlacement();
         gridVisualization.SetActive(true);
 
-        buildingState = new PlacementState(
-            ID, grid, previewSystem, database,
-            floorData, furnitureData, objectPlacer);
+        if (ID == 0) // Exemplu: Dacă e podea
+        {
+            buildingState = new BoxPlacementState(ID, grid, previewSystem, database, floorData, objectPlacer, gameManager);
+        }
+        else // Dacă e mobilă
+        {
+            buildingState = new PlacementState(ID, grid, previewSystem, database, floorData, furnitureData, objectPlacer, gameManager);
+        }
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
