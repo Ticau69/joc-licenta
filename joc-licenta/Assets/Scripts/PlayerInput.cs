@@ -1,5 +1,4 @@
 using System;
-using UnityEditor.SearchService;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -10,25 +9,56 @@ public class PlayerInput : MonoBehaviour
     private Vector3 lastPosition;
     [SerializeField] private LayerMask placementLayerMask;
 
-    public event Action OnClick, OnExit;
+    // Evenimente separate pentru drag-and-place
+    public event Action OnClick;           // Click standard (pentru compatibilitate)
+    public event Action OnMouseDown;       // Mouse pressed
+    public event Action OnMouseUp;         // Mouse released
+    public event Action OnRightClick;      // Right click pentru anulare
+    public event Action OnExit;
     public event Action OnRotate;
+
+    private bool isMouseDown = false;
 
     void Update()
     {
-
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (Mouse.current != null)
         {
-            OnClick?.Invoke();
+            // Detectăm mouse down (începutul drag-ului)
+            if (Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                isMouseDown = true;
+                OnMouseDown?.Invoke();
+                OnClick?.Invoke(); // Pentru compatibilitate cu sistemele vechi
+            }
+
+            // Detectăm mouse up (sfârșitul drag-ului)
+            if (Mouse.current.leftButton.wasReleasedThisFrame)
+            {
+                if (isMouseDown)
+                {
+                    OnMouseUp?.Invoke();
+                    isMouseDown = false;
+                }
+            }
+
+            // Detectăm right-click pentru anulare
+            if (Mouse.current.rightButton.wasPressedThisFrame)
+            {
+                OnRightClick?.Invoke();
+            }
         }
 
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (Keyboard.current != null)
         {
-            OnExit?.Invoke();
-        }
+            if (Keyboard.current.escapeKey.wasPressedThisFrame)
+            {
+                OnExit?.Invoke();
+            }
 
-        if (Keyboard.current != null && Keyboard.current.rKey.wasPressedThisFrame)
-        {
-            OnRotate?.Invoke();
+            if (Keyboard.current.rKey.wasPressedThisFrame)
+            {
+                OnRotate?.Invoke();
+            }
         }
     }
 
@@ -48,4 +78,5 @@ public class PlayerInput : MonoBehaviour
         return lastPosition;
     }
 
+    public bool IsMouseDown() => isMouseDown;
 }

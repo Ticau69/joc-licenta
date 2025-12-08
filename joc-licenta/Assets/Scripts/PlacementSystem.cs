@@ -12,14 +12,18 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField] private GameManager gameManager;
 
     private GridData floorData, furnitureData;
+    private WallGridData wallData;
     private Vector3Int lastDetectedPosition = Vector3Int.zero;
     private IBuldingState buildingState;
+
+    private bool isWallMode = false;
 
     private void Start()
     {
         gridVisualization.SetActive(false);
         floorData = new();
         furnitureData = new();
+        wallData = new WallGridData();
     }
 
     private void Update()
@@ -27,11 +31,10 @@ public class PlacementSystem : MonoBehaviour
         if (buildingState == null)
             return;
 
-        // Update normal de poziție
         Vector3 mousePosition = playerInput.GetSelectedMapPostion();
         Vector3Int gridPosition = grid.WorldToCell(mousePosition);
 
-        if (lastDetectedPosition != gridPosition)
+        if (lastDetectedPosition != gridPosition || isWallMode)
         {
             buildingState.UpdateState(gridPosition);
             lastDetectedPosition = gridPosition;
@@ -43,34 +46,58 @@ public class PlacementSystem : MonoBehaviour
         StopPlacement();
         gridVisualization.SetActive(true);
 
-        if (ID == 0) // Exemplu: Dacă e podea
+        if (ID == 0) // Podea
         {
-            buildingState = new BoxPlacementState(ID, grid, previewSystem, database, floorData, objectPlacer, gameManager);
+            isWallMode = false;
+            buildingState = new BoxPlacementState(
+                ID, grid, previewSystem, database,
+                floorData, objectPlacer, gameManager);
+
+            // Box folosește click standard
+            playerInput.OnClick += PlaceStructure;
         }
-        else // Dacă e mobilă
+        else if (ID == 1) // Perete - MULTI-SEGMENT MODE
         {
-            buildingState = new PlacementState(ID, grid, previewSystem, database, floorData, furnitureData, objectPlacer, gameManager);
+            isWallMode = true;
+            buildingState = new WallPlacementState(
+                ID, grid, previewSystem, database,
+                objectPlacer, gameManager, playerInput, wallData);
+
+            // Wall folosește click pentru fiecare punct
+            playerInput.OnClick += PlaceStructure; // Adaugă puncte
+            playerInput.OnRightClick += CancelWallSegment; // Anulare
+        }
+        else // Mobilă
+        {
+            isWallMode = false;
+            buildingState = new PlacementState(
+                ID, grid, previewSystem, database,
+                floorData, furnitureData, objectPlacer, gameManager);
+
+            // Mobilă folosește click standard
+            playerInput.OnClick += PlaceStructure;
         }
 
-        playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
-        playerInput.OnRotate += RotateStructure; // ADĂUGAT - Subscribe la event
+        playerInput.OnRotate += RotateStructure;
     }
 
     public void StartRemoving()
     {
         StopPlacement();
         gridVisualization.SetActive(true);
+        isWallMode = false;
 
         buildingState = new RemovingState(
             grid, previewSystem,
             floorData, furnitureData,
-            objectPlacer, database);
+            objectPlacer, database, wallData);
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
     }
 
+    // Pentru obiecte normale și pereți multi-segment (click)
     private void PlaceStructure()
     {
         if (playerInput.IsPointerOverUI())
@@ -82,15 +109,24 @@ public class PlacementSystem : MonoBehaviour
         buildingState.OnAction(gridPosition);
     }
 
-    // METODĂ NOUĂ - Handler pentru rotație
+    // Pentru anularea segmentului curent de perete
+    private void CancelWallSegment()
+    {
+        if (!isWallMode) return;
+
+        // Trimitem un mesaj special pentru anulare
+        // Putem folosi o poziție specială sau o metodă dedicată
+        StopPlacement();
+        StartPlacement(1); // Restart wall mode
+    }
+
     private void RotateStructure()
     {
-        if (buildingState == null)
-            return;
+        if (buildingState == null || isWallMode)
+            return; // Nu rotim pereții
 
         previewSystem.RotatePreview();
 
-        // Re-validăm plasarea cu noua dimensiune
         Vector3 mousePosition = playerInput.GetSelectedMapPostion();
         Vector3Int gridPosition = grid.WorldToCell(mousePosition);
         buildingState.UpdateState(gridPosition);
@@ -104,11 +140,29 @@ public class PlacementSystem : MonoBehaviour
         gridVisualization.SetActive(false);
         buildingState.EndState();
 
+        // Unsubscribe de la toate evenimentele
         playerInput.OnClick -= PlaceStructure;
+        //playerInput.OnMouseDown -= StartWallDrag;
+        //playerInput.OnMouseUp -= FinishWallDrag;
+        playerInput.OnRightClick -= CancelWallSegment;
         playerInput.OnExit -= StopPlacement;
-        playerInput.OnRotate -= RotateStructure; // ADĂUGAT - Unsubscribe
+        playerInput.OnRotate -= RotateStructure;
 
         lastDetectedPosition = Vector3Int.zero;
         buildingState = null;
+        isWallMode = false;
     }
+
+    // Metode helper pentru debugging
+    public void DebugShowAllWalls()
+    {
+        var walls = wallData.GetAllWalls();
+        Debug.Log($"Total pereți: {walls.Count}");
+        foreach (var wall in walls)
+        {
+            Debug.Log($"Perete: {wall.StartPosition} -> {wall.EndPosition}, Lungime: {wall.Length}");
+        }
+    }
+
+    public WallGridData GetWallData() => wallData;
 }

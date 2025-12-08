@@ -68,14 +68,14 @@ public class CameraController : MonoBehaviour
     {
         inputSystem.CameraControl.Enable();
 
-        if (mousePositionAction == null || !mousePositionAction.enabled)
+        /*if (mousePositionAction == null || !mousePositionAction.enabled)
         {
             mousePositionAction = new InputAction(
                 type: InputActionType.Value,
                 binding: "<Pointer>/position" // Works for mouse & touch
             );
             mousePositionAction.Enable();
-        }
+        }*/
     }
 
     void OnDisable()
@@ -117,7 +117,7 @@ public class CameraController : MonoBehaviour
         Vector3 moveDir = Vector3.zero;
 
         // Mouse Edge Scrolling
-        if (screenPos.y >= Screen.height - panBorderThickness)
+        /*if (screenPos.y >= Screen.height - panBorderThickness)
             moveDir += camForward;
         else if (screenPos.y <= panBorderThickness)
             moveDir -= camForward;
@@ -125,7 +125,7 @@ public class CameraController : MonoBehaviour
         if (screenPos.x >= Screen.width - panBorderThickness)
             moveDir += camRight;
         else if (screenPos.x <= panBorderThickness)
-            moveDir -= camRight;
+            moveDir -= camRight;*/
 
         // Keyboard Input (WASD)
         if (isMovementPressed)

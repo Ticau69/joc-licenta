@@ -80,6 +80,11 @@ public class PreviewSystem : MonoBehaviour
         return currentSize;
     }
 
+    public GameObject GetPreviewObject()
+    {
+        return previewObject;
+    }
+
     public void UpdatePosition(Vector3 position, bool validity)
     {
         // CalculÄƒm centrul pentru poziÈ›ionare
@@ -93,6 +98,26 @@ public class PreviewSystem : MonoBehaviour
         MoveCursor(position);
         ApplyFeedbackToCursor(validity);
         ApplyFeedbackToPreview(validity);
+    }
+
+    public void UpdateWallPreview(Vector3 position, Quaternion rotation, bool validity)
+    {
+        // 1. Mutăm obiectul 3D exact la coordonata primită (deja calculată în State)
+        if (previewRoot != null)
+        {
+            MovePreview(position, rotation);
+            //previewRoot.transform.position = position;
+            //previewRoot.transform.rotation = rotation;
+        }
+
+
+        // 4. Aplicăm culoarea (Roșu/Alb)
+        ApplyFeedbackToPreview(validity);
+    }
+
+    public void ToggleCursorVisibility(bool isVisible)
+    {
+        cellIndicator.SetActive(isVisible);
     }
 
     private void PrepareCursor(Vector2Int size)
@@ -164,7 +189,7 @@ public class PreviewSystem : MonoBehaviour
         cellIndicator.transform.position = position;
     }
 
-    private void MovePreview(Vector3 position)
+    private void MovePreview(Vector3 position, Quaternion? rotation = null)
     {
         if (previewRoot != null)
         {
@@ -173,6 +198,10 @@ public class PreviewSystem : MonoBehaviour
                 position.y + previewYOffset,
                 position.z
             );
+            if (rotation.HasValue)
+            {
+                previewRoot.transform.rotation = rotation.Value;
+            }
         }
     }
 
