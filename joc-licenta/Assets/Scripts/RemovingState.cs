@@ -3,6 +3,7 @@ using UnityEngine;
 public class RemovingState : IBuldingState
 {
     private int gameObjectIndex = -1;
+    private bool isWall = false;
     Grid grid;
     PreviewSystem previewSystem;
     GridData floorData;
@@ -39,7 +40,6 @@ public class RemovingState : IBuldingState
     public void OnAction(Vector3Int gridPosition)
     {
         GridData selectedData = null;
-        bool isWall = false;
 
         // 1. Verificăm dacă am dat click pe un perete
         if (wallData != null)

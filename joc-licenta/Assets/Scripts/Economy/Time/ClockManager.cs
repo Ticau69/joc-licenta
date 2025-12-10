@@ -1,17 +1,29 @@
 using UnityEngine;
-using TMPro;
+using UnityEngine.UIElements;
 
 public class ClockManager : MonoBehaviour
 {
     [Header("UI References")]
-    [SerializeField] private TextMeshProUGUI dayText;    // Ex: "Ziua 1"
-    [SerializeField] private TextMeshProUGUI clockText;  // Ex: "08:00"
-    [SerializeField] private TextMeshProUGUI statusText; // Ex: "DESCHIS"
+    [SerializeField] private UIDocument uiDocument;
+    private Label dayText;
+    private Label clockText;
+    private VisualElement LeftPanel;
 
     [Header("Colors")]
     [SerializeField] private Color openColor = Color.green;
     [SerializeField] private Color closeColor = Color.red;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
+
+    private void OnEnable()
+    {
+        VisualElement root = uiDocument.rootVisualElement;
+
+        var hotbar = root.Q<VisualElement>("HotBar");
+        LeftPanel = hotbar.Q<VisualElement>("LeftPanel");
+
+        dayText = LeftPanel.Q<Label>("Day");
+        clockText = LeftPanel.Q<Label>("Time");
+    }
+
     void Start()
     {
         // 1. Ne abonăm la evenimentele din TimeManager
@@ -20,8 +32,8 @@ public class ClockManager : MonoBehaviour
         {
             TimeManager.Instance.OnMinuteChanged += UpdateClock;
             TimeManager.Instance.OnDayChanged += UpdateDay;
-            TimeManager.Instance.OnShopOpen += SetShopOpen;
-            TimeManager.Instance.OnShopClose += SetShopClosed;
+            //TimeManager.Instance.OnShopOpen += SetShopOpen;
+            //TimeManager.Instance.OnShopClose += SetShopClosed;
 
             // 2. Inițializăm textul la start (ca să nu aștepte primul minut)
             UpdateDay();
@@ -29,7 +41,7 @@ public class ClockManager : MonoBehaviour
 
             // Verificăm starea inițială manual
             // (Poți adăuga o proprietate publică IsShopOpen în TimeManager pentru asta)
-            UpdateStatusText(false);
+            //UpdateStatusText(false);
         }
     }
 
@@ -41,45 +53,53 @@ public class ClockManager : MonoBehaviour
         {
             TimeManager.Instance.OnMinuteChanged -= UpdateClock;
             TimeManager.Instance.OnDayChanged -= UpdateDay;
-            TimeManager.Instance.OnShopOpen -= SetShopOpen;
-            TimeManager.Instance.OnShopClose -= SetShopClosed;
+            //TimeManager.Instance.OnShopOpen -= SetShopOpen;
+            //TimeManager.Instance.OnShopClose -= SetShopClosed;
         }
     }
+
+
 
     // --- Metodele care actualizează efectiv Textul ---
 
     private void UpdateClock()
     {
         // Formatare: "00" asigură că ora 8 apare ca "08"
-        clockText.text = TimeManager.Instance.GetFormattedTime();
+        if (clockText != null)
+        {
+            clockText.text = "Clock: " + TimeManager.Instance.CurrentHour.ToString("00") + ":" + TimeManager.Instance.CurrentMinute.ToString("00");
+        }
     }
 
     private void UpdateDay()
     {
-        dayText.text = "ZIUA " + TimeManager.Instance.CurrentDay;
-    }
-
-    private void SetShopOpen()
-    {
-        UpdateStatusText(true);
-    }
-
-    private void SetShopClosed()
-    {
-        UpdateStatusText(false);
-    }
-
-    private void UpdateStatusText(bool isOpen)
-    {
-        if (isOpen)
+        if (dayText != null)
         {
-            statusText.text = "DESCHIS";
-            statusText.color = openColor;
-        }
-        else
-        {
-            statusText.text = "ÎNCHIS";
-            statusText.color = closeColor;
+            dayText.text = "DAY " + TimeManager.Instance.CurrentDay;
         }
     }
+
+    // private void SetShopOpen()
+    // {
+    //     UpdateStatusText(true);
+    // }
+
+    // private void SetShopClosed()
+    // {
+    //     UpdateStatusText(false);
+    // }
+
+    // private void UpdateStatusText(bool isOpen)
+    // {
+    //     if (isOpen)
+    //     {
+    //         statusText.text = "DESCHIS";
+    //         statusText.color = openColor;
+    //     }
+    //     else
+    //     {
+    //         statusText.text = "ÎNCHIS";
+    //         statusText.color = closeColor;
+    //     }
+    // }
 }

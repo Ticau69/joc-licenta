@@ -65,7 +65,12 @@ public class WallPlacementState : IBuldingState
     public void EndState()
     {
         CleanupAll();
-        previewSystem.ToggleCursorVisibility(true);
+
+        // IMPORTANT: Reactivăm cursor-ul și ascundem indicatorii
+        previewSystem.ToggleCursorVisibility(false); // Ascundem cursor-ul complet
+
+        // Alternativ, dacă vrei să-l faci vizibil pentru alte state-uri:
+        // previewSystem.ToggleCursorVisibility(true);
     }
 
     public void OnAction(Vector3Int gridPosition)
@@ -332,7 +337,7 @@ public class WallPlacementState : IBuldingState
         }
 
         // Arătăm un segment mic pe axa X
-        Vector3 endPoint = snapPoint + new Vector3(0.2f, 0, 0);
+        Vector3 endPoint = snapPoint + new Vector3(0.01f, 0, 0);
 
         ProceduralWall pWall = currentSegmentPreview.GetComponent<ProceduralWall>();
         if (pWall != null)
@@ -439,20 +444,25 @@ public class WallPlacementState : IBuldingState
     }
 
     /// <summary>
-    /// Creează un indicator vizual pentru un colț
+    /// Creează un indicator vizual pentru un colț (stâlp vertical)
     /// </summary>
     private void CreateCornerIndicator(Vector3 position, Color color)
     {
         if (cornerIndicatorPrefab == null) return;
 
         GameObject indicator = GameObject.Instantiate(cornerIndicatorPrefab);
-        indicator.transform.position = position + Vector3.up * 0.05f;
+
+        // Poziționăm la jumătatea înălțimii pentru a sta pe pământ
+        float postHeight = 2.5f;
+        indicator.transform.position = position + Vector3.up * (postHeight / 2f);
         indicator.name = $"CornerIndicator_{cornerIndicators.Count}";
 
         Renderer renderer = indicator.GetComponent<Renderer>();
         if (renderer != null)
         {
-            renderer.material.color = color;
+            Color semiTransparent = color;
+            semiTransparent.a = 0.6f; // Semi-transparent
+            renderer.material.color = semiTransparent;
         }
 
         cornerIndicators.Add(indicator);

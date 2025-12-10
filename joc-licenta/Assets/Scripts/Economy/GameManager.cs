@@ -1,6 +1,6 @@
 using UnityEngine;
 using System;
-using TMPro;
+using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour
 {
@@ -12,7 +12,8 @@ public class GameManager : MonoBehaviour
     public int CurrentMoney { get; private set; }
 
     [Header("UI References")]
-    [SerializeField] private TextMeshProUGUI moneyText; // Ex: "Bani: 5000"
+    [SerializeField] private UIDocument uiDocument;
+    private Label moneyText;
 
     // Eveniment pentru UI (ca să actualizăm textul doar când se schimbă banii)
     public event Action OnMoneyChanged;
@@ -22,7 +23,22 @@ public class GameManager : MonoBehaviour
         // Inițializăm banii
         CurrentMoney = startingMoney;
         OnMoneyChanged += UpdateMoneyUI;
-        OnMoneyChanged?.Invoke(); // Actualizăm UI-ul la start
+    }
+
+    void OnEnable()
+    {
+        VisualElement root = uiDocument.rootVisualElement;
+
+        var hotbar = root.Q<VisualElement>("HotBar");
+
+        moneyText = root.Q<Label>("Money");
+        Debug.Log("Money Text Found: " + (moneyText != null));
+    }
+
+    void Start()
+    {
+        // Inițializăm UI-ul la start
+        UpdateMoneyUI();
     }
 
     public bool TrySpendMoney(int amount)
@@ -44,7 +60,10 @@ public class GameManager : MonoBehaviour
 
     public void UpdateMoneyUI()
     {
-        moneyText.text = "BANI: " + CurrentMoney;
+        if (moneyText != null)
+        {
+            moneyText.text = $"{CurrentMoney}";
+        }
     }
 
     void OnDestroy()

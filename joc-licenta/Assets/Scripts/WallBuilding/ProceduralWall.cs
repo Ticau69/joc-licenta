@@ -11,7 +11,7 @@ public class ProceduralWall : MonoBehaviour
 
     // Setări Perete
     [SerializeField] private float height = 2.5f;
-    [SerializeField] private float width = 0.2f;
+    [SerializeField] private float width = 0.1f;
     [SerializeField] private Material wallMaterial;
 
     // Referințe pentru coordonate
@@ -38,6 +38,12 @@ public class ProceduralWall : MonoBehaviour
 
     public void GenerateWall(Vector3 startPos, Vector3 endPos)
     {
+        float overlap = 0.1f;
+        Vector3 direction = (endPos - startPos).normalized;
+
+        startPos -= direction * overlap;
+        endPos += direction * overlap;
+
         worldStartPos = startPos;
         worldEndPos = endPos;
 
