@@ -1182,6 +1182,7 @@ Transform:
   - {fileID: 1644672767}
   - {fileID: 1820631520}
   - {fileID: 224801240}
+  - {fileID: 783284320}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &505795533
@@ -1557,6 +1558,69 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 756891136}
   m_CullTransparentMesh: 1
+--- !u!1 &783284319
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 783284320}
+  - component: {fileID: 783284321}
+  - component: {fileID: 783284322}
+  m_Layer: 0
+  m_Name: OpenBuildMenu
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &783284320
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 783284319}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -4.13913, y: -11.24817, z: 10.3485}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 437662384}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &783284321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 783284319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7d4ed941f43c37442b7c288abb56417d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OpenBuildMenu
+  uiDocument: {fileID: 784697281}
+--- !u!114 &783284322
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 783284319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e3acbc4673ae4943b82b3bd70b1a553, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BuildingUI
+  uiDocument: {fileID: 784697281}
+  placementSystem: {fileID: 1093049220}
+  database: {fileID: 11400000, guid: 82e66b4642bd43249ae31f7522d917ff, type: 2}
+  floorObjectName: Floor
+  wallObjectName: Wall
 --- !u!1 &784697280
 GameObject:
   m_ObjectHideFlags: 0
@@ -1588,7 +1652,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
   m_PanelSettings: {fileID: 11400000, guid: baf0e509d13ddff43ade2ccc836cfb20, type: 2}
   m_ParentUI: {fileID: 0}
-  sourceAsset: {fileID: 9197481963319205126, guid: a7c7155d5fdd55d44a8082d5cfab6704, type: 3}
+  sourceAsset: {fileID: 9197481963319205126, guid: 2c7815e36e7462440b0b8b902950f547, type: 3}
   m_SortingOrder: 0
   m_Position: 0
   m_WorldSpaceSizeMode: 1
@@ -2762,7 +2826,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d58a5a5a9a0103419c0dc1976833243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  dayDurationInSeconds: 30
+  dayDurationInSeconds: 50
   openHour: 8
   closeHour: 22
 --- !u!1 &1817641399
@@ -2947,8 +3011,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ClockManager
   uiDocument: {fileID: 784697281}
-  openColor: {r: 0, g: 1, b: 0, a: 1}
-  closeColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &1935791892
 GameObject:
   m_ObjectHideFlags: 0

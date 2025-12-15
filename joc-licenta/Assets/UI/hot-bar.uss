@@ -1,14 +1,6 @@
 :root {
 }
 
-.hot-bar {
-    background-color: rgba(4, 0, 12, 0.58);
-    bottom: 0;
-    align-content: flex-end;
-    height: 1%;
-    aspect-ratio: auto;
-    min-height: 0;
-    max-height: 667px;
-    flex-direction: column-reverse;
-    position: absolute;
-}
+
+
+

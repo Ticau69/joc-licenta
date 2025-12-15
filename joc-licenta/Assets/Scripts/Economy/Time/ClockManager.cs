@@ -1,73 +1,57 @@
 using UnityEngine;
 using UnityEngine.UIElements;
+using System; // NECESAR pentru DateTime
+using System.Globalization; // NECESAR pentru limba română (numele lunilor)
 
 public class ClockManager : MonoBehaviour
 {
     [Header("UI References")]
     [SerializeField] private UIDocument uiDocument;
+
     private Label dayText;
     private Label clockText;
-    private VisualElement LeftPanel;
 
-    [Header("Colors")]
-    [SerializeField] private Color openColor = Color.green;
-    [SerializeField] private Color closeColor = Color.red;
+    // --- CONFIGURARE DATA START ---
+    // Anul, Luna, Ziua (2025, 3, 22)
+    private DateTime startDate = new DateTime(2025, 3, 22);
 
     private void OnEnable()
     {
         VisualElement root = uiDocument.rootVisualElement;
 
-        var hotbar = root.Q<VisualElement>("HotBar");
-        LeftPanel = hotbar.Q<VisualElement>("LeftPanel");
-
-        dayText = LeftPanel.Q<Label>("Day");
-        clockText = LeftPanel.Q<Label>("Time");
+        // Căutăm elementele UI
+        dayText = root.Q<Label>("Date");   // Sau "Date", depinde cum ai numit Label-ul în UXML
+        clockText = root.Q<Label>("Hour");
     }
 
     void Start()
     {
-        // 1. Ne abonăm la evenimentele din TimeManager
-        // Astfel, acest script reacționează DOAR când TimeManager "strigă" că s-a schimbat ceva.
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnMinuteChanged += UpdateClock;
             TimeManager.Instance.OnDayChanged += UpdateDay;
-            //TimeManager.Instance.OnShopOpen += SetShopOpen;
-            //TimeManager.Instance.OnShopClose += SetShopClosed;
 
-            // 2. Inițializăm textul la start (ca să nu aștepte primul minut)
+            // Inițializare imediată
             UpdateDay();
             UpdateClock();
-
-            // Verificăm starea inițială manual
-            // (Poți adăuga o proprietate publică IsShopOpen în TimeManager pentru asta)
-            //UpdateStatusText(false);
         }
     }
 
     void OnDestroy()
     {
-        // 3. FOARTE IMPORTANT: Ne dezabonăm când obiectul e distrus
-        // Dacă nu faci asta, vor apărea erori când schimbi scena.
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnMinuteChanged -= UpdateClock;
             TimeManager.Instance.OnDayChanged -= UpdateDay;
-            //TimeManager.Instance.OnShopOpen -= SetShopOpen;
-            //TimeManager.Instance.OnShopClose -= SetShopClosed;
         }
     }
 
-
-
-    // --- Metodele care actualizează efectiv Textul ---
-
     private void UpdateClock()
     {
-        // Formatare: "00" asigură că ora 8 apare ca "08"
         if (clockText != null)
         {
-            clockText.text = "Clock: " + TimeManager.Instance.CurrentHour.ToString("00") + ":" + TimeManager.Instance.CurrentMinute.ToString("00");
+            // Format HH:MM (ex: 08:05)
+            clockText.text = $"{TimeManager.Instance.CurrentHour:00}:{TimeManager.Instance.CurrentMinute:00}";
         }
     }
 
@@ -75,31 +59,19 @@ public class ClockManager : MonoBehaviour
     {
         if (dayText != null)
         {
-            dayText.text = "DAY " + TimeManager.Instance.CurrentDay;
+            // 1. Calculăm câte zile au trecut de la început
+            // Scădem 1 pentru că "Ziua 1" este chiar data de start
+            int daysPassed = TimeManager.Instance.CurrentDay - 1;
+
+            // 2. Adăugăm zilele la data de start
+            DateTime currentDate = startDate.AddDays(daysPassed);
+
+            // 3. Formatom textul în limba română
+            // "dd" = ziua (2 cifre), "MMMM" = luna (nume complet), "yyyy" = anul
+            CultureInfo roCulture = CultureInfo.CreateSpecificCulture("en-EN");
+
+            // Rezultat: "22 MARTIE 2025"
+            dayText.text = currentDate.ToString("dd MMMM yyyy", roCulture).ToUpper();
         }
     }
-
-    // private void SetShopOpen()
-    // {
-    //     UpdateStatusText(true);
-    // }
-
-    // private void SetShopClosed()
-    // {
-    //     UpdateStatusText(false);
-    // }
-
-    // private void UpdateStatusText(bool isOpen)
-    // {
-    //     if (isOpen)
-    //     {
-    //         statusText.text = "DESCHIS";
-    //         statusText.color = openColor;
-    //     }
-    //     else
-    //     {
-    //         statusText.text = "ÎNCHIS";
-    //         statusText.color = closeColor;
-    //     }
-    // }
 }
