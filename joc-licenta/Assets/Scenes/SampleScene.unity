@@ -1619,8 +1619,9 @@ MonoBehaviour:
   uiDocument: {fileID: 784697281}
   placementSystem: {fileID: 1093049220}
   database: {fileID: 11400000, guid: 82e66b4642bd43249ae31f7522d917ff, type: 2}
-  floorObjectName: Floor
-  wallObjectName: Wall
+  containerNames:
+  - BuildView
+  - FurnitureView
 --- !u!1 &784697280
 GameObject:
   m_ObjectHideFlags: 0

@@ -11,7 +11,7 @@ public class ProceduralWall : MonoBehaviour
 
     // Setări Perete
     [SerializeField] private float height = 2.5f;
-    [SerializeField] private float width = 0.1f;
+    [SerializeField] private float width = 0.2f;
     [SerializeField] private Material wallMaterial;
 
     // Referințe pentru coordonate
@@ -184,7 +184,12 @@ public class ProceduralWall : MonoBehaviour
 
     public Material GetMaterial()
     {
-        return meshRenderer != null ? meshRenderer.material : null;
+        // FIX: Returnăm direct variabila setată în Inspector, nu așteptăm MeshRenderer-ul
+        if (wallMaterial != null)
+            return wallMaterial;
+
+        // Fallback: Dacă nu e setat sus, încercăm să luăm de pe renderer
+        return meshRenderer != null ? meshRenderer.sharedMaterial : null;
     }
 
     public Vector3 GetStartPosition() => worldStartPos;

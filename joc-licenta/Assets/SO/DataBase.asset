@@ -25,8 +25,20 @@ MonoBehaviour:
     <Prefab>k__BackingField: {fileID: 5886555951527748466, guid: 57977ed4b43fa8148abfb0bd6ba175a3, type: 3}
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
-  - <Name>k__BackingField: FrigiderMare
+  - <Name>k__BackingField: Usa
     <ID>k__BackingField: 2
+    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 5785866022173266267, guid: 7e1237167c195fc4d82d24c52f71887c, type: 3}
+    <Cost>k__BackingField: 100
+    <PowerConsumption>k__BackingField: 0
+  - <Name>k__BackingField: Casierie
+    <ID>k__BackingField: 3
+    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 7650287880413670760, guid: 984e0302f1653c442addd47f1130e051, type: 3}
+    <Cost>k__BackingField: 150
+    <PowerConsumption>k__BackingField: 0
+  - <Name>k__BackingField: Big_Fridge
+    <ID>k__BackingField: 4
     <Size>k__BackingField: {x: 2, y: 1}
     <Prefab>k__BackingField: {fileID: 8297112200244068997, guid: e6573f0c6b90f4a4a93210681db836e9, type: 3}
     <Cost>k__BackingField: 250

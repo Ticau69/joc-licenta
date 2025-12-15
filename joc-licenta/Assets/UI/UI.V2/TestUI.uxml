@@ -19,8 +19,13 @@
             </ui:Button>
         </ui:VisualElement>
     </ui:VisualElement>
-    <ui:VisualElement name="BuildView" style="flex-grow: 1; background-color: rgba(20, 20, 20, 0.27); left: 0%; top: 8%; position: absolute; width: 12%; height: 67%; flex-direction: column; flex-shrink: 1; flex-wrap: nowrap; align-self: flex-start; align-content: flex-start; align-items: center; justify-content: flex-start; padding-top: 5px; padding-right: 0; padding-bottom: 5px; padding-left: 0; display: none;">
-        <ui:Button text="Button" name="FloorButton" style="width: 60%; height: 20%;"/>
-        <ui:Button text="Button" name="WallButton" style="width: 60%; height: 20%;"/>
-    </ui:VisualElement>
+    <ui:ScrollView horizontal-page-size="0" vertical-page-size="3" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible" focusable="false" mode="Vertical" name="BuildView" style="left: 0; top: 14%; position: absolute; width: 12%; height: 60%; background-color: rgba(0, 0, 0, 0.57); align-content: stretch; justify-content: space-evenly; align-self: flex-start; align-items: flex-start; flex-direction: column; -unity-text-align: upper-left; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-wrap: nowrap; display: flex;">
+        <ui:Button text="Button" name="FloorButton" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto;"/>
+        <ui:Button text="Button" name="WallButton" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto; top: 130px;"/>
+        <ui:Button text="Button" name="Usa" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto; top: 260px;"/>
+    </ui:ScrollView>
+    <ui:ScrollView horizontal-page-size="0" vertical-page-size="3" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible" focusable="false" mode="Vertical" name="FurnitureView" style="left: 0; top: 14%; position: absolute; width: 12%; height: 60%; background-color: rgba(0, 0, 0, 0.57); align-content: stretch; justify-content: space-evenly; align-self: flex-start; align-items: flex-start; flex-direction: column; -unity-text-align: upper-left; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-wrap: nowrap; display: none;">
+        <ui:Button text="Button" name="Big_Fridge" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto;"/>
+        <ui:Button text="Button" name="Casierie" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto; top: 130px;"/>
+    </ui:ScrollView>
 </ui:UXML>

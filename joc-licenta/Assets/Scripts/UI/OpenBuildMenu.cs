@@ -7,6 +7,9 @@ public class OpenBuildMenu : MonoBehaviour
     private Button openBuildMenuButton;
     private VisualElement buildPanel;
 
+    private Button openFurnitureMenuButton;
+    private VisualElement furniturePanel;
+
     private void OnEnable()
     {
         VisualElement root = uiDocument.rootVisualElement;
@@ -19,13 +22,24 @@ public class OpenBuildMenu : MonoBehaviour
             openBuildMenuButton.clicked += OnBuildClicked;
         }
 
-        // --- FIXUL ESTE AICI ---
-        // Forțăm panoul să fie ascuns la pornirea scriptului.
-        // Astfel, variabila 'style.display' devine 'None' în mod explicit.
         if (buildPanel != null)
         {
             buildPanel.style.display = DisplayStyle.None;
         }
+
+        openFurnitureMenuButton = root.Q<Button>("FurnitureButton");
+        furniturePanel = root.Q<VisualElement>("FurnitureView");
+
+        if (openFurnitureMenuButton != null)
+        {
+            openFurnitureMenuButton.clicked += OnFurnitureClicked;
+        }
+
+        if (furniturePanel != null)
+        {
+            furniturePanel.style.display = DisplayStyle.None;
+        }
+
     }
 
     private void OnDisable()
@@ -33,6 +47,31 @@ public class OpenBuildMenu : MonoBehaviour
         if (openBuildMenuButton != null)
         {
             openBuildMenuButton.clicked -= OnBuildClicked;
+        }
+
+        if (openFurnitureMenuButton != null)
+        {
+            openFurnitureMenuButton.clicked -= OnFurnitureClicked;
+        }
+    }
+
+    private void OnFurnitureClicked()
+    {
+        if (furniturePanel == null) return;
+
+        // Verificăm dacă ESTE VIZIBIL (Flex).
+        // Dacă e Null sau None, considerăm că e ascuns.
+        bool isVisible = furniturePanel.style.display == DisplayStyle.Flex;
+
+        if (isVisible)
+        {
+            // Dacă e vizibil, îl ascundem
+            furniturePanel.style.display = DisplayStyle.None;
+        }
+        else
+        {
+            // Dacă e ascuns (sau Null), îl arătăm
+            furniturePanel.style.display = DisplayStyle.Flex;
         }
     }
 

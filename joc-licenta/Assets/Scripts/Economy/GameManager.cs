@@ -62,7 +62,7 @@ public class GameManager : MonoBehaviour
     {
         if (moneyText != null)
         {
-            moneyText.text = $"{CurrentMoney}";
+            moneyText.text = $"{CurrentMoney} RON";
         }
     }
 

@@ -13,6 +13,7 @@ public class PlacementSystem : MonoBehaviour
 
     private GridData floorData, furnitureData;
     private WallGridData wallData;
+    private WallSegmentData segmentData; // NOU: Sistem cu segmente
     private Vector3Int lastDetectedPosition = Vector3Int.zero;
     private IBuldingState buildingState;
 
@@ -24,6 +25,7 @@ public class PlacementSystem : MonoBehaviour
         floorData = new();
         furnitureData = new();
         wallData = new WallGridData();
+        segmentData = new WallSegmentData(0.5f); // NOU: Segmente de 0.5m
     }
 
     private void Update()
@@ -53,7 +55,6 @@ public class PlacementSystem : MonoBehaviour
                 ID, grid, previewSystem, database,
                 floorData, objectPlacer, gameManager);
 
-            // Box folosește click standard
             playerInput.OnClick += PlaceStructure;
         }
         else if (ID == 1) // Perete - MULTI-SEGMENT MODE
@@ -61,11 +62,19 @@ public class PlacementSystem : MonoBehaviour
             isWallMode = true;
             buildingState = new WallPlacementState(
                 ID, grid, previewSystem, database,
-                objectPlacer, gameManager, playerInput, wallData);
+                objectPlacer, gameManager, playerInput, wallData, segmentData);
 
-            // Wall folosește click pentru fiecare punct
             playerInput.OnClick += PlaceStructure; // Adaugă puncte
             playerInput.OnRightClick += CancelWallSegment; // Anulare
+        }
+        else if (ID == 2) // Ușă - WALL SNAP MODE
+        {
+            isWallMode = false;
+            buildingState = new DoorPlacementState(
+                ID, grid, previewSystem, database,
+                objectPlacer, gameManager, wallData, segmentData); // NOU: Pasăm segmentData
+
+            playerInput.OnClick += PlaceStructure;
         }
         else // Mobilă
         {
@@ -74,7 +83,6 @@ public class PlacementSystem : MonoBehaviour
                 ID, grid, previewSystem, database,
                 floorData, furnitureData, objectPlacer, gameManager);
 
-            // Mobilă folosește click standard
             playerInput.OnClick += PlaceStructure;
         }
 
@@ -142,8 +150,6 @@ public class PlacementSystem : MonoBehaviour
 
         // Unsubscribe de la toate evenimentele
         playerInput.OnClick -= PlaceStructure;
-        //playerInput.OnMouseDown -= StartWallDrag;
-        //playerInput.OnMouseUp -= FinishWallDrag;
         playerInput.OnRightClick -= CancelWallSegment;
         playerInput.OnExit -= StopPlacement;
         playerInput.OnRotate -= RotateStructure;
