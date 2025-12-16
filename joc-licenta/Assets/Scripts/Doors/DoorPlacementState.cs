@@ -12,6 +12,7 @@ public class DoorPlacementState : IBuldingState
     private GameManager gameManager;
     private WallGridData wallData;
     private WallSegmentData segmentData; // NOU: Pentru ștergerea segmentelor
+    private DoorData doorData; // NOU: Pentru ștergerea ușilor
 
     private GameObject doorPreview;
     private GameObject doorPrefab;
@@ -34,7 +35,8 @@ public class DoorPlacementState : IBuldingState
         ObjectPlacer objectPlacer,
         GameManager gameManager,
         WallGridData wallData,
-        WallSegmentData segmentData) // NOU
+        WallSegmentData segmentData,
+        DoorData doorData) // NOU
     {
         this.ID = iD;
         this.grid = grid;
@@ -43,7 +45,8 @@ public class DoorPlacementState : IBuldingState
         this.objectPlacer = objectPlacer;
         this.gameManager = gameManager;
         this.wallData = wallData;
-        this.segmentData = segmentData; // NOU
+        this.segmentData = segmentData;
+        this.doorData = doorData; // NOU
 
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
 

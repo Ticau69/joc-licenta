@@ -1,18 +1,20 @@
 using UnityEngine;
-using System.Collections.Generic; // Necesar pentru List
+using UnityEngine.InputSystem;
+using System.Linq;
 
 public class RemovingState : IBuldingState
 {
-    private int gameObjectIndex = -1;
-    private bool isWall = false;
-    Grid grid;
-    PreviewSystem previewSystem;
-    GridData floorData;
-    GridData furnitureData;
-    WallGridData wallData;
-    WallSegmentData segmentData; // <--- 1. ADĂUGAT: Referință la segmente
-    ObjectPlacer objectPlacer;
-    ObjectDataBase dataBase;
+    private Grid grid;
+    private PreviewSystem previewSystem;
+    private GridData floorData;
+    private GridData furnitureData;
+    private WallGridData wallData;
+    private WallSegmentData segmentData;
+    private DoorData doorData;
+    private ObjectPlacer objectPlacer;
+    private ObjectDataBase dataBase;
+
+    private Camera mainCamera;
 
     public RemovingState(
         Grid grid,
@@ -22,7 +24,8 @@ public class RemovingState : IBuldingState
         ObjectPlacer objectPlacer,
         ObjectDataBase dataBase,
         WallGridData wallData = null,
-        WallSegmentData segmentData = null) // <--- 2. ADĂUGAT: Parametru în constructor
+        WallSegmentData segmentData = null,
+        DoorData doorData = null)
     {
         this.grid = grid;
         this.previewSystem = previewSystem;
@@ -31,8 +34,10 @@ public class RemovingState : IBuldingState
         this.objectPlacer = objectPlacer;
         this.dataBase = dataBase;
         this.wallData = wallData;
-        this.segmentData = segmentData; // <--- 3. Salvăm referința
+        this.segmentData = segmentData;
+        this.doorData = doorData;
 
+        this.mainCamera = Camera.main;
         previewSystem.StartShowingRemovePreview();
     }
 
@@ -43,120 +48,136 @@ public class RemovingState : IBuldingState
 
     public void OnAction(Vector3Int gridPosition)
     {
-        GridData selectedData = null;
-        Vector3 worldPos = grid.CellToWorld(gridPosition);
+        if (mainCamera == null) mainCamera = Camera.main;
 
-        // --- FIX: ȘTERGERE SEGMENTE ---
-        // 1. Verificăm mai întâi sistemul nou de segmente
-        if (segmentData != null)
+        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+        // LayerMask: Ignorăm "Placement" și "Ignore Raycast"
+        int layerMask = ~LayerMask.GetMask("Placement", "Ignore Raycast");
+
+        RaycastHit[] hits = Physics.RaycastAll(ray, 100f, layerMask);
+
+        // Sortăm după distanță
+        System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+
+        foreach (RaycastHit hit in hits)
         {
-            // Căutăm segmente aproape de punctul click-ului (folosim o rază egală cu jumătate de celulă)
-            int removedCount = 0;
-            segmentData.RemoveSegmentsInRange(worldPos, grid.cellSize.x * 0.7f, out removedCount);
+            GameObject hitObject = hit.collider.gameObject;
 
-            if (removedCount > 0)
+            // --- FIX 1: SIGURANȚĂ PENTRU GRID ---
+            // Dacă layer-ul nu e setat corect pe copii, verificăm și numele
+            if (hitObject.name.Contains("gridVisualization") ||
+                hitObject.transform.root.name.Contains("gridVisualization") ||
+                hit.collider.isTrigger)
             {
-                Debug.Log("Segment de perete șters!");
-
-                // Opțional: Curățăm și datele vechi din wallData dacă nu mai există segmente
-                // Dar pentru moment vizual e suficient.
-                return;
+                continue; // Ignorăm și trecem la următorul obiect (din spate)
             }
-        }
 
-        // 2. Fallback la sistemul vechi (pentru pereți vechi sau compatibilitate)
-        if (wallData != null)
-        {
-            WallData wall = wallData.FindWallNearPoint(worldPos, grid.cellSize.x);
+            Debug.Log($"Raycast a lovit valid: {hitObject.name}");
 
-            if (wall != null)
+            // --- 1. VERIFICARE UȘI ---
+            if (doorData != null)
             {
-                // Verificăm consumul de energie
-                var objectSettings = dataBase.objectsData.Find(x => x.ID == wall.ID);
-                if (objectSettings != null && objectSettings.PowerConsumption > 0)
+                // Căutăm ușa folosind poziția obiectului lovit (Centrul ușii)
+                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f);
+
+                // Fallback la punctul de impact
+                if (door == null) door = doorData.FindDoorNearPoint(hit.point, 1.0f);
+
+                if (door != null)
                 {
-                    if (PowerManager.Instance != null)
-                    {
-                        PowerManager.Instance.UnregisterConsumer(objectSettings.PowerConsumption);
-                    }
+                    RestoreResources(door.DoorID);
+                    doorData.RemoveDoor(door.Position);
+                    Debug.Log("Ușă ștearsă!");
+                    return;
                 }
-
-                wallData.RemoveWall(wall.StartPosition, wall.EndPosition);
-                Debug.Log("Perete (Legacy) șters!");
-                return;
             }
-        }
-        // -----------------------------
 
-        // 3. Verificăm mobilă
-        if (furnitureData.canPlaceObjectAt(gridPosition, Vector2Int.one) == false)
-        {
-            selectedData = furnitureData;
-        }
-        // 4. Verificăm podea
-        else if (floorData.canPlaceObjectAt(gridPosition, Vector2Int.one) == false)
-        {
-            selectedData = floorData;
-        }
-
-        if (selectedData == null)
-        {
-            // Debug.Log("Nu există nimic de șters aici!");
-        }
-        else
-        {
-            int objectID = selectedData.GetObjectIDAt(gridPosition);
-            if (objectID != -1)
+            // --- 2. VERIFICARE PEREȚI ---
+            if (segmentData != null)
             {
-                var objectSettings = dataBase.objectsData.Find(x => x.ID == objectID);
-                if (objectSettings != null && objectSettings.PowerConsumption > 0)
+                ProceduralWall wallScript = hitObject.GetComponentInParent<ProceduralWall>();
+
+                if (wallScript != null)
                 {
-                    if (PowerManager.Instance != null)
+                    // --- FIX 2: PRECIZIE ȘTERGERE ---
+                    // În loc să folosim hit.point (care e la margine), folosim transform.position
+                    // al obiectului lovit. ProceduralWall își setează pivotul exact în centru.
+                    // Astfel distanța va fi 0, și ștergerea e garantată.
+
+                    Vector3 segmentCenter = wallScript.transform.position;
+
+                    int removedCount;
+                    segmentData.RemoveSegmentsInRange(segmentCenter, 0.5f, out removedCount);
+
+                    if (removedCount > 0)
                     {
-                        PowerManager.Instance.UnregisterConsumer(objectSettings.PowerConsumption);
+                        Debug.Log("Perete șters!");
+                        return;
                     }
                 }
             }
 
-            gameObjectIndex = selectedData.GetRepresentationIndex(gridPosition);
-            if (gameObjectIndex == -1)
+            // --- 3. VERIFICARE MOBILĂ ---
+            Vector3Int objectGridPos = grid.WorldToCell(hit.point);
+            int furnitureID = furnitureData.GetObjectIDAt(objectGridPos);
+
+            if (furnitureID != -1)
+            {
+                RemoveObjectAt(objectGridPos, furnitureData);
+                Debug.Log("Mobilă ștearsă!");
                 return;
+            }
 
-            selectedData.RemoveObjectAt(gridPosition);
-            objectPlacer.RemoveObjectAt(gameObjectIndex);
+            // --- 4. VERIFICARE PODEA ---
+            // Dacă lovim ceva ce pare a fi podeaua (Ground, Default layer)
+            if (hitObject.name.Contains("Ground") || hitObject.layer == 0)
+            {
+                int floorID = floorData.GetObjectIDAt(objectGridPos);
+                if (floorID != -1)
+                {
+                    RemoveObjectAt(objectGridPos, floorData);
+                    Debug.Log("Podea ștearsă!");
+                    return;
+                }
+
+                // Dacă am lovit pământul și nu era podea, ne oprim.
+                break;
+            }
         }
-
-        Vector3 cellPosition = grid.CellToWorld(gridPosition);
-        previewSystem.UpdatePosition(cellPosition, CheckIfSelectionIsValid(gridPosition));
     }
 
-    public bool CheckIfSelectionIsValid(Vector3Int gridPosition)
+    private void RemoveObjectAt(Vector3Int pos, GridData data)
     {
-        bool hasFurniture = !furnitureData.canPlaceObjectAt(gridPosition, Vector2Int.one);
-        bool hasFloor = !floorData.canPlaceObjectAt(gridPosition, Vector2Int.one);
+        int id = data.GetObjectIDAt(pos);
+        RestoreResources(id);
 
-        bool hasWall = false;
-        Vector3 worldPos = grid.CellToWorld(gridPosition);
-
-        // Verificăm segmente
-        if (segmentData != null)
+        int index = data.GetRepresentationIndex(pos);
+        if (index != -1)
         {
-            var segments = segmentData.FindSegmentsNearPoint(worldPos, grid.cellSize.x * 0.5f);
-            if (segments.Count > 0) hasWall = true;
+            data.RemoveObjectAt(pos);
+            objectPlacer.RemoveObjectAt(index);
         }
+    }
 
-        // Verificăm pereți vechi
-        if (!hasWall && wallData != null)
+    private void RestoreResources(int objectID)
+    {
+        if (objectID == -1) return;
+
+        var objectSettings = dataBase.objectsData.Find(x => x.ID == objectID);
+        if (objectSettings != null)
         {
-            hasWall = wallData.FindWallNearPoint(worldPos, grid.cellSize.x) != null;
+            if (objectSettings.PowerConsumption > 0 && PowerManager.Instance != null)
+            {
+                PowerManager.Instance.UnregisterConsumer(objectSettings.PowerConsumption);
+            }
         }
-
-        return hasFurniture || hasFloor || hasWall;
     }
 
     public void UpdateState(Vector3Int gridPosition)
     {
-        bool validity = CheckIfSelectionIsValid(gridPosition);
-        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), validity);
+        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), false);
     }
+
+    public bool CheckIfSelectionIsValid(Vector3Int gridPosition) => true;
 }

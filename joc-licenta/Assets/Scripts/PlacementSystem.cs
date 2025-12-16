@@ -13,7 +13,8 @@ public class PlacementSystem : MonoBehaviour
 
     private GridData floorData, furnitureData;
     private WallGridData wallData;
-    private WallSegmentData segmentData; // NOU: Sistem cu segmente
+    private WallSegmentData segmentData;
+    private DoorData doorData; // NOU: Tracking pentru uși
     private Vector3Int lastDetectedPosition = Vector3Int.zero;
     private IBuldingState buildingState;
 
@@ -25,7 +26,8 @@ public class PlacementSystem : MonoBehaviour
         floorData = new();
         furnitureData = new();
         wallData = new WallGridData();
-        segmentData = new WallSegmentData(0.5f); // NOU: Segmente de 0.5m
+        segmentData = new WallSegmentData(0.5f);
+        doorData = new DoorData(); // NOU: Inițializăm tracking-ul pentru uși
     }
 
     private void Update()
@@ -72,7 +74,7 @@ public class PlacementSystem : MonoBehaviour
             isWallMode = false;
             buildingState = new DoorPlacementState(
                 ID, grid, previewSystem, database,
-                objectPlacer, gameManager, wallData, segmentData); // NOU: Pasăm segmentData
+                objectPlacer, gameManager, wallData, segmentData, doorData); // +doorData
 
             playerInput.OnClick += PlaceStructure;
         }
@@ -96,7 +98,7 @@ public class PlacementSystem : MonoBehaviour
         gridVisualization.SetActive(true);
         isWallMode = false;
 
-        // --- FIX: Adăugăm segmentData la final ---
+        // ACTUALIZAT: Trimitem și segmentData, și doorData
         buildingState = new RemovingState(
             grid,
             previewSystem,
@@ -104,9 +106,10 @@ public class PlacementSystem : MonoBehaviour
             furnitureData,
             objectPlacer,
             database,
-            wallData,
-            segmentData); // <--- AICI e cheia!
-                          // ----------------------------------------
+            wallData,      // Legacy walls
+            segmentData,   // New segments
+            doorData       // New doors
+        );
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
