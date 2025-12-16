@@ -96,10 +96,17 @@ public class PlacementSystem : MonoBehaviour
         gridVisualization.SetActive(true);
         isWallMode = false;
 
+        // --- FIX: Adăugăm segmentData la final ---
         buildingState = new RemovingState(
-            grid, previewSystem,
-            floorData, furnitureData,
-            objectPlacer, database, wallData);
+            grid,
+            previewSystem,
+            floorData,
+            furnitureData,
+            objectPlacer,
+            database,
+            wallData,
+            segmentData); // <--- AICI e cheia!
+                          // ----------------------------------------
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;

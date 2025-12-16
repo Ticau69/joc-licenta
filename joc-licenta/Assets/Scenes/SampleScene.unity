@@ -1569,6 +1569,7 @@ GameObject:
   - component: {fileID: 783284320}
   - component: {fileID: 783284321}
   - component: {fileID: 783284322}
+  - component: {fileID: 783284323}
   m_Layer: 0
   m_Name: OpenBuildMenu
   m_TagString: Untagged
@@ -1622,6 +1623,20 @@ MonoBehaviour:
   containerNames:
   - BuildView
   - FurnitureView
+--- !u!114 &783284323
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 783284319}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3e6f20b2775e5e948ba9bb978d6439e7, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeleteUI
+  uiDocument: {fileID: 784697281}
+  placementSystem: {fileID: 1093049220}
 --- !u!1 &784697280
 GameObject:
   m_ObjectHideFlags: 0
