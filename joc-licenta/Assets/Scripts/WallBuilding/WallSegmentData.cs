@@ -148,7 +148,11 @@ public class WallSegmentData
         ProceduralWall pWall = segmentObj.AddComponent<ProceduralWall>();
         segmentObj.AddComponent<MeshFilter>();
         segmentObj.AddComponent<MeshRenderer>();
-        segmentObj.AddComponent<MeshCollider>();
+
+        // CONFIGURARE EXPLICITĂ A COLLIDER-ULUI
+        MeshCollider meshCollider = segmentObj.AddComponent<MeshCollider>();
+        meshCollider.convex = false; // Pentru pereți statici
+        meshCollider.enabled = true; // Forțează activarea
 
         // Generăm mesh-ul
         pWall.GenerateWall(start, end);

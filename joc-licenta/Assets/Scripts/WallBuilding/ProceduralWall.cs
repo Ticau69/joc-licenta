@@ -155,22 +155,17 @@ public class ProceduralWall : MonoBehaviour
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
-        // Debug: Verificăm prima normală
-        if (mesh.normals.Length > 0)
+        // Actualizăm collider-ul - ELIMINĂ CONDIȚIA meshCollider.enabled
+        if (meshCollider == null)
         {
-            Vector3 firstNormalLocal = mesh.normals[0];
-            Vector3 firstNormalWorld = transform.TransformDirection(firstNormalLocal);
-            Debug.Log($"[ProceduralWall] Primă normală - Local: {firstNormalLocal:F3}, World: {firstNormalWorld:F3}");
+            meshCollider = GetComponent<MeshCollider>();
         }
 
-        // Actualizăm collider-ul doar dacă e activat
-        if (meshCollider != null && meshCollider.enabled)
+        if (meshCollider != null && mesh.vertexCount >= 3 && mesh.triangles.Length >= 3)
         {
-            if (mesh.vertexCount >= 3 && mesh.triangles.Length >= 3)
-            {
-                meshCollider.sharedMesh = null;
-                meshCollider.sharedMesh = mesh;
-            }
+            meshCollider.sharedMesh = null;
+            meshCollider.sharedMesh = mesh;
+            meshCollider.enabled = true; // Forțează activarea
         }
     }
 

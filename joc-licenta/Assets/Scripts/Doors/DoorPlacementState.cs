@@ -249,10 +249,8 @@ public class DoorPlacementState : IBuldingState
         int removedCount = 0;
         if (segmentData != null)
         {
-            // Raza = lățimea usei + un pic extra pentru siguranță
             float clearanceRadius = doorWidth / 2f + 0.1f;
             segmentData.RemoveSegmentsInRange(position, clearanceRadius, out removedCount);
-
             Debug.Log($"Segmente de perete șterse pentru ușă: {removedCount}");
         }
 
@@ -260,9 +258,13 @@ public class DoorPlacementState : IBuldingState
         GameObject newDoor = GameObject.Instantiate(doorPrefab);
         newDoor.transform.position = position;
         newDoor.transform.rotation = rotation;
-        newDoor.name = $"Door_{wallData.GetAllWalls().Count}";
+        newDoor.name = $"Door_{doorData.GetAllDoors().Count}";
 
-        // 3. Consumăm energie dacă este cazul
+        // 3. ADĂUGĂM ÎN TRACKING - ACEASTA ERA PROBLEMA!
+        doorData.AddDoor(position, rotation, ID, newDoor);
+        Debug.Log($"Ușă adăugată în doorData la poziția: {position}");
+
+        // 4. Consumăm energie dacă este cazul
         int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
         if (consumption > 0 && PowerManager.Instance != null)
         {
