@@ -105,6 +105,11 @@ public class PlacementState : IBuldingState
             index,
             currentRotation);
 
+        if (EmployeeManager.Instance != null)
+        {
+            EmployeeManager.Instance.RefreshStations();
+        }
+
         // Update vizual
         previewSystem.UpdatePosition(worldPosition, false);
     }

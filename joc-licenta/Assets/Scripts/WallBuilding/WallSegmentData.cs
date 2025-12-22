@@ -154,6 +154,10 @@ public class WallSegmentData
         meshCollider.convex = false; // Pentru pereți statici
         meshCollider.enabled = true; // Forțează activarea
 
+        var obstacle = segmentObj.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+        obstacle.carving = true; // Permite carving pentru a actualiza NavMesh-ul
+
         // Generăm mesh-ul
         pWall.GenerateWall(start, end);
 
