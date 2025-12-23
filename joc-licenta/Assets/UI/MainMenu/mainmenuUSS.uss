@@ -1,0 +1,66 @@
+:root {
+}
+
+.buttons {
+    color: rgb(255, 255, 255);
+    align-items: center;
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+    background-color: rgb(45, 134, 172);
+    align-self: center;
+    top: 50%;
+    width: 50%;
+    height: 8%;
+    font-size: 34px;
+    -unity-text-align: middle-center;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-top-left-radius: 10px;
+    border-top-right-radius: 10px;
+    border-bottom-right-radius: 10px;
+    border-bottom-left-radius: 10px;
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(255, 255, 255);
+    border-top-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+    -unity-text-outline-width: 0;
+    -unity-font-style: bold;
+    flex-basis: 10%;
+    flex-grow: 0;
+    flex-shrink: 1;
+    padding-top: 9px;
+    padding-right: 9px;
+    padding-bottom: 9px;
+    padding-left: 9px;
+    margin-top: 9px;
+    margin-right: 9px;
+    margin-bottom: 9px;
+    margin-left: 9px;
+    position: relative;
+    white-space: pre;
+    text-overflow: clip;
+    word-spacing: 0;
+    letter-spacing: 0;
+}
+
+.buttons:hover {
+    border-top-width: 9px;
+    border-right-width: 9px;
+    border-bottom-width: 9px;
+    border-left-width: 9px;
+    border-top-left-radius: 11px;
+    border-top-right-radius: 11px;
+    border-bottom-right-radius: 11px;
+    border-bottom-left-radius: 11px;
+    border-left-color: rgb(255, 255, 255);
+    border-right-color: rgb(255, 255, 255);
+    border-top-color: rgb(255, 255, 255);
+    border-bottom-color: rgb(255, 255, 255);
+    scale: 1.1 1.1 1.1;
+    -unity-text-align: middle-center;
+    white-space: normal;
+    text-overflow: ellipsis;
+    -unity-font-style: bold;
+    font-size: 30px;
+}
