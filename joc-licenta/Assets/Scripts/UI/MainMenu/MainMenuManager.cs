@@ -19,6 +19,7 @@ public class MainMenuController : MonoBehaviour
         {
             if (mainMenuDoc.enabled == false)
                 mainMenuDoc.enabled = true;
+
             var root = mainMenuDoc.rootVisualElement;
 
             // Facem meniul vizibil

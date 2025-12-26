@@ -221,6 +221,7 @@ public class Employee : MonoBehaviour
 
 public enum EmployeeRole
 {
+    None,
     Janitor,    // Îngrijitor
     Cashier,    // Casier
     Restocker   // Aranjator marfă

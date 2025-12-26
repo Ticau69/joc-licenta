@@ -1205,6 +1205,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1413553010}
   - component: {fileID: 1413553009}
+  - component: {fileID: 1413553011}
   m_Layer: 0
   m_Name: EmployeeManager
   m_TagString: Untagged
@@ -1242,6 +1243,27 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1413553011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1413553008}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 765b9c7016f74904fb7f92ba5b1eaf0b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::EmployeeManagerUI
+  gameUIDoc: {fileID: 784697281}
+  employeeCardTemplate: {fileID: 9197481963319205126, guid: 2322329c7055d6a42910c8d6ec9db0b1, type: 3}
+  randomNames:
+  - Ion
+  - Maria
+  - Andrei
+  - Elena
+  - Dan
+  - Ioana
 --- !u!1 &1524395618
 GameObject:
   m_ObjectHideFlags: 0

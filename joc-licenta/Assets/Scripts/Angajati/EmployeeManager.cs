@@ -33,11 +33,6 @@ public class EmployeeManager : MonoBehaviour
 
         // Găsim toate stațiile de lucru din scenă la început
         FindAllWorkStations();
-
-        // TEST: Angajăm 3 oameni diferiți
-        HireEmployee("Maria", EmployeeRole.Cashier);
-        HireEmployee("Ion", EmployeeRole.Janitor);
-        HireEmployee("Alex", EmployeeRole.Restocker);
     }
 
     public void FindAllWorkStations()
@@ -94,28 +89,51 @@ public class EmployeeManager : MonoBehaviour
         }
     }
 
-    public void HireEmployee(string name, EmployeeRole role)
+    public Employee HireEmployee(string name)
     {
-        if (allEmployees.Count >= maxEmployees) return;
+        if (allEmployees.Count >= maxEmployees) return null;
 
         GameObject newObj = Instantiate(employeePrefab, spawnPoint.position, Quaternion.identity);
-        newObj.name = role.ToString() + "_" + name;
+        newObj.name = "Angajat_" + name;
 
         Employee script = newObj.GetComponent<Employee>();
         if (script != null)
         {
             script.employeeName = name;
-            script.role = role; // Setăm rolul, dar stația o căutăm mai jos
-
-            // Încercăm să asignăm stația (dacă există)
-            AssignStationToEmployee(script);
+            script.role = EmployeeRole.None; // Default la început
 
             allEmployees.Add(script);
-
-            // Dacă e în timpul programului, îl activăm
-            // (Verifică logica ta cu TimeManager aici, pentru simplitate îl las inactiv inițial)
-            newObj.SetActive(false);
+            newObj.SetActive(false); // Așteaptă programul
         }
+
+        return script; // <--- Returnăm scriptul ca să îl folosim în UI
+    }
+
+    public void FireEmployee(Employee employee)
+    {
+        if (allEmployees.Contains(employee))
+        {
+            allEmployees.Remove(employee);
+            Destroy(employee.gameObject); // Îl ștergem fizic din lume
+            Debug.Log($"[MANAGER] {employee.employeeName} a fost concediat.");
+        }
+    }
+
+    // Metodă ajutătoare pentru Dropdown-ul din UI
+    public void ChangeEmployeeRole(Employee emp, EmployeeRole newRole)
+    {
+        // 1. Îi scoatem rolul vechi (dacă avea stație, o eliberăm?)
+        // (Aici poți adăuga logică să eliberezi stația veche dacă e cazul)
+
+        // 2. Setăm noul rol
+        emp.role = newRole;
+        emp.myWorkStation = null; // Resetăm stația
+        emp.secondaryTarget = null;
+
+        // 3. Încercăm să îi găsim o stație nouă imediat
+        AssignStationToEmployee(emp);
+
+        Debug.Log($"[MANAGER] Rol schimbat pentru {emp.employeeName}: {newRole}");
     }
 
     private void StartWorkDay()

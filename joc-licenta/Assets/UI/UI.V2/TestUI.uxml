@@ -1,4 +1,5 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="EmployeeTemplateCard" src="project://database/Assets/UI/EmployeeTemplateCard.uxml?fileID=9197481963319205126&amp;guid=2322329c7055d6a42910c8d6ec9db0b1&amp;type=3#EmployeeTemplateCard"/>
     <Style src="project://database/Assets/UI/hot-bar.uss?fileID=7433441132597879392&amp;guid=b73f89344d1e0784496871a42196f095&amp;type=3#hot-bar"/>
     <ui:VisualElement name="Hotbar" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.38); height: 56%; align-self: center; align-content: flex-end; width: 100%; max-height: 18%; position: absolute; top: auto; left: auto; right: auto; bottom: 0%;">
         <ui:VisualElement name="InfoBar" style="flex-grow: 1; bottom: 0; position: absolute; background-color: rgba(0, 0, 0, 0.52); width: 100%; height: 50%; flex-direction: row; flex-wrap: nowrap;">
@@ -21,6 +22,9 @@
         <ui:Button text=" " name="Delete" style="position: absolute; right: 2%; bottom: 50%; border-top-left-radius: 89px; border-top-right-radius: 89px; border-bottom-right-radius: 89px; border-bottom-left-radius: 89px; height: 45%; width: 5%; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); font-size: 73px; color: rgb(255, 0, 0); -unity-text-outline-width: 2px; background-color: rgba(188, 188, 188, 0); -unity-text-align: middle-center; text-overflow: ellipsis; text-shadow: 0 0 0 rgba(0, 0, 0, 0);">
             <ui:Image source="project://database/Assets/UI/Photos/DemolishButtonIcon.png?fileID=21300000&amp;guid=ee10546c1b8316e44afcd802d0321e99&amp;type=3#DemolishButtonIcon" style="width: 100%; height: 100%; position: absolute; left: 0; top: 0; align-self: center; align-content: center; min-height: 100%; max-height: 100%;"/>
         </ui:Button>
+        <ui:Button text="" name="Angajati" style="right: 0%; left: 0%; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-top-left-radius: 61px; border-top-right-radius: 61px; border-bottom-right-radius: 61px; border-bottom-left-radius: 61px; height: 50%; width: 5%; background-color: rgba(188, 188, 188, 0);">
+            <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
+        </ui:Button>
     </ui:VisualElement>
     <ui:ScrollView horizontal-page-size="0" vertical-page-size="3" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible" focusable="false" mode="Vertical" name="BuildView" style="left: 0; top: 14%; position: absolute; width: 12%; height: 60%; background-color: rgba(0, 0, 0, 0.57); align-content: stretch; justify-content: space-evenly; align-self: flex-start; align-items: flex-start; flex-direction: column; -unity-text-align: upper-left; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-wrap: nowrap; display: none;">
         <ui:Button text="Button" name="FloorButton" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto;"/>
@@ -31,4 +35,11 @@
         <ui:Button text="Button" name="Big_Fridge" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto;"/>
         <ui:Button text="Button" name="Casierie" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto; top: 130px;"/>
     </ui:ScrollView>
+    <ui:VisualElement name="EmployeePanel" style="flex-grow: 1; right: 0%; width: 57%; position: absolute; height: 75%; top: 5%; background-color: rgba(0, 0, 0, 0.69); color: rgb(0, 0, 0); display: none;">
+        <ui:Label text="EMPLOYEES " name="Title" style="color: rgb(255, 255, 255); align-items: center; align-self: center; -unity-text-align: upper-center; font-size: 45px;"/>
+        <ui:Button text="HIRE EMPLOYEE" name="HireButton" style="background-color: rgba(188, 188, 188, 0); color: rgb(255, 255, 255); font-size: 37px; bottom: 0%; position: absolute; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0;"/>
+        <ui:ScrollView name="EmployeeList" style="top: 0%; height: 73%;">
+            <ui:Instance template="EmployeeTemplateCard" name="EmployeeTemplateCard" style="display: none;"/>
+        </ui:ScrollView>
+    </ui:VisualElement>
 </ui:UXML>
