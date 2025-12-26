@@ -1055,6 +1055,7 @@ MonoBehaviour:
   previewSystem: {fileID: 788751818}
   objectPlacer: {fileID: 1211937101}
   gameManager: {fileID: 1644672768}
+  wallPreviewShader: {fileID: -6465566751694194690, guid: 089086ff82b30f9409c10a0000feb635, type: 3}
 --- !u!1 &1115994637
 GameObject:
   m_ObjectHideFlags: 0

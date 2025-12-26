@@ -10,6 +10,7 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField] private PreviewSystem previewSystem;
     [SerializeField] private ObjectPlacer objectPlacer;
     [SerializeField] private GameManager gameManager;
+    [SerializeField] private Shader wallPreviewShader;
 
     private GridData floorData, furnitureData;
     private WallGridData wallData;
@@ -64,7 +65,7 @@ public class PlacementSystem : MonoBehaviour
             isWallMode = true;
             buildingState = new WallPlacementState(
                 ID, grid, previewSystem, database,
-                objectPlacer, gameManager, playerInput, wallData, segmentData);
+                objectPlacer, gameManager, playerInput, wallData, segmentData, wallPreviewShader);
 
             playerInput.OnClick += PlaceStructure; // Adaugă puncte
             playerInput.OnRightClick += CancelWallSegment; // Anulare

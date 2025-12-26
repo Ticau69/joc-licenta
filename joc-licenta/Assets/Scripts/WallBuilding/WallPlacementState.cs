@@ -13,6 +13,7 @@ public class WallPlacementState : IBuldingState
     private PlayerInput playerInput;
     private WallGridData wallData;
     private WallSegmentData segmentData; // NOU: Sistemul cu segmente
+    private Shader previewShader;
 
     // Sistema multi-segment
     private List<Vector3> wallPoints = new List<Vector3>();
@@ -35,7 +36,8 @@ public class WallPlacementState : IBuldingState
         GameManager gameManager,
         PlayerInput input,
         WallGridData wallData,
-        WallSegmentData segmentData) // NOU
+        WallSegmentData segmentData,
+        Shader shader) // NOU
     {
         this.ID = iD;
         this.grid = grid;
@@ -45,7 +47,8 @@ public class WallPlacementState : IBuldingState
         this.gameManager = gameManager;
         this.playerInput = input;
         this.wallData = wallData;
-        this.segmentData = segmentData; // NOU
+        this.segmentData = segmentData;
+        this.previewShader = shader; // NOU
 
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
 
@@ -439,7 +442,7 @@ public class WallPlacementState : IBuldingState
         cornerIndicatorPrefab.transform.localScale = Vector3.one * 0.2f;
 
         Renderer renderer = cornerIndicatorPrefab.GetComponent<Renderer>();
-        Material mat = new Material(Shader.Find("Standard"));
+        Material mat = new Material(previewShader);
         mat.SetFloat("_Mode", 3);
         mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
