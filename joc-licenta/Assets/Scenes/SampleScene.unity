@@ -1345,6 +1345,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1644672767}
   - component: {fileID: 1644672768}
+  - component: {fileID: 1644672769}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1379,8 +1380,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c9b5c755def8c941bd523796fade820, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  startingMoney: 2000000
+  startingMoney: 20000
   uiDocument: {fileID: 784697281}
+--- !u!114 &1644672769
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644672766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b8dd373f8d84f143a399518c9e6bd99, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StatsUIController
+  gameUIDoc: {fileID: 784697281}
 --- !u!1 &1681826857
 GameObject:
   m_ObjectHideFlags: 0
