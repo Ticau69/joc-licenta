@@ -6,28 +6,36 @@ public class WorkStation : MonoBehaviour
 {
     public StationType stationType;
 
+    // --- NOU: Punctul unde trebuie să stea angajatul ---
+    [Header("Navigație")]
+    public Transform interactionPoint;
+    // ---------------------------------------------------
+
     [Header("Setări Inventar (Doar pentru Rafturi)")]
     public int maxProducts = 20;
     public int currentProducts = 0;
 
-    // Proprietate care ne spune rapid dacă raftul are nevoie de marfă
-    public bool NeedsRestocking => stationType == StationType.Shelf && currentProducts < maxProducts;
+    // Proprietatea ajutătoare pentru a obține poziția corectă
+    public Vector3 GetStandPosition()
+    {
+        // Dacă am setat un interactionPoint, îl folosim pe acela.
+        // Dacă am uitat să îl setăm, folosim poziția obiectului curent ca fallback.
+        if (interactionPoint != null) return interactionPoint.position;
+        return transform.position;
+    }
 
-    // Proprietate care ne spune dacă un client are ce cumpăra
+    public bool NeedsRestocking => stationType == StationType.Shelf && currentProducts < maxProducts;
     public bool HasProducts => stationType == StationType.Shelf && currentProducts > 0;
 
-    // Metodă pentru Angajat (Pune marfă)
     public void AddProduct()
     {
         if (currentProducts < maxProducts)
         {
             currentProducts++;
-            // Aici poți adăuga logică vizuală (să apară obiecte pe raft)
             Debug.Log($"{name}: Produs adăugat! ({currentProducts}/{maxProducts})");
         }
     }
 
-    // Metodă pentru Client (Ia marfă)
     public bool TakeProduct()
     {
         if (currentProducts > 0)

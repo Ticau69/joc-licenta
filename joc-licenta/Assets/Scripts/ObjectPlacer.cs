@@ -31,6 +31,13 @@ public class ObjectPlacer : MonoBehaviour
         // Aplicăm offset-ul invers pentru a centra obiectul
         newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);
 
+        // --- SCHIMBARE LAYER AUTOMATĂ (NOU) ---
+        // Setează aici numele layer-ului pe care îl dorești (ex: "Default" sau "Interactable")
+        int targetLayer = LayerMask.NameToLayer("ObjectInteraction");
+
+        // Aplicăm recursiv pe părinte (Root) și pe toți copiii (Mesh, Collider, RaftWorkStation_Pos etc.)
+        SetLayerRecursively(root, targetLayer);
+
         // Opțional: Dacă vrei să păstrezi Y-ul original (să nu intre în pământ dacă pivotul e jos)
         // Comentează linia de mai sus și folosește:
         // newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);
@@ -38,6 +45,20 @@ public class ObjectPlacer : MonoBehaviour
         placedGameObjects.Add(root);
 
         return placedGameObjects.Count - 1;
+    }
+
+    // Funcția care sapă prin toți copiii și le schimbă layer-ul
+    private void SetLayerRecursively(GameObject obj, int newLayer)
+    {
+        if (obj == null) return;
+
+        obj.layer = newLayer;
+
+        foreach (Transform child in obj.transform)
+        {
+            if (child == null) continue;
+            SetLayerRecursively(child.gameObject, newLayer);
+        }
     }
 
     // Funcție ajutătoare pentru a găsi centrul vizual real

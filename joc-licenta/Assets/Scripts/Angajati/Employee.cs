@@ -79,9 +79,10 @@ public class Employee : MonoBehaviour
                     // (Poate l-a umplut alt angajat între timp)
                     if (secondaryTarget != null)
                     {
-                        var shelfInfo = secondaryTarget.GetComponent<WorkStation>();
+                        var shelfInfo = secondaryTarget.GetComponentInParent<WorkStation>();
                         if (!shelfInfo.NeedsRestocking)
                         {
+
                             // Raftul s-a umplut între timp! Căutăm altul sau intrăm în Idle
                             if (!FindTargetShelf())
                             {
@@ -128,7 +129,7 @@ public class Employee : MonoBehaviour
                     if (boxVisual != null) boxVisual.SetActive(false);
 
                     // --- ACTUALIZARE INVENTAR ---
-                    WorkStation shelf = secondaryTarget.GetComponent<WorkStation>();
+                    WorkStation shelf = secondaryTarget.GetComponentInParent<WorkStation>();
                     if (shelf != null)
                     {
                         shelf.AddProduct(); // Punem produsul fizic în date
@@ -163,16 +164,22 @@ public class Employee : MonoBehaviour
     // Returnează TRUE dacă a găsit un raft care are nevoie de marfă
     private bool FindTargetShelf()
     {
+        // Găsim toate scripturile (care sunt pe Părinți)
         var allShelves = FindObjectsByType<WorkStation>(FindObjectsSortMode.None)
                       .Where(x => x.stationType == StationType.Shelf).ToList();
 
-        // Filtrăm: Vrem doar rafturile care au nevoie de restocking (< 20 produse)
         var needyShelves = allShelves.Where(x => x.NeedsRestocking).ToList();
 
         if (needyShelves.Count > 0)
         {
-            // Alegem unul random dintre cele care au nevoie
-            secondaryTarget = needyShelves[Random.Range(0, needyShelves.Count)].transform;
+            WorkStation chosenShelf = needyShelves[Random.Range(0, needyShelves.Count)];
+
+            // FIX: Îi setăm ținta pe interactionPoint, nu pe părinte
+            if (chosenShelf.interactionPoint != null)
+                secondaryTarget = chosenShelf.interactionPoint;
+            else
+                secondaryTarget = chosenShelf.transform;
+
             return true;
         }
         else

@@ -26,7 +26,7 @@
             <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
         </ui:Button>
         <ui:Button text="" name="Stats" style="right: 0%; left: 85%; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-top-left-radius: 61px; border-top-right-radius: 61px; border-bottom-right-radius: 61px; border-bottom-left-radius: 61px; height: 50%; width: 5%; background-color: rgba(188, 188, 188, 0); position: absolute;">
-            <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
+            <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" enabled="true" picking-mode="Ignore" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
         </ui:Button>
     </ui:VisualElement>
     <ui:ScrollView horizontal-page-size="0" vertical-page-size="3" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible" focusable="false" mode="Vertical" name="BuildView" style="left: 0; top: 14%; position: absolute; width: 12%; height: 60%; background-color: rgba(0, 0, 0, 0.57); align-content: stretch; justify-content: space-evenly; align-self: flex-start; align-items: flex-start; flex-direction: column; -unity-text-align: upper-left; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-wrap: nowrap; display: none;">
@@ -45,22 +45,36 @@
             <ui:Instance template="EmployeeTemplateCard" name="EmployeeTemplateCard" style="display: none;"/>
         </ui:ScrollView>
     </ui:VisualElement>
-    <ui:TabView name="StatsPanel" style="width: 50%; height: 70%; background-color: rgba(0, 0, 0, 0.58); top: 5%; left: 25%; display: flex;">
-        <ui:Tab label="POWER">
-            <ui:VisualElement name="ChartContainer" style="height: 466px; flex-direction: row; background-color: rgba(0, 0, 0, 0.5); padding: 5px;">
-                <ui:VisualElement name="Y-Axis" style="width: 60px; justify-content: space-between; margin-right: 5px;">
-                    <ui:Label name="MaxMoneyLabel" text="1000 $" style="color: rgb(143, 206, 0); -unity-text-align: upper-right; font-size: 12px;"/>
-                    <ui:Label name="MinMoneyLabel" text="0 $" style="color: rgb(255, 94, 94); -unity-text-align: lower-right; font-size: 12px;"/>
-                </ui:VisualElement>
-                <ui:VisualElement name="Graph-Area" style="flex-grow: 1;">
-                    <LineChart name="ProfitChart" LineWidth="3" LineColor="rgba(0, 255, 0, 1)" style="flex-grow: 1;"/>
-                    <ui:VisualElement name="X-Axis" style="height: 20px; flex-direction: row; justify-content: space-between; margin-top: 2px;">
-                        <ui:Label name="StartTimeLabel" text="Oldest" style="color: white; font-size: 10px;"/>
-                        <ui:Label name="EndTimeLabel" text="Now" style="color: white; font-size: 10px;"/>
+    <ui:TabView name="StatsPanel" style="width: 80%; height: 75%; align-self: center; flex-grow: 0; top: 24px; display: none;">
+        <ui:Tab label="CASH FLOW" name="Cash" style="height: 474%; flex-grow: 1;">
+            <ui:VisualElement name="FinancialCard" style="width: 100%; height: 867px; background-color: rgba(30, 30, 35, 0.95); border-radius: 16px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); padding: 15px; margin: 10px; border-top-left-radius: 0; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; align-self: center; flex-grow: 1; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
+                <ui:VisualElement name="Header" style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
+                    <ui:VisualElement style="flex-direction: row; align-items: center;">
+                        <ui:Label text="&#128202;" style="font-size: 18px; margin-right: 5px;"/>
+                        <ui:Label text="RAPORT FINANCIAR" style="color: rgb(220, 220, 220); -unity-font-style: bold; font-size: 14px;"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; padding: 2px 6px;">
+                        <ui:Label text="MAX:" style="color: rgb(150, 150, 150); font-size: 10px; margin-right: 2px;"/>
+                        <ui:Label name="MaxMoneyLabel" text="1500 RON" style="color: rgb(255, 215, 0); -unity-font-style: bold; font-size: 12px;"/>
                     </ui:VisualElement>
                 </ui:VisualElement>
+                <ui:VisualElement name="Legend" style="flex-direction: row; justify-content: flex-end; margin-bottom: 5px;">
+                    <ui:VisualElement style="flex-direction: row; align-items: center; margin-right: 15px;">
+                        <ui:VisualElement style="width: 8px; height: 8px; background-color: rgb(76, 175, 80); border-radius: 4px; margin-right: 4px;"/>
+                        <ui:Label text="Venit" style="color: rgb(180, 180, 180); font-size: 10px;"/>
+                    </ui:VisualElement>
+                    <ui:VisualElement style="flex-direction: row; align-items: center;">
+                        <ui:VisualElement style="width: 8px; height: 8px; background-color: rgb(229, 57, 53); border-radius: 4px; margin-right: 4px;"/>
+                        <ui:Label text="Cheltuieli" style="color: rgb(180, 180, 180); font-size: 10px;"/>
+                    </ui:VisualElement>
+                </ui:VisualElement>
+                <BarChart name="ProfitChart" style="flex-grow: 1; margin-top: 5px;"/>
             </ui:VisualElement>
         </ui:Tab>
-        <ui:Tab label="Tab"/>
+        <ui:Tab label="POWER" name="Power"/>
     </ui:TabView>
+    <ui:VisualElement name="ObjectInfo" style="flex-grow: 1; background-color: rgba(30, 30, 35, 0.84); align-self: auto; height: 30%; width: 20%; align-items: center; flex-direction: column; aspect-ratio: auto; position: absolute; right: 117px; top: 29%; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); display: flex;">
+        <ui:Label text="Label" name="ObjectName" style="color: rgb(255, 255, 255); -unity-font-style: bold; -unity-text-align: upper-center; margin-top: 4px; margin-right: 4px; margin-bottom: 4px; margin-left: 4px;"/>
+        <ui:VisualElement name="Content" style="flex-grow: 1; width: 75%; height: 58%; bottom: 0;"/>
+    </ui:VisualElement>
 </ui:UXML>

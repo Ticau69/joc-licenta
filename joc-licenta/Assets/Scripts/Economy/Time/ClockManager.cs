@@ -10,10 +10,16 @@ public class ClockManager : MonoBehaviour
 
     private Label dayText;
     private Label clockText;
+    public DateTime currentDate { get; private set; }
 
     // --- CONFIGURARE DATA START ---
     // Anul, Luna, Ziua (2025, 3, 22)
-    private DateTime startDate = new DateTime(2025, 3, 22);
+    public DateTime startDate { get; private set; } = new DateTime(2025, 3, 22);
+
+    private void Awake()
+    {
+        currentDate = startDate;
+    }
 
     private void OnEnable()
     {

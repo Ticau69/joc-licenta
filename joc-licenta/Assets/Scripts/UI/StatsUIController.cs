@@ -1,154 +1,152 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Collections.Generic;
-using System.Linq;
 
 public class StatsUIController : MonoBehaviour
 {
     [SerializeField] private UIDocument gameUIDoc;
-    private Button openStatsButton;
-    private VisualElement statsPanel;
     private GameManager gameManager;
+    private ClockManager clockManager;
+    private TimeManager timeManager;
+    private BarChart barChart; // Am schimbat tipul aici
+    private Label maxValLabel; // Doar o etichetă sus e suficientă la BarChart
+    private Button statsButton;
 
-    private LineChart profitChart;
-    private Label maxMoneyLabel;
-    private Label minMoneyLabel;
-    private Label startTimeLabel;
-    private List<float> balanceHistory = new List<float>();
-    private List<float> expensesHistory = new List<float>();
+    // Lista cu datele pe zile
+    private List<DayData> history = new List<DayData>();
 
-    // Câte puncte păstrăm în istoric? (ca să nu devină linia o mâzgălitură)
-    private int maxDataPoints = 50;
+    // Tracking pentru ziua curentă
+    private float lastKnownMoney;
+    private float currentDayIncome = 0;
+    private float currentDayExpense = 0;
 
     void Start()
     {
         if (gameUIDoc == null) gameUIDoc = GetComponent<UIDocument>();
-
-        // Așteptăm ca UI-ul să fie gata
         var root = gameUIDoc.rootVisualElement;
 
-        openStatsButton = root.Q<Button>("Stats");
-        statsPanel = root.Q<VisualElement>("StatsPanel");
-
-        profitChart = root.Q<LineChart>("ProfitChart");
-        maxMoneyLabel = root.Q<Label>("MaxMoneyLabel");
-        minMoneyLabel = root.Q<Label>("MinMoneyLabel");
-        startTimeLabel = root.Q<Label>("StartTimeLabel");
-
-        // 1. Încercăm să găsim graficul
-        profitChart = root.Q<LineChart>("ProfitChart"); // <--- Verifică dacă acest nume e corect în UXML!
+        // Găsim BarChart-ul (asigură-te că are numele "ProfitChart" în UXML)
+        barChart = root.Q<BarChart>("ProfitChart");
+        maxValLabel = root.Q<Label>("MaxMoneyLabel"); // Folosim label-ul de sus
+        statsButton = root.Q<Button>("Stats");
 
         gameManager = GetComponent<GameManager>();
-        if (gameManager != null)
+        clockManager = GetComponent<ClockManager>();
+        timeManager = GetComponent<TimeManager>();
+
+        if (gameManager != null && barChart != null)
         {
-            gameManager.OnMoneyChanged += UpdateChartData;
+            gameManager.OnMoneyChanged += UpdateCurrentDayStats;
 
-            // Date inițiale
-            float startMoney = gameManager.CurrentMoney;
-            balanceHistory.Add(startMoney); balanceHistory.Add(startMoney);
+            // Setăm referința de bani
+            lastKnownMoney = gameManager.CurrentMoney;
 
-            // Inițializăm cheltuielile cu 0
-            expensesHistory.Add(0); expensesHistory.Add(0);
+            // --- GENERARE DATE FICTIVE PENTRU TEST ---
+            // Ca să nu arate gol la început, simulăm "ultimele 5 zile"
+            history.Clear();
 
-            UpdateChartData();
+            // Ziua Curentă (Ziua 5) - Începe de la 0
+            history.Add(new DayData(clockManager.currentDate.ToString("dd MMM"), 0, 0));
+
+            UpdateChartDisplay();
         }
 
-        if (openStatsButton != null)
+        // Buton pentru deschiderea/închiderea meniului de statistici
+        if (statsButton != null)
         {
-            openStatsButton.clicked += () =>
+            statsButton.clicked += () =>
             {
-                ToggleStatsPanel();
+                var statsPanel = root.Q<VisualElement>("StatsPanel");
+                if (statsPanel != null)
+                {
+                    statsPanel.style.display = statsPanel.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None;
+                }
             };
         }
-    }
 
-    private void ToggleStatsPanel()
-    {
-        if (statsPanel != null)
+        if (timeManager != null)
         {
-            bool isVisible = statsPanel.style.display == DisplayStyle.Flex;
-            statsPanel.style.display = isVisible ? DisplayStyle.None : DisplayStyle.Flex;
+            // Dacă evenimentul tău se numește 'OnDayChanged' sau 'OnShopOpen'
+            // Folosește evenimentul care marchează ÎNCEPUTUL unei noi zile de muncă
+            timeManager.OnDayChanged += OnNewDayStarted; // <--- LINIE NOUĂ IMPORTANTA
         }
     }
 
     void OnDestroy()
     {
         if (gameManager != null)
+            gameManager.OnMoneyChanged -= UpdateCurrentDayStats;
+
+        if (timeManager != null)
         {
-            gameManager.OnMoneyChanged -= UpdateChartData;
+            timeManager.OnDayChanged -= OnNewDayStarted; // <--- LINIE NOUĂ
         }
     }
 
-    private void UpdateChartData()
+    // Se apelează la fiecare tranzacție
+    private void UpdateCurrentDayStats()
     {
-        if (profitChart == null) return;
-
-        // 1. Actualizăm Istoricul Balanței
         float currentMoney = gameManager.CurrentMoney;
-        balanceHistory.Add(currentMoney);
-        if (balanceHistory.Count > maxDataPoints) balanceHistory.RemoveAt(0);
+        float diff = currentMoney - lastKnownMoney;
 
-        // 2. Actualizăm Istoricul Cheltuielilor (Logică Exemplu)
-        // Aici ar trebui să iei o variabilă reală, ex: GameManager.Instance.TotalExpenses
-        // De dragul exemplului, generez o valoare fluctuantă mică
-        float currentExpense = Random.Range(100f, 500f);
-        expensesHistory.Add(currentExpense);
-        if (expensesHistory.Count > maxDataPoints) expensesHistory.RemoveAt(0);
+        // Identificăm dacă e venit sau cheltuială
+        if (diff > 0)
+        {
+            currentDayIncome += diff;
+        }
+        else if (diff < 0)
+        {
+            currentDayExpense += Mathf.Abs(diff);
+        }
 
+        lastKnownMoney = currentMoney;
 
-        // 3. DESENARE MULTI-LINE
+        // Actualizăm ULTIMA intrare din listă (Ziua Curentă)
+        int lastIndex = history.Count - 1;
+        string currentDateLabel = history[lastIndex].DateLabel;
+        history[lastIndex] = new DayData(currentDateLabel, currentDayIncome, currentDayExpense);
 
-        // A. Ștergem ce era înainte
-        profitChart.ClearData();
-
-        // B. Adăugăm Linia VERDE (Profit/Balanță)
-        // Width: 4px, Culoare: Verde
-        profitChart.AddSeries(balanceHistory, new Color(0, 1, 0, 1), 4f);
-
-        // C. Adăugăm Linia ROȘIE (Cheltuieli)
-        // Width: 2px, Culoare: Roșu
-        profitChart.AddSeries(expensesHistory, new Color(1, 0.3f, 0.3f, 1), 2f);
-
-        UpdateLabels();
+        UpdateChartDisplay();
     }
 
-    private void UpdateLabels()
+    // Funcție opțională: Când se termină ziua în joc (TimeManager.OnDayChanged)
+    // Poți apela asta ca să începi o bară nouă curată
+    public void OnNewDayStarted()
     {
-        // Trebuie să găsim Min și Max GLOBAL (din toate listele active)
-        float globalMax = float.MinValue;
-        float globalMin = float.MaxValue;
+        // Resetăm tracker-ul zilnic
+        currentDayIncome = 0;
+        currentDayExpense = 0;
 
-        // Verificăm lista de Balanță
-        if (balanceHistory.Count > 0)
+        // --- FIX AICI ---
+        // Nu citim clockManager.currentDate (care e posibil să fie veche).
+        // Calculăm data direct pe baza numărului zilei curente.
+
+        int daysPassed = timeManager.CurrentDay - 1;
+        System.DateTime newDate = clockManager.startDate.AddDays(daysPassed);
+
+        // Folosim data calculată proaspăt
+        history.Add(new DayData(newDate.ToString("dd MMM"), 0, 0));
+
+        // Dacă lista e prea lungă, ștergem ziua cea mai veche
+        if (history.Count > 5) history.RemoveAt(0);
+
+        UpdateChartDisplay();
+    }
+
+    private void UpdateChartDisplay()
+    {
+        if (barChart == null) return;
+
+        // Trimitem datele la grafic
+        barChart.SetData(history);
+
+        // Actualizăm Label-ul de sus cu cea mai mare valoare (pentru scară)
+        float maxVal = 0;
+        foreach (var d in history)
         {
-            float maxB = balanceHistory.Max();
-            float minB = balanceHistory.Min();
-            if (maxB > globalMax) globalMax = maxB;
-            if (minB < globalMin) globalMin = minB;
+            if (d.Income > maxVal) maxVal = d.Income;
+            if (d.Expense > maxVal) maxVal = d.Expense;
         }
-
-        // Verificăm lista de Cheltuieli
-        if (expensesHistory.Count > 0)
-        {
-            float maxE = expensesHistory.Max();
-            float minE = expensesHistory.Min();
-            if (maxE > globalMax) globalMax = maxE;
-            if (minE < globalMin) globalMin = minE;
-        }
-
-        // Dacă nu avem date, punem 0
-        if (globalMax == float.MinValue) globalMax = 100;
-        if (globalMin == float.MaxValue) globalMin = 0;
-
-        // Setăm textul în UI
-        if (maxMoneyLabel != null) maxMoneyLabel.text = $"{globalMax:0} RON";
-        if (minMoneyLabel != null) minMoneyLabel.text = $"{globalMin:0} RON";
-
-        if (startTimeLabel != null)
-        {
-            // Luăm count-ul de la lista cea mai lungă (de obicei sunt egale)
-            int count = Mathf.Max(balanceHistory.Count, expensesHistory.Count);
-            startTimeLabel.text = $"-{count} Tranzacții";
-        }
+        if (maxValLabel != null) maxValLabel.text = maxVal.ToString("0") + " RON";
     }
 }

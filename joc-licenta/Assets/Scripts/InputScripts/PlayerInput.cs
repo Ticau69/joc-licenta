@@ -8,6 +8,7 @@ public class PlayerInput : MonoBehaviour
     [SerializeField] private Camera sceneCamera;
     private Vector3 lastPosition;
     [SerializeField] private LayerMask placementLayerMask;
+    [SerializeField] private LayerMask selectionLayerMask;
 
     // Evenimente separate pentru drag-and-place
     public event Action OnClick;           // Click standard (pentru compatibilitate)
@@ -17,18 +18,28 @@ public class PlayerInput : MonoBehaviour
     public event Action OnExit;
     public event Action OnRotate;
 
+    public event Action<GameObject> OnObjectClicked;
+
     private bool isMouseDown = false;
 
     void Update()
     {
         if (Mouse.current != null)
         {
-            // Detectăm mouse down (începutul drag-ului)
+            // Detectăm CLICK STÂNGA
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
+                // 1. Verificăm dacă nu dăm click prin UI
+                if (!IsPointerOverUI())
+                {
+                    // 2. Încercăm să selectăm un obiect 3D
+                    HandleObjectSelection();
+                }
+
+                // 3. Logica veche pentru Building System
                 isMouseDown = true;
                 OnMouseDown?.Invoke();
-                OnClick?.Invoke(); // Pentru compatibilitate cu sistemele vechi
+                OnClick?.Invoke();
             }
 
             // Detectăm mouse up (sfârșitul drag-ului)
@@ -59,6 +70,22 @@ public class PlayerInput : MonoBehaviour
             {
                 OnRotate?.Invoke();
             }
+        }
+    }
+
+    private void HandleObjectSelection()
+    {
+        Vector3 mousePos = Mouse.current.position.ReadValue();
+        Ray ray = sceneCamera.ScreenPointToRay(mousePos);
+        RaycastHit hit;
+
+        // Tragem raza doar pe layerele de selecție (ex: Default sau Interactive)
+        if (Physics.Raycast(ray, out hit, 100, selectionLayerMask))
+        {
+            Debug.Log($"[Input] Click pe: {hit.collider.name}");
+
+            // Trimitem obiectul lovit către oricine ascultă (ex: UIManager)
+            OnObjectClicked?.Invoke(hit.collider.gameObject);
         }
     }
 

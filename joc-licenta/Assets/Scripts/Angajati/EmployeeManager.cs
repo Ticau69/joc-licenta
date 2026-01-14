@@ -68,24 +68,51 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignStationToEmployee(Employee script)
     {
-        Transform targetStation = null;
+        Transform targetPos = null;
 
-        if (script.role == EmployeeRole.Cashier && cashRegisters.Count > 0)
+        if (script.role == EmployeeRole.Cashier)
         {
-            // Simplificat: ia prima casă (poți face logică să ia una liberă)
-            targetStation = cashRegisters[0].transform;
+            // --- FIX: Curățăm lista de obiecte șterse ---
+            // RemoveAll(x => x == null) va șterge automat din listă orice casă distrusă
+            cashRegisters.RemoveAll(x => x == null);
+
+            if (cashRegisters.Count > 0)
+            {
+                WorkStation station = cashRegisters[0];
+                targetPos = station.interactionPoint != null ? station.interactionPoint : station.transform;
+            }
         }
-        else if (script.role == EmployeeRole.Restocker && storages.Count > 0)
+        else if (script.role == EmployeeRole.Restocker)
         {
-            targetStation = storages[0].transform;
-            if (shelves.Count > 0) script.secondaryTarget = shelves[0].transform;
+            // --- FIX: Curățăm lista de depozite ---
+            storages.RemoveAll(x => x == null);
+
+            if (storages.Count > 0)
+            {
+                WorkStation storage = storages[0];
+                targetPos = storage.interactionPoint != null ? storage.interactionPoint : storage.transform;
+
+                // --- FIX: Curățăm lista de rafturi ---
+                shelves.RemoveAll(x => x == null);
+
+                if (shelves.Count > 0)
+                {
+                    // Alegem un raft valid (aici luăm primul, dar logic ar fi unul random sau gol)
+                    WorkStation shelf = shelves[0];
+                    script.secondaryTarget = shelf.interactionPoint != null ? shelf.interactionPoint : shelf.transform;
+                }
+            }
         }
 
-        // Dacă am găsit o stație, o asignăm
-        if (targetStation != null)
+        if (targetPos != null)
         {
-            script.AssignRole(script.role, targetStation);
-            Debug.Log($"[MANAGER] Am asignat {script.employeeName} la {targetStation.name}");
+            script.AssignRole(script.role, targetPos);
+            Debug.Log($"[MANAGER] Am asignat {script.employeeName} la {targetPos.name}");
+        }
+        else
+        {
+            // Opțional: Dacă nu am găsit stație, anunțăm
+            Debug.LogWarning($"[MANAGER] Nu am găsit o stație validă pentru {script.employeeName} ({script.role})");
         }
     }
 
@@ -100,13 +127,40 @@ public class EmployeeManager : MonoBehaviour
         if (script != null)
         {
             script.employeeName = name;
-            script.role = EmployeeRole.None; // Default la început
-
+            script.role = EmployeeRole.None;
             allEmployees.Add(script);
-            newObj.SetActive(false); // Așteaptă programul
+
+            // --- FIXUL ESTE AICI ---
+            // Verificăm dacă magazinul este DEJA deschis
+            bool isShopOpen = false;
+            if (TimeManager.Instance != null)
+            {
+                int currentH = TimeManager.Instance.CurrentHour;
+                int openH = TimeManager.Instance.openHour;
+                int closeH = TimeManager.Instance.closeHour;
+
+                // Verificăm intervalul orar
+                if (currentH >= openH && currentH < closeH)
+                {
+                    isShopOpen = true;
+                }
+            }
+
+            if (isShopOpen)
+            {
+                // Dacă magazinul e deschis, îl punem la treabă imediat!
+                script.StartShift(spawnPoint.position);
+                Debug.Log($"[MANAGER] {name} a fost angajat în timpul programului și începe munca!");
+            }
+            else
+            {
+                // Dacă e noapte, îl dezactivăm până dimineața
+                newObj.SetActive(false);
+                Debug.Log($"[MANAGER] {name} a fost angajat, dar așteaptă deschiderea magazinului.");
+            }
         }
 
-        return script; // <--- Returnăm scriptul ca să îl folosim în UI
+        return script;
     }
 
     public void FireEmployee(Employee employee)

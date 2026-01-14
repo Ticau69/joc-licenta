@@ -13,13 +13,30 @@ public class GameManager : MonoBehaviour
 
     [Header("UI References")]
     [SerializeField] private UIDocument uiDocument;
+
+    private VisualElement root;
     private Label moneyText;
 
-    // Eveniment pentru UI (ca să actualizăm textul doar când se schimbă banii)
+    // Referințe pentru panoul de info
+    private VisualElement objectSelectedInfo;
+    private Label objectNameLabel;
+    private VisualElement objectDetailsContainer;
+
     public event Action OnMoneyChanged;
 
     void Awake()
     {
+        // 1. REPARATIE CRITICĂ SINGLETON
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         // Inițializăm banii
         CurrentMoney = startingMoney;
         OnMoneyChanged += UpdateMoneyUI;
@@ -27,18 +44,72 @@ public class GameManager : MonoBehaviour
 
     void OnEnable()
     {
-        VisualElement root = uiDocument.rootVisualElement;
-
-        var hotbar = root.Q<VisualElement>("HotBar");
+        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
+        root = uiDocument.rootVisualElement;
 
         moneyText = root.Q<Label>("Money");
-        Debug.Log("Money Text Found: " + (moneyText != null));
+
+        // Căutăm panoul de Info
+        // Asigură-te că în UXML elementul se numește EXACT "ObjectInfo"
+        objectSelectedInfo = root.Q<VisualElement>("ObjectInfo");
+
+        if (objectSelectedInfo != null)
+        {
+            objectNameLabel = objectSelectedInfo.Q<Label>("ObjectName");
+            objectDetailsContainer = objectSelectedInfo.Q<VisualElement>("ObjectDetails");
+
+            // Ascundem panoul la început, ca să nu stea pe ecran degeaba
+            objectSelectedInfo.style.display = DisplayStyle.None;
+        }
+        else
+        {
+            Debug.LogError("Nu am găsit elementul 'ObjectInfo' în UI Builder! Verifică numele.");
+        }
     }
 
     void Start()
     {
-        // Inițializăm UI-ul la start
         UpdateMoneyUI();
+
+        // Ne abonăm la click-uri
+        var playerInput = FindFirstObjectByType<PlayerInput>();
+        if (playerInput != null)
+        {
+            playerInput.OnObjectClicked += SelectObject;
+        }
+    }
+
+    void SelectObject(GameObject obj)
+    {
+        Debug.Log("Obiect lovit de Raycast: " + obj.name);
+
+        // Ascundem panoul existent pentru a-l reîmprospăta
+        if (objectSelectedInfo != null) objectSelectedInfo.style.display = DisplayStyle.None;
+
+        // 2. REPARATIE IERARHIE: Căutăm scripturile și în PĂRINȚI
+        // (Deoarece Collider-ul poate fi pe un copil, iar scriptul pe părinte)
+        Employee employee = obj.GetComponentInParent<Employee>();
+        WorkStation shelf = obj.GetComponentInParent<WorkStation>();
+
+        if (employee != null)
+        {
+            Debug.Log("Am selectat angajatul: " + employee.employeeName);
+            // Aici poți deschide UI-ul specific angajatului
+        }
+        else if (shelf != null)
+        {
+            Debug.Log("Am selectat stația de lucru: " + shelf.name);
+
+            if (objectSelectedInfo != null)
+            {
+                // Afișăm panoul
+                objectSelectedInfo.style.display = DisplayStyle.Flex;
+
+                // Setăm numele
+                if (objectNameLabel != null)
+                    objectNameLabel.text = shelf.name; // Sau o variabilă din WorkStation
+            }
+        }
     }
 
     public bool TrySpendMoney(int amount)
@@ -46,10 +117,10 @@ public class GameManager : MonoBehaviour
         if (amount <= CurrentMoney)
         {
             CurrentMoney -= amount;
-            OnMoneyChanged?.Invoke(); // Actualizăm UI-ul
+            OnMoneyChanged?.Invoke();
             return true;
         }
-        return false; // Nu sunt suficienți bani
+        return false;
     }
 
     public void AddMoney(int amount)
@@ -69,5 +140,12 @@ public class GameManager : MonoBehaviour
     void OnDestroy()
     {
         OnMoneyChanged -= UpdateMoneyUI;
+
+        // Dezabonare pentru a evita erori la schimbarea scenei
+        var playerInput = FindFirstObjectByType<PlayerInput>();
+        if (playerInput != null)
+        {
+            playerInput.OnObjectClicked -= SelectObject;
+        }
     }
 }

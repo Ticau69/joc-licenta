@@ -10,7 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 5912241390587948966}
   - component: {fileID: 5749380908322401812}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CashRegisterPos
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -45,6 +45,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorkStation
   stationType: 0
+  maxProducts: 20
+  currentProducts: 0
 --- !u!1 &7650287880413670760
 GameObject:
   m_ObjectHideFlags: 0
@@ -54,7 +56,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5519675861790207771}
-  m_Layer: 0
+  m_Layer: 7
   m_Name: CasierieParent
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -134,6 +136,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Casierie
       objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 1b0e3a24184e19b4dba1a26e21b112d8, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 8164078558771037576, guid: 1b0e3a24184e19b4dba1a26e21b112d8, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -141,6 +151,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 8164078558771037576, guid: 1b0e3a24184e19b4dba1a26e21b112d8, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8325353730445674300}
+    - targetCorrespondingSourceObject: {fileID: 8164078558771037576, guid: 1b0e3a24184e19b4dba1a26e21b112d8, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1393175843360390753}
   m_SourcePrefab: {fileID: 100100000, guid: 1b0e3a24184e19b4dba1a26e21b112d8, type: 3}
 --- !u!4 &4371780581410140673 stripped
 Transform:
@@ -162,9 +175,30 @@ NavMeshObstacle:
   m_Enabled: 1
   serializedVersion: 3
   m_Shape: 1
-  m_Extents: {x: 1.1, y: 1, z: 0.6}
+  m_Extents: {x: 1, y: 1, z: 0.5}
   m_MoveThreshold: 0.1
   m_Carve: 1
   m_CarveOnlyStationary: 1
   m_Center: {x: -1, y: 1, z: 0.5}
   m_TimeToStationary: 0.5
+--- !u!65 &1393175843360390753
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5363140688419868770}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.1999998, y: 2, z: 1.2}
+  m_Center: {x: -0.99999994, y: 1, z: 0.5}

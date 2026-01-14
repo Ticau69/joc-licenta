@@ -9,7 +9,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1334822634165654021}
-  - component: {fileID: 1809829494476659578}
   m_Layer: 0
   m_Name: RaftWorkStation_Pos
   m_TagString: Untagged
@@ -32,19 +31,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 5516817683271197962}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1809829494476659578
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 7967175350215938114}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a38fdbebb481923458081ff50c9aedf6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::WorkStation
-  stationType: 2
 --- !u!1 &8297112200244068997
 GameObject:
   m_ObjectHideFlags: 0
@@ -54,6 +40,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5516817683271197962}
+  - component: {fileID: 8199260961855143650}
+  - component: {fileID: 2431577677445458728}
   m_Layer: 0
   m_Name: FrigiderParent
   m_TagString: Untagged
@@ -78,6 +66,43 @@ Transform:
   - {fileID: 1334822634165654021}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8199260961855143650
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8297112200244068997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a38fdbebb481923458081ff50c9aedf6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::WorkStation
+  stationType: 2
+  interactionPoint: {fileID: 1334822634165654021}
+  maxProducts: 20
+  currentProducts: 0
+--- !u!65 &2431577677445458728
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8297112200244068997}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 2.0112798, y: 3.813487, z: 0.8877168}
+  m_Center: {x: 0.9989642, y: 1.9000673, z: 0.6431241}
 --- !u!1001 &1230860648956700055
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -133,6 +158,14 @@ PrefabInstance:
     - target: {fileID: 919132149155446097, guid: 54b0f54af1fda1f4492cb1ffcbc8fe5e, type: 3}
       propertyPath: m_Name
       value: Frigider_Dublu 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: 54b0f54af1fda1f4492cb1ffcbc8fe5e, type: 3}
+      propertyPath: m_Layer
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8164078558771037576, guid: 54b0f54af1fda1f4492cb1ffcbc8fe5e, type: 3}
+      propertyPath: m_Layer
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
