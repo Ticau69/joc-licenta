@@ -102,8 +102,6 @@ public class CameraController : MonoBehaviour
 
     void HandleMovement()
     {
-        Vector2 screenPos = mousePositionAction.ReadValue<Vector2>();
-
         // Calculăm direcțiile FATA și DREAPTA relative la rotația camerei
         // Important: Setăm y=0 pentru a nu intra în pământ când apăsăm W
         Vector3 camForward = transform.forward;
@@ -130,7 +128,6 @@ public class CameraController : MonoBehaviour
         // Keyboard Input (WASD)
         if (isMovementPressed)
         {
-            // Combinăm direcțiile relative cu inputul WASD
             moveDir += (camForward * currentMovementInput.y) + (camRight * currentMovementInput.x);
         }
 

@@ -1,6 +1,8 @@
 using UnityEngine;
 using System;
 using UnityEngine.UIElements;
+using System.Linq;
+using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
@@ -20,7 +22,11 @@ public class GameManager : MonoBehaviour
     // Referințe pentru panoul de info
     private VisualElement objectSelectedInfo;
     private Label objectNameLabel;
-    private VisualElement objectDetailsContainer;
+    private VisualElement contentContainer;
+    private DropdownField productDropdown; // Folosim DropdownField pentru filtrare
+    private Button addProductButton;
+
+    private WorkStation currentSelectedShelf;
 
     public event Action OnMoneyChanged;
 
@@ -45,9 +51,10 @@ public class GameManager : MonoBehaviour
     void OnEnable()
     {
         if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
-        root = uiDocument.rootVisualElement;
+        var root = uiDocument.rootVisualElement;
 
         moneyText = root.Q<Label>("Money");
+
 
         // Căutăm panoul de Info
         // Asigură-te că în UXML elementul se numește EXACT "ObjectInfo"
@@ -56,10 +63,14 @@ public class GameManager : MonoBehaviour
         if (objectSelectedInfo != null)
         {
             objectNameLabel = objectSelectedInfo.Q<Label>("ObjectName");
-            objectDetailsContainer = objectSelectedInfo.Q<VisualElement>("ObjectDetails");
+            contentContainer = objectSelectedInfo.Q<VisualElement>("Content");
+            addProductButton = objectSelectedInfo.Q<Button>("AdaugareProdus");
 
             // Ascundem panoul la început, ca să nu stea pe ecran degeaba
             objectSelectedInfo.style.display = DisplayStyle.None;
+
+            if (addProductButton != null)
+                addProductButton.clicked += OnActionButtonClicked;
         }
         else
         {
@@ -81,34 +92,158 @@ public class GameManager : MonoBehaviour
 
     void SelectObject(GameObject obj)
     {
-        Debug.Log("Obiect lovit de Raycast: " + obj.name);
+        // Căutăm WorkStation (codul tău standard)
+        WorkStation shelf = obj.GetComponentInParent<WorkStation>(true);
+        if (shelf == null) shelf = obj.transform.root.GetComponent<WorkStation>();
 
-        // Ascundem panoul existent pentru a-l reîmprospăta
-        if (objectSelectedInfo != null) objectSelectedInfo.style.display = DisplayStyle.None;
-
-        // 2. REPARATIE IERARHIE: Căutăm scripturile și în PĂRINȚI
-        // (Deoarece Collider-ul poate fi pe un copil, iar scriptul pe părinte)
-        Employee employee = obj.GetComponentInParent<Employee>();
-        WorkStation shelf = obj.GetComponentInParent<WorkStation>();
-
-        if (employee != null)
+        if (shelf != null && shelf.stationType == StationType.Shelf)
         {
-            Debug.Log("Am selectat angajatul: " + employee.employeeName);
-            // Aici poți deschide UI-ul specific angajatului
+            currentSelectedShelf = shelf;
+            RefreshUI(); // Funcția care decide ce arătăm
+            objectSelectedInfo.style.display = DisplayStyle.Flex;
         }
-        else if (shelf != null)
+        else
         {
-            Debug.Log("Am selectat stația de lucru: " + shelf.name);
+            objectSelectedInfo.style.display = DisplayStyle.None;
+            currentSelectedShelf = null;
+        }
+    }
 
-            if (objectSelectedInfo != null)
+    private void RefreshUI()
+    {
+        if (currentSelectedShelf == null) return;
+
+        // Resetăm conținutul (ștergem dropdown-uri vechi dacă există)
+        contentContainer.Clear();
+        objectNameLabel.text = currentSelectedShelf.shelfVariant.ToString();
+
+        // CAZ 1: Raftul nu are produs asignat
+        if (currentSelectedShelf.slot1Product == ProductType.None)
+        {
+            addProductButton.text = "Adaugă Produs";
+            addProductButton.SetEnabled(true);
+
+            // Putem pune un text informativ în content
+            Label info = new Label("Acest raft este gol.");
+            info.style.color = Color.gray;
+            info.style.unityTextAlign = TextAnchor.MiddleCenter;
+            contentContainer.Add(info);
+        }
+        // CAZ 2: Raftul are produs
+        else
+        {
+            // Afișăm info despre produs
+            Label prodLabel = new Label($"Produs: {currentSelectedShelf.slot1Product}");
+            prodLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            prodLabel.style.color = Color.white;
+            contentContainer.Add(prodLabel);
+
+            Color stockColor;
+            float fillPercentage = (float)currentSelectedShelf.slot1Stock / currentSelectedShelf.maxProductsPerSlot;
+
+            if (currentSelectedShelf.slot1Stock == 0)
             {
-                // Afișăm panoul
-                objectSelectedInfo.style.display = DisplayStyle.Flex;
-
-                // Setăm numele
-                if (objectNameLabel != null)
-                    objectNameLabel.text = shelf.name; // Sau o variabilă din WorkStation
+                stockColor = Color.red; // E gol complet
             }
+            else if (fillPercentage <= 0.5f) // Dacă e sub sau egal cu 50% (ex: 10/20)
+            {
+                stockColor = Color.yellow;
+            }
+            else
+            {
+                stockColor = Color.green; // Peste 50%
+            }
+
+            Label stockLabel = new Label($"Stoc: {currentSelectedShelf.slot1Stock}/{currentSelectedShelf.maxProductsPerSlot}");
+            stockLabel.style.color = stockColor;
+            stockLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
+            contentContainer.Add(stockLabel);
+
+            addProductButton.text = "Reumple Stoc";
+            addProductButton.SetEnabled(currentSelectedShelf.slot1Stock < currentSelectedShelf.maxProductsPerSlot);
+        }
+    }
+
+    private void OnActionButtonClicked()
+    {
+        if (currentSelectedShelf == null) return;
+
+        // Dacă nu avem produs -> Generăm Dropdown-ul!
+        if (currentSelectedShelf.slot1Product == ProductType.None)
+        {
+            CreateDynamicDropdown();
+        }
+        // Dacă avem produs -> Reumplem stocul
+        else
+        {
+            currentSelectedShelf.RestockSlot1();
+            RefreshUI(); // Actualizăm vizual
+        }
+    }
+
+    // --- 4. GENERARE DINAMICĂ DROPDOWN ---
+    private void CreateDynamicDropdown()
+    {
+        // Curățăm containerul
+        contentContainer.Clear();
+
+        // Ascundem butonul
+        addProductButton.style.display = DisplayStyle.None;
+
+        // Creăm Dropdown-ul
+        DropdownField dropdown = new DropdownField("Alege Produsul:");
+
+        List<string> options = currentSelectedShelf.GetAllowedProducts()
+                                .Select(x => x.ToString()).ToList();
+
+        dropdown.choices = options;
+
+        // --- FIXUL ESTE AICI ---
+        // Nu mai selectăm automat prima opțiune (options[0]).
+        // Punem un text "fantomă" care forțează utilizatorul să facă o schimbare.
+        dropdown.value = "Selectează...";
+        // -----------------------
+
+        dropdown.style.marginBottom = 10;
+        dropdown.style.width = Length.Percent(100);
+
+        dropdown.RegisterValueChangedCallback(evt =>
+        {
+            // Verificăm să nu fie textul placeholder (deși nu e în listă, e bine să fim siguri)
+            if (evt.newValue != "Selectează...")
+            {
+                OnProductSelected(evt.newValue);
+            }
+        });
+
+        contentContainer.Add(dropdown);
+
+        // Buton Anulare
+        Button cancelButton = new Button(() =>
+        {
+            addProductButton.style.display = DisplayStyle.Flex;
+            RefreshUI();
+        });
+        cancelButton.text = "Anulează";
+        contentContainer.Add(cancelButton);
+    }
+
+    // --- 5. FINALIZARE SELECȚIE ---
+    private void OnProductSelected(string productName)
+    {
+        if (Enum.TryParse(productName, out ProductType selectedType))
+        {
+            // Salvăm în raft
+            currentSelectedShelf.slot1Product = selectedType;
+            currentSelectedShelf.slot1Stock = 0;
+
+            Debug.Log($"Produs ales: {selectedType}");
+
+            // Reafișăm butonul principal
+            addProductButton.style.display = DisplayStyle.Flex;
+
+            // Revenim la meniul de info (care acum va arăta stocul)
+            RefreshUI();
         }
     }
 

@@ -164,17 +164,19 @@ public class Employee : MonoBehaviour
     // Returnează TRUE dacă a găsit un raft care are nevoie de marfă
     private bool FindTargetShelf()
     {
-        // Găsim toate scripturile (care sunt pe Părinți)
+        // Găsim toate rafturile
         var allShelves = FindObjectsByType<WorkStation>(FindObjectsSortMode.None)
                       .Where(x => x.stationType == StationType.Shelf).ToList();
 
-        var needyShelves = allShelves.Where(x => x.NeedsRestocking).ToList();
+        // FIX: Adăugăm condiția && x.slot1Product != ProductType.None
+        var needyShelves = allShelves.Where(x => x.NeedsRestocking && x.slot1Product != ProductType.None).ToList();
 
         if (needyShelves.Count > 0)
         {
+            // Alegem un raft random
             WorkStation chosenShelf = needyShelves[Random.Range(0, needyShelves.Count)];
 
-            // FIX: Îi setăm ținta pe interactionPoint, nu pe părinte
+            // Mergem la interactionPoint dacă există
             if (chosenShelf.interactionPoint != null)
                 secondaryTarget = chosenShelf.interactionPoint;
             else

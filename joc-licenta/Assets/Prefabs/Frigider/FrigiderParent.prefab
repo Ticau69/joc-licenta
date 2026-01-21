@@ -80,8 +80,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::WorkStation
   stationType: 2
   interactionPoint: {fileID: 1334822634165654021}
-  maxProducts: 20
-  currentProducts: 0
+  shelfVariant: 1
+  slot1Product: 0
+  slot1Stock: 0
+  maxProductsPerSlot: 20
 --- !u!65 &2431577677445458728
 BoxCollider:
   m_ObjectHideFlags: 0

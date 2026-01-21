@@ -73,8 +73,9 @@
         </ui:Tab>
         <ui:Tab label="POWER" name="Power"/>
     </ui:TabView>
-    <ui:VisualElement name="ObjectInfo" style="flex-grow: 1; background-color: rgba(30, 30, 35, 0.84); align-self: auto; height: 30%; width: 20%; align-items: center; flex-direction: column; aspect-ratio: auto; position: absolute; right: 117px; top: 29%; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); display: flex;">
+    <ui:VisualElement name="ObjectInfo" style="flex-grow: 1; background-color: rgba(30, 30, 35, 0.84); align-self: auto; height: 42%; width: 20%; align-items: center; flex-direction: column; aspect-ratio: auto; position: absolute; right: 117px; top: 29%; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); display: flex;">
         <ui:Label text="Label" name="ObjectName" style="color: rgb(255, 255, 255); -unity-font-style: bold; -unity-text-align: upper-center; margin-top: 4px; margin-right: 4px; margin-bottom: 4px; margin-left: 4px;"/>
-        <ui:VisualElement name="Content" style="flex-grow: 1; width: 75%; height: 58%; bottom: 0;"/>
+        <ui:VisualElement name="Content" style="flex-grow: 1; width: 90%;"/>
+        <ui:Button text="Button" name="AdaugareProdus"/>
     </ui:VisualElement>
 </ui:UXML>
