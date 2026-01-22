@@ -17,6 +17,11 @@ public class WorkStation : MonoBehaviour
     public ProductType slot1Product = ProductType.None;
     public int slot1Stock = 0;
 
+    [Header("Depozit: Inventar General")]
+    // Acest dicționar va fi folosit DOAR dacă stationType == Storage
+    // Cheie: Tip Produs, Valoare: Cantitate
+    public Dictionary<ProductType, int> storageInventory = new Dictionary<ProductType, int>();
+
     // Configurare generală
     public int maxProductsPerSlot = 20;
 
@@ -51,12 +56,74 @@ public class WorkStation : MonoBehaviour
         return allowed;
     }
 
+    void Start()
+    {
+        // Inițializare automată DOAR pentru Depozit
+        if (stationType == StationType.Storage)
+        {
+            // Trecem prin toate tipurile posibile de produse din Enum
+            foreach (ProductType type in System.Enum.GetValues(typeof(ProductType)))
+            {
+                // Ignorăm "None"
+                if (type != ProductType.None)
+                {
+                    // Adăugăm un stoc de start (ex: 50 bucăți din fiecare)
+                    if (!storageInventory.ContainsKey(type))
+                    {
+                        storageInventory.Add(type, 50);
+                    }
+                    else
+                    {
+                        storageInventory[type] = 50;
+                    }
+                }
+            }
+            Debug.Log($"[DEPOZIT] {name} a fost aprovizionat automat cu stoc de start!");
+        }
+    }
+
     public Vector3 GetStandPosition()
     {
         // Dacă am setat un interactionPoint, îl folosim pe acela.
         // Dacă am uitat să îl setăm, folosim poziția obiectului curent ca fallback.
         if (interactionPoint != null) return interactionPoint.position;
         return transform.position;
+    }
+
+    // Adaugă marfă în depozit (ex: când scoatem de pe un raft)
+    public void AddToStorage(ProductType type, int amount)
+    {
+        if (stationType != StationType.Storage) return;
+
+        if (storageInventory.ContainsKey(type))
+        {
+            storageInventory[type] += amount;
+        }
+        else
+        {
+            storageInventory.Add(type, amount);
+        }
+        Debug.Log($"[DEPOZIT] Am primit {amount} x {type}. Total: {storageInventory[type]}");
+    }
+
+    // Scoate marfă din depozit (pentru Angajați care vin să ia marfă)
+    public bool TakeFromStorage(ProductType type, int amount)
+    {
+        if (stationType != StationType.Storage) return false;
+
+        if (storageInventory.ContainsKey(type) && storageInventory[type] >= amount)
+        {
+            storageInventory[type] -= amount;
+            return true;
+        }
+        return false;
+    }
+
+    // Verifică stocul din depozit
+    public int GetStorageStock(ProductType type)
+    {
+        if (storageInventory.ContainsKey(type)) return storageInventory[type];
+        return 0;
     }
 
     public void RestockSlot1()
@@ -78,14 +145,22 @@ public class WorkStation : MonoBehaviour
     public bool HasProducts => stationType == StationType.Shelf && slot1Stock > 0;
 
     // Metodă pentru Angajat (Restocker) - Adaugă o bucată
-    public void AddProduct()
+    public void AddProduct(int amount)
     {
-        // Adăugăm doar dacă e loc și dacă avem un tip de produs setat
-        if (slot1Stock < maxProductsPerSlot && slot1Product != ProductType.None)
+        // Verificăm dacă e loc și dacă tipul produsului e corect
+        if (slot1Product != ProductType.None)
         {
-            slot1Stock++;
-            // Aici poți adăuga instanțierea vizuală a produsului pe raft
-            // UpdateVisuals(); 
+            // Adăugăm cantitatea
+            slot1Stock += amount;
+
+            // Ne asigurăm că nu depășim maximul
+            if (slot1Stock > maxProductsPerSlot)
+            {
+                // Opțional: Aici am putea returna surplusul, dar momentan îl pierdem sau îl considerăm "extra"
+                slot1Stock = maxProductsPerSlot;
+            }
+
+            // Debug.Log($"[Raft] S-au adăugat {amount} buc. Stoc nou: {slot1Stock}");
         }
     }
 

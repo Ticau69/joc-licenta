@@ -15,7 +15,7 @@ public class Employee : MonoBehaviour
     public GameObject boxVisual;
 
     private enum RestockerState { MovingToStorage, Loading, MovingToShelf, Unloading, Idle }
-    private RestockerState restockerState = RestockerState.MovingToStorage;
+    private RestockerState restockerState = RestockerState.Idle;
 
     private NavMeshAgent agent;
     private bool isWorking = false;
@@ -49,6 +49,27 @@ public class Employee : MonoBehaviour
         }
     }
 
+    public void WakeUpAndWork()
+    {
+        // Reacționăm doar dacă suntem Restocker și stăm degeaba (Idle)
+        if (role == EmployeeRole.Restocker && restockerState == RestockerState.Idle)
+        {
+            Debug.Log($"[Angajat] {name} a primit notificare de muncă!");
+
+            // Oprim imediat plimbarea curentă
+            if (agent != null && agent.isActiveAndEnabled)
+                agent.ResetPath();
+
+            workTimer = 0; // Resetăm timerul de plimbare
+
+            // Verificăm imediat dacă e nevoie de noi
+            if (FindTargetShelf())
+            {
+                restockerState = RestockerState.MovingToStorage;
+            }
+        }
+    }
+
     // --- LOGICĂ RESTOCKER ACTUALIZATĂ ---
     private void DoRestockerWork()
     {
@@ -72,33 +93,66 @@ public class Employee : MonoBehaviour
                 break;
 
             case RestockerState.MovingToStorage:
+                // Mergem spre depozit
                 agent.SetDestination(myWorkStation.position);
-                if (!agent.pathPending && agent.remainingDistance < 0.5f)
+
+                // VERIFICARE: Am ajuns la depozit?
+                // Mărim toleranța la 2.5f sau folosim agent.stoppingDistance
+                if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.5f)
                 {
-                    // Înainte să încărcăm, verificăm dacă mai avem nevoie de raft
-                    // (Poate l-a umplut alt angajat între timp)
+                    // Suntem lângă depozit. Verificăm dacă știm ce trebuie să luăm.
                     if (secondaryTarget != null)
                     {
-                        var shelfInfo = secondaryTarget.GetComponentInParent<WorkStation>();
-                        if (!shelfInfo.NeedsRestocking)
-                        {
+                        WorkStation targetShelf = secondaryTarget.GetComponentInParent<WorkStation>();
 
-                            // Raftul s-a umplut între timp! Căutăm altul sau intrăm în Idle
-                            if (!FindTargetShelf())
+                        if (targetShelf != null && targetShelf.slot1Product != ProductType.None)
+                        {
+                            ProductType neededProduct = targetShelf.slot1Product;
+                            int amountCarried = 5;
+
+                            // Luăm referința scriptului Depozit
+                            WorkStation storageScript = myWorkStation.GetComponentInParent<WorkStation>();
+
+                            if (storageScript != null)
                             {
-                                restockerState = RestockerState.Idle;
-                                return;
+                                // Încercăm să luăm marfa
+                                bool gotGoods = storageScript.TakeFromStorage(neededProduct, amountCarried);
+
+                                if (gotGoods)
+                                {
+                                    Debug.Log($"[SUCCES] Angajatul a luat {neededProduct}. Pleacă spre raft.");
+
+                                    // Dacă ai cutie vizuală, o activăm aici
+                                    if (boxVisual != null) boxVisual.SetActive(true);
+
+                                    agent.SetDestination(secondaryTarget.position);
+                                    restockerState = RestockerState.MovingToShelf;
+                                }
+                                else
+                                {
+                                    // Depozitul e gol sau nu are produsul
+                                    Debug.LogWarning($"[ESEC] Depozitul nu are stoc pentru {neededProduct}! Verifică inventarul.");
+
+                                    // Important: Îl trimitem la Idle ca să nu rămână blocat aici
+                                    restockerState = RestockerState.Idle;
+                                }
+                            }
+                            else
+                            {
+                                Debug.LogError("Obiectul Depozit nu are componenta WorkStation!");
                             }
                         }
+                        else
+                        {
+                            Debug.Log("Raftul țintă nu mai are produs setat sau a dispărut.");
+                            restockerState = RestockerState.Idle;
+                        }
                     }
-                    else if (!FindTargetShelf()) // Dacă nu aveam țintă
+                    else
                     {
+                        Debug.Log("Am ajuns la depozit dar am uitat raftul țintă (secondaryTarget null).");
                         restockerState = RestockerState.Idle;
-                        return;
                     }
-
-                    restockerState = RestockerState.Loading;
-                    workTimer = 0f;
                 }
                 break;
 
@@ -132,7 +186,7 @@ public class Employee : MonoBehaviour
                     WorkStation shelf = secondaryTarget.GetComponentInParent<WorkStation>();
                     if (shelf != null)
                     {
-                        shelf.AddProduct(); // Punem produsul fizic în date
+                        shelf.AddProduct(5); // Punem produsul fizic în date
                     }
                     // ----------------------------
 
