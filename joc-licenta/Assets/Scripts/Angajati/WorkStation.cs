@@ -15,6 +15,7 @@ public class WorkStation : MonoBehaviour
     [Header("Configurare Sloturi")]
     // Momentan facem logică pentru 1 produs, dar pregătită pentru 2
     public ProductType slot1Product = ProductType.None;
+    public ProductType pendingProduct = ProductType.None;
     public int slot1Stock = 0;
 
     [Header("Depozit: Inventar General")]
@@ -139,44 +140,48 @@ public class WorkStation : MonoBehaviour
 
     // Proprietăți ajutătoare
     public bool NeedsRestocking =>
-     stationType == StationType.Shelf &&
-     slot1Stock < maxProductsPerSlot &&
-     slot1Product != ProductType.None;
+        stationType == StationType.Shelf &&
+        slot1Stock < maxProductsPerSlot &&
+        slot1Product != ProductType.None &&
+        (pendingProduct == ProductType.None || pendingProduct == slot1Product);
+    public bool NeedsClearing =>
+        stationType == StationType.Shelf &&
+        pendingProduct != ProductType.None &&
+        pendingProduct != slot1Product &&
+        slot1Stock > 0;
     public bool HasProducts => stationType == StationType.Shelf && slot1Stock > 0;
 
     // Metodă pentru Angajat (Restocker) - Adaugă o bucată
     public void AddProduct(int amount)
     {
-        // Verificăm dacă e loc și dacă tipul produsului e corect
         if (slot1Product != ProductType.None)
         {
-            // Adăugăm cantitatea
             slot1Stock += amount;
-
-            // Ne asigurăm că nu depășim maximul
-            if (slot1Stock > maxProductsPerSlot)
-            {
-                // Opțional: Aici am putea returna surplusul, dar momentan îl pierdem sau îl considerăm "extra"
-                slot1Stock = maxProductsPerSlot;
-            }
-
-            // Debug.Log($"[Raft] S-au adăugat {amount} buc. Stoc nou: {slot1Stock}");
+            if (slot1Stock > maxProductsPerSlot) slot1Stock = maxProductsPerSlot;
         }
     }
 
     // Metodă pentru Client - Ia o bucată
-    public bool TakeProduct()
+    public int TakeProduct(int requestedAmount)
     {
         if (slot1Stock > 0)
         {
-            slot1Stock--;
+            int amountToTake = Mathf.Min(requestedAmount, slot1Stock);
+            slot1Stock -= amountToTake;
 
-            // Dacă s-a golit raftul, decidem dacă păstrăm eticheta produsului sau nu
-            // De obicei e bine să o păstrăm ca să știe angajatul ce să aducă
+            // --- LOGICĂ NOUĂ: SCHIMBARE AUTOMATĂ TIP ---
+            // Dacă s-a golit raftul și aveam o comandă de schimbare în așteptare
+            if (slot1Stock == 0 && pendingProduct != ProductType.None && pendingProduct != slot1Product)
+            {
+                Debug.Log($"[WorkStation] Raft golit! Schimbăm tipul din {slot1Product} în {pendingProduct}");
+                slot1Product = pendingProduct; // Aplicăm schimbarea
+                pendingProduct = ProductType.None; // Resetăm comanda
+            }
+            // -------------------------------------------
 
-            return true; // Clientul a reușit să ia produsul
+            return amountToTake;
         }
-        return false; // Raftul e gol, clientul pleacă supărat
+        return 0;
     }
 }
 

@@ -11,6 +11,8 @@ public class StatsUIController : MonoBehaviour
     private BarChart barChart; // Am schimbat tipul aici
     private Label maxValLabel; // Doar o etichetă sus e suficientă la BarChart
     private Button statsButton;
+    private VisualElement statsPanel; // Păstrăm referința aici
+    private bool isStatsPanelOpen = false; // Ținem minte starea
 
     // Lista cu datele pe zile
     private List<DayData> history = new List<DayData>();
@@ -29,6 +31,7 @@ public class StatsUIController : MonoBehaviour
         barChart = root.Q<BarChart>("ProfitChart");
         maxValLabel = root.Q<Label>("MaxMoneyLabel"); // Folosim label-ul de sus
         statsButton = root.Q<Button>("Stats");
+        statsPanel = root.Q<VisualElement>("StatsPanel");
 
         gameManager = GetComponent<GameManager>();
         clockManager = GetComponent<ClockManager>();
@@ -52,15 +55,26 @@ public class StatsUIController : MonoBehaviour
         }
 
         // Buton pentru deschiderea/închiderea meniului de statistici
+        if (statsPanel != null)
+        {
+            statsPanel.style.display = DisplayStyle.None; // Îl ascundem vizual
+            isStatsPanelOpen = false; // Setăm variabila pe false
+        }
+
         if (statsButton != null)
         {
             statsButton.clicked += () =>
             {
-                var statsPanel = root.Q<VisualElement>("StatsPanel");
-                if (statsPanel != null)
-                {
-                    statsPanel.style.display = statsPanel.style.display == DisplayStyle.None ? DisplayStyle.Flex : DisplayStyle.None;
-                }
+                if (statsPanel == null) return;
+
+                // Inversăm starea (True -> False, False -> True)
+                isStatsPanelOpen = !isStatsPanelOpen;
+
+                // Aplicăm vizual
+                if (isStatsPanelOpen)
+                    statsPanel.style.display = DisplayStyle.Flex;
+                else
+                    statsPanel.style.display = DisplayStyle.None;
             };
         }
 

@@ -1138,6 +1138,7 @@ MonoBehaviour:
   interactionPoint: {fileID: 0}
   shelfVariant: 0
   slot1Product: 0
+  pendingProduct: 0
   slot1Stock: 0
   maxProductsPerSlot: 20
 --- !u!4 &1124307594
@@ -1426,7 +1427,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d58a5a5a9a0103419c0dc1976833243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  dayDurationInSeconds: 35
+  dayDurationInSeconds: 45
   openHour: 8
   closeHour: 22
 --- !u!1 &1681826857

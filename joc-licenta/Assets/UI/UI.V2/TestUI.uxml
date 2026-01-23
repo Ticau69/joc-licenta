@@ -2,7 +2,7 @@
     <ui:Template name="EmployeeTemplateCard" src="project://database/Assets/UI/EmployeeTemplateCard.uxml?fileID=9197481963319205126&amp;guid=2322329c7055d6a42910c8d6ec9db0b1&amp;type=3#EmployeeTemplateCard"/>
     <Style src="project://database/Assets/UI/hot-bar.uss?fileID=7433441132597879392&amp;guid=b73f89344d1e0784496871a42196f095&amp;type=3#hot-bar"/>
     <ui:VisualElement name="Hotbar" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.38); height: 56%; align-self: center; align-content: flex-end; width: 100%; max-height: 18%; position: absolute; top: auto; left: auto; right: auto; bottom: 0%;">
-        <ui:VisualElement name="InfoBar" style="flex-grow: 1; bottom: 0; position: absolute; background-color: rgba(0, 0, 0, 0.52); width: 100%; height: 50%; flex-direction: row; flex-wrap: nowrap;">
+        <ui:VisualElement name="InfoBar" style="flex-grow: 1; bottom: 0; position: absolute; background-color: rgba(0, 0, 0, 0.52); width: 100%; height: 50%; flex-direction: row; flex-wrap: nowrap; left: -1px;">
             <ui:VisualElement name="TimePanel" style="flex-grow: 1; left: 1%; top: 27%; width: 23%; height: 50%; min-height: 15%; max-height: 64%; background-color: rgba(34, 27, 27, 0.72); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(147, 147, 147); border-right-color: rgb(147, 147, 147); border-top-color: rgb(147, 147, 147); border-bottom-color: rgb(147, 147, 147); border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-right-radius: 10px; border-bottom-left-radius: 10px; flex-direction: row; flex-wrap: nowrap; align-items: center; justify-content: flex-start; align-self: auto; align-content: flex-start; flex-basis: 0; min-width: 24%; max-width: 14%;">
                 <ui:Label text="Label" name="Hour" style="left: 0; position: absolute; color: rgb(255, 255, 255); width: 38%; font-size: initial;"/>
                 <ui:Label text="22 MARCH 2025" name="Date" enable-rich-text="true" style="left: 49%; position: absolute; color: rgb(255, 255, 255); width: 45%; font-size: initial; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; -unity-text-align: middle-center; white-space: normal;"/>
@@ -25,7 +25,7 @@
         <ui:Button text="" name="Angajati" style="right: 0%; left: 0%; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-top-left-radius: 61px; border-top-right-radius: 61px; border-bottom-right-radius: 61px; border-bottom-left-radius: 61px; height: 50%; width: 5%; background-color: rgba(188, 188, 188, 0);">
             <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
         </ui:Button>
-        <ui:Button text="" name="Stats" style="right: 0%; left: 85%; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-top-left-radius: 61px; border-top-right-radius: 61px; border-bottom-right-radius: 61px; border-bottom-left-radius: 61px; height: 50%; width: 5%; background-color: rgba(188, 188, 188, 0); position: absolute;">
+        <ui:Button text="" name="Stats" focusable="true" style="right: 0%; left: 85%; align-self: center; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; border-top-left-radius: 61px; border-top-right-radius: 61px; border-bottom-right-radius: 61px; border-bottom-left-radius: 61px; height: 50%; width: 5%; background-color: rgba(188, 188, 188, 0); position: absolute;">
             <ui:Image source="project://database/Assets/UI/Photos/AngajatiIcon.png?fileID=21300000&amp;guid=48eeb29cc4e26ba498ccb078d4a12b69&amp;type=3#AngajatiIcon" enabled="true" picking-mode="Ignore" style="width: 100%; height: 100%; min-height: 100%; max-height: 100%; min-width: 0%; position: absolute; top: 0%; left: 0%;"/>
         </ui:Button>
     </ui:VisualElement>
@@ -72,6 +72,25 @@
             </ui:VisualElement>
         </ui:Tab>
         <ui:Tab label="POWER" name="Power"/>
+        <ui:Tab label="INVENTORY" name="Inventory" style="width: 100%; height: 566px; background-color: rgba(34, 33, 38, 0.95); border-radius: 16px; overflow: hidden; border-top-left-radius: 0;">
+            <ui:VisualElement style="height: 50px; justify-content: center; align-items: center; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1);">
+                <ui:Label text="GESTIUNE DEPOZIT" style="-unity-font-style: bold; font-size: 18px; color: white;"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row; flex-grow: 1; padding: 10px; overflow: hidden;">
+                <ui:ScrollView name="InventoryList" mode="Vertical" style="width: 50%; height: 100%; margin-right: 5px; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px;"/>
+                <ui:VisualElement name="DetailsPanel" style="width: 50%; height: 100%; margin-left: 5px; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; align-items: center;">
+                    <ui:Label name="DetailName" text="Selecteaz&#259; un produs" style="color: white; font-size: 22px; -unity-font-style: bold; margin-bottom: 30px; margin-top: 20px;"/>
+                    <ui:VisualElement style="width: 100%; height: 1px; background-color: rgba(255, 255, 255, 0.2); margin-bottom: 20px;"/>
+                    <ui:Label name="DetailStock" text="Stoc: -" style="color: white; font-size: 18px; margin-bottom: 15px;"/>
+                    <ui:Label name="DetailStatus" text="Status: -" style="color: gray; font-size: 16px; margin-bottom: 20px;"/>
+                    <ui:VisualElement style="width: 120px; height: 120px; background-color: rgba(0, 0, 0, 0.2); border-radius: 10px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); margin-top: auto; margin-bottom: 20px;"/>
+                    <ui:Label text="PRE&#538; V&#194;NZARE" style="color: yellow; font-size: 14px; -unity-font-style: bold; margin-bottom: 5px;"/>
+                    <ui:Label name="PriceDisplay" text="15.00 $" style="color: white; font-size: 18px; align-self: center; margin-bottom: 5px;"/>
+                    <ui:Slider name="PriceSlider" low-value="0" high-value="100" style="width: 100%;"/>
+                    <ui:Label name="ProfitDisplay" text="Profit: +5.00 $" style="color: green; font-size: 12px; align-self: center; margin-top: 5px;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Tab>
     </ui:TabView>
     <ui:VisualElement name="ObjectInfo" style="flex-grow: 1; background-color: rgba(30, 30, 35, 0.84); align-self: auto; height: 42%; width: 20%; align-items: center; flex-direction: column; aspect-ratio: auto; position: absolute; right: 117px; top: 29%; border-top-left-radius: 16px; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); display: none;">
         <ui:VisualElement name="VisualElement" style="flex-grow: 1; height: auto; flex-direction: row; align-self: center; align-items: center; justify-content: center; align-content: flex-start; max-height: 35px; margin-bottom: 7px; width: 100%;">
