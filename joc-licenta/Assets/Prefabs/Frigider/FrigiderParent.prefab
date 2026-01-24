@@ -42,6 +42,7 @@ GameObject:
   - component: {fileID: 5516817683271197962}
   - component: {fileID: 8199260961855143650}
   - component: {fileID: 2431577677445458728}
+  - component: {fileID: 4643126216870974533}
   m_Layer: 0
   m_Name: FrigiderParent
   m_TagString: Untagged
@@ -82,6 +83,7 @@ MonoBehaviour:
   interactionPoint: {fileID: 1334822634165654021}
   shelfVariant: 1
   slot1Product: 0
+  pendingProduct: 0
   slot1Stock: 0
   maxProductsPerSlot: 20
 --- !u!65 &2431577677445458728
@@ -105,6 +107,19 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 2.0112798, y: 3.813487, z: 0.8877168}
   m_Center: {x: 0.9989642, y: 1.9000673, z: 0.6431241}
+--- !u!114 &4643126216870974533
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8297112200244068997}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 450ec31ba344bb840960111b655790c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AutoRegisterComponent
+  unregisterOnDestroy: 1
 --- !u!1001 &1230860648956700055
 PrefabInstance:
   m_ObjectHideFlags: 0

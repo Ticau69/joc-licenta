@@ -45,8 +45,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorkStation
   stationType: 0
-  maxProducts: 20
-  currentProducts: 0
+  interactionPoint: {fileID: 0}
+  shelfVariant: 0
+  slot1Product: 0
+  pendingProduct: 0
+  slot1Stock: 0
+  maxProductsPerSlot: 20
 --- !u!1 &7650287880413670760
 GameObject:
   m_ObjectHideFlags: 0
@@ -56,6 +60,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 5519675861790207771}
+  - component: {fileID: -6084831906430094215}
   m_Layer: 7
   m_Name: CasierieParent
   m_TagString: Untagged
@@ -80,6 +85,19 @@ Transform:
   - {fileID: 5912241390587948966}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &-6084831906430094215
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7650287880413670760}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 450ec31ba344bb840960111b655790c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AutoRegisterComponent
+  unregisterOnDestroy: 1
 --- !u!1001 &4260711168623744490
 PrefabInstance:
   m_ObjectHideFlags: 0

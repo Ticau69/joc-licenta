@@ -12,8 +12,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 522797a1b5b8460449f72b4a983a6325, type: 3}
   m_Name: ProductDataSO
   m_EditorClassIdentifier: Assembly-CSharp::ProductDataSO
-  productName: 
-  type: 0
-  icon: {fileID: 0}
-  baseCost: 0
-  defaultSellingPrice: 0
+  allProducts:
+  - productName: Bread
+    type: 1
+    icon: {fileID: 0}
+    baseCost: 3
+    defaultSellingPrice: 3

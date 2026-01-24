@@ -1115,6 +1115,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1124307594}
   - component: {fileID: 1124307593}
+  - component: {fileID: 1124307595}
   m_Layer: 0
   m_Name: StoreStorage
   m_TagString: Untagged
@@ -1156,6 +1157,19 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1124307595
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1124307592}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 450ec31ba344bb840960111b655790c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::AutoRegisterComponent
+  unregisterOnDestroy: 1
 --- !u!1 &1211937100
 GameObject:
   m_ObjectHideFlags: 0
@@ -1387,7 +1401,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 0c9b5c755def8c941bd523796fade820, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GameManager
-  startingMoney: 20000
+  gameConfig: {fileID: 11400000, guid: c2777215caa42254e8588bb0efbbd3c4, type: 2}
+  productDB: {fileID: 11400000, guid: f5077b9aad56b2049bf7ec0cdb4acb06, type: 2}
   uiDocument: {fileID: 784697281}
 --- !u!114 &1644672769
 MonoBehaviour:
