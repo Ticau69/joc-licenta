@@ -1,4 +1,5 @@
 <ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="DeliveryItemTemplate" src="project://database/Assets/UI/DeliveryItemTemplate.uxml?fileID=9197481963319205126&amp;guid=5634188c94615e347b8ecc2721303c40&amp;type=3#DeliveryItemTemplate"/>
     <ui:Template name="EmployeeTemplateCard" src="project://database/Assets/UI/EmployeeTemplateCard.uxml?fileID=9197481963319205126&amp;guid=2322329c7055d6a42910c8d6ec9db0b1&amp;type=3#EmployeeTemplateCard"/>
     <Style src="project://database/Assets/UI/hot-bar.uss?fileID=7433441132597879392&amp;guid=b73f89344d1e0784496871a42196f095&amp;type=3#hot-bar"/>
     <ui:VisualElement name="Hotbar" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.38); height: 56%; align-self: center; align-content: flex-end; width: 100%; max-height: 18%; position: absolute; top: auto; left: auto; right: auto; bottom: 0%;">
@@ -50,7 +51,7 @@
             <ui:VisualElement name="FinancialCard" style="width: 100%; height: 867px; background-color: rgba(30, 30, 35, 0.95); border-radius: 16px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); padding: 15px; margin: 10px; border-top-left-radius: 0; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; align-self: center; flex-grow: 1; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
                 <ui:VisualElement name="Header" style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding-bottom: 5px;">
                     <ui:VisualElement style="flex-direction: row; align-items: center;">
-                        <ui:Label text="&#128202;" style="font-size: 18px; margin-right: 5px;"/>
+                        <ui:Label text="📊" style="font-size: 18px; margin-right: 5px;"/>
                         <ui:Label text="RAPORT FINANCIAR" style="color: rgb(220, 220, 220); -unity-font-style: bold; font-size: 14px;"/>
                     </ui:VisualElement>
                     <ui:VisualElement style="flex-direction: row; align-items: center; background-color: rgba(0, 0, 0, 0.3); border-radius: 5px; padding: 2px 6px;">
@@ -79,15 +80,38 @@
             <ui:VisualElement style="flex-direction: row; flex-grow: 1; padding: 10px; overflow: hidden;">
                 <ui:ScrollView name="InventoryList" mode="Vertical" style="width: 50%; height: 100%; margin-right: 5px; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px;"/>
                 <ui:VisualElement name="DetailsPanel" style="width: 50%; height: 100%; margin-left: 5px; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; align-items: center;">
-                    <ui:Label name="DetailName" text="Selecteaz&#259; un produs" style="color: white; font-size: 22px; -unity-font-style: bold; margin-bottom: 30px; margin-top: 20px;"/>
+                    <ui:Label name="DetailName" text="Selectează un produs" style="color: white; font-size: 22px; -unity-font-style: bold; margin-bottom: 30px; margin-top: 20px;"/>
                     <ui:VisualElement style="width: 100%; height: 1px; background-color: rgba(255, 255, 255, 0.2); margin-bottom: 20px;"/>
                     <ui:Label name="DetailStock" text="Stoc: -" style="color: white; font-size: 18px; margin-bottom: 15px;"/>
                     <ui:Label name="DetailStatus" text="Status: -" style="color: gray; font-size: 16px; margin-bottom: 20px;"/>
                     <ui:VisualElement style="width: 120px; height: 120px; background-color: rgba(0, 0, 0, 0.2); border-radius: 10px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); margin-top: auto; margin-bottom: 20px;"/>
-                    <ui:Label text="PRE&#538; V&#194;NZARE" style="color: yellow; font-size: 14px; -unity-font-style: bold; margin-bottom: 5px;"/>
+                    <ui:Label text="PREȚ VÂNZARE" style="color: yellow; font-size: 14px; -unity-font-style: bold; margin-bottom: 5px;"/>
                     <ui:Label name="PriceDisplay" text="15.00 $" style="color: white; font-size: 18px; align-self: center; margin-bottom: 5px;"/>
                     <ui:Slider name="PriceSlider" low-value="0" high-value="100" style="width: 100%;"/>
                     <ui:Label name="ProfitDisplay" text="Profit: +5.00 $" style="color: green; font-size: 12px; align-self: center; margin-top: 5px;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+        </ui:Tab>
+        <ui:Tab label="DELIVERY" name="Delivery" style="width: 100%; height: 566px; background-color: rgba(34, 33, 38, 0.95); border-radius: 16px; border-top-left-radius: 0; overflow: hidden;">
+            <ui:VisualElement style="height: 50px; justify-content: center; align-items: center; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1);">
+                <ui:Label text="LOGISTICĂ &amp; LIVRĂRI" style="-unity-font-style: bold; font-size: 18px; color: white;"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row; flex-grow: 1; padding: 10px;">
+                <ui:VisualElement style="width: 60%; margin-right: 10px; display: flex;">
+                    <ui:Label text="Livrări în Curs" style="color: rgb(180, 180, 180); margin-bottom: 5px; -unity-font-style: bold; font-size: 14px;"/>
+                    <ui:ScrollView name="ActiveDeliveryList" mode="Vertical" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 5px;">
+                        <ui:Instance template="DeliveryItemTemplate" name="DeliveryItemTemplate"/>
+                    </ui:ScrollView>
+                </ui:VisualElement>
+                <ui:VisualElement name="DeliveryActions" style="width: 40%; background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 15px; align-items: center;">
+                    <ui:Label text="Contracte Furnizori" style="color: white; font-size: 16px; -unity-font-style: bold; margin-bottom: 20px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.2); width: 100%; -unity-text-align: middle-center; padding-bottom: 10px;"/>
+                    <ui:Button text="Comandă Stoc Nou" name="NewOrderBtn" style="width: 100%; height: 45px; margin-bottom: 10px; background-color: rgb(40, 167, 69); color: white; -unity-font-style: bold; font-size: 14px; border-radius: 6px; border-width: 0;"/>
+                    <ui:Button text="Upgrade Flotă" name="UpgradeFleetBtn" style="width: 100%; height: 45px; margin-bottom: 10px; background-color: rgb(60, 60, 70); color: white; font-size: 14px; border-radius: 6px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1);"/>
+                    <ui:VisualElement style="flex-grow: 1;"/>
+                    <ui:VisualElement style="flex-direction: row; background-color: rgba(0, 0, 0, 0.4); padding: 10px; border-radius: 8px; width: 100%;">
+                        <ui:Label text="Capacitate:" style="color: gray; flex-grow: 1;"/>
+                        <ui:Label text="3/5 Camioane" style="color: white; -unity-font-style: bold;"/>
+                    </ui:VisualElement>
                 </ui:VisualElement>
             </ui:VisualElement>
         </ui:Tab>

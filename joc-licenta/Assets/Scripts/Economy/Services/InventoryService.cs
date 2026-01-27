@@ -37,7 +37,7 @@ public class InventoryService : IInventoryService
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _cacheDuration = config.cacheDuration;
 
-        //RefreshStorageCache();
+        RefreshStorageCache();
     }
 
     private void RefreshStorageCache()

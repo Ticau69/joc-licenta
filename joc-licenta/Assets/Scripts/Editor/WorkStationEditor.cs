@@ -11,6 +11,7 @@ public class WorkStationEditor : Editor
     SerializedProperty slot1Product;
     SerializedProperty slot1Stock;
     SerializedProperty maxProductsPerSlot;
+    SerializedProperty doorController; // ✅ ADĂUGAT
 
     void OnEnable()
     {
@@ -20,6 +21,7 @@ public class WorkStationEditor : Editor
         slot1Product = serializedObject.FindProperty("slot1Product");
         slot1Stock = serializedObject.FindProperty("slot1Stock");
         maxProductsPerSlot = serializedObject.FindProperty("maxProductsPerSlot");
+        doorController = serializedObject.FindProperty("doorController"); // ✅ ADĂUGAT
     }
 
     public override void OnInspectorGUI()
@@ -38,7 +40,21 @@ public class WorkStationEditor : Editor
         EditorGUILayout.LabelField("Navigație", EditorStyles.boldLabel);
         EditorGUILayout.PropertyField(interactionPoint);
 
-        // 3. LOGICA CONDIȚIONALĂ
+        // ✅ 3. UȘĂ GLISANTĂ (afișăm pentru Shelf și Storage)
+        if (currentType == StationType.Shelf || currentType == StationType.Storage)
+        {
+            EditorGUILayout.Space(5);
+            EditorGUILayout.LabelField("Vizuale", EditorStyles.boldLabel);
+            EditorGUILayout.PropertyField(doorController, new GUIContent("Door Controller"));
+
+            // ✅ Validare vizuală
+            if (doorController.objectReferenceValue == null)
+            {
+                EditorGUILayout.HelpBox("⚠️ Ușa glisantă nu este setată! Angajații nu vor putea deschide ușa.", MessageType.Warning);
+            }
+        }
+
+        // 4. LOGICA CONDIȚIONALĂ
         if (currentType == StationType.Shelf)
         {
             EditorGUILayout.Space(10);

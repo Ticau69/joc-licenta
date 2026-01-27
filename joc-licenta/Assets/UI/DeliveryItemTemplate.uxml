@@ -1,0 +1,10 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement name="MockItem" style="flex-direction: row; background-color: rgba(255, 255, 255, 0.08); margin-bottom: 5px; padding: 8px; border-radius: 6px; align-items: center; height: 50px;">
+        <ui:Label text="🚛" style="font-size: 24px; margin-right: 10px;"/>
+        <ui:VisualElement style="flex-grow: 1; justify-content: center;">
+            <ui:Label text="Comandă #104 - Alimente" style="color: white; -unity-font-style: bold; font-size: 12px;"/>
+            <ui:Label text="ETA: 00:45s" style="color: rgb(255, 193, 7); font-size: 10px;"/>
+        </ui:VisualElement>
+        <ui:Button text="URGENT" style="background-color: rgb(180, 50, 50); color: white; font-size: 10px; border-radius: 4px; border-width: 0;"/>
+    </ui:VisualElement>
+</ui:UXML>

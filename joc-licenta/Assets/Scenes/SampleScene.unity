@@ -1142,6 +1142,7 @@ MonoBehaviour:
   pendingProduct: 0
   slot1Stock: 0
   maxProductsPerSlot: 20
+  doorController: {fileID: 0}
 --- !u!4 &1124307594
 Transform:
   m_ObjectHideFlags: 0

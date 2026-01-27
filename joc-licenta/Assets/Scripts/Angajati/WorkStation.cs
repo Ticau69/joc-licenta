@@ -49,6 +49,8 @@ public class WorkStation : MonoBehaviour
     public ProductType pendingProduct = ProductType.None;
     public int slot1Stock = 0;
     public int maxProductsPerSlot = 20;
+    [Header("Visuals")]
+    public SimpleDoorController doorController;
 
     [Header("Storage: General Inventory")]
     // Folosit DOAR dacă stationType == Storage

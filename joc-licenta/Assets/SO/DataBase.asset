@@ -40,6 +40,6 @@ MonoBehaviour:
   - <Name>k__BackingField: Big_Fridge
     <ID>k__BackingField: 4
     <Size>k__BackingField: {x: 2, y: 1}
-    <Prefab>k__BackingField: {fileID: 8297112200244068997, guid: e6573f0c6b90f4a4a93210681db836e9, type: 3}
+    <Prefab>k__BackingField: {fileID: 942758342410213492, guid: 81635eeee72d7d84d8d22bd900df7fa3, type: 3}
     <Cost>k__BackingField: 250
     <PowerConsumption>k__BackingField: 25

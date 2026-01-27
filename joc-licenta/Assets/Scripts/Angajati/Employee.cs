@@ -39,6 +39,9 @@ public class Employee : MonoBehaviour
     private Vector3 homePosition;
     private float workTimer = 0f;
 
+    // ✅ ADĂUGAT: Tracking pentru ultima ușă deschisă
+    private SimpleDoorController lastOpenedDoor = null;
+
     void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -95,6 +98,7 @@ public class Employee : MonoBehaviour
                 if (!agent.pathPending && agent.remainingDistance < 0.5f)
                 {
                     currentState = RestockerState.WorkingAtLocation;
+                    OpenDoorAtCurrentTarget();
                     workTimer = 0;
                 }
                 break;
@@ -105,6 +109,7 @@ public class Employee : MonoBehaviour
                 if (!agent.pathPending && agent.remainingDistance < agent.stoppingDistance + 0.5f)
                 {
                     currentState = RestockerState.WorkingAtLocation;
+                    OpenDoorAtStorage(); // ✅ Deschidem ușa depozitului
                     workTimer = 0;
                 }
                 break;
@@ -183,11 +188,19 @@ public class Employee : MonoBehaviour
                         if (boxVisual != null) boxVisual.SetActive(true);
 
                         Debug.Log($"[Angajat] Am luat {needed} din depozit. Plec la raft.");
+
+                        // ✅ ÎNCHIDE UȘA DEPOZITULUI înainte de a pleca
+                        CloseLastOpenedDoor();
+
                         currentState = RestockerState.MovingToShelf;
                     }
                     else
                     {
                         Debug.Log($"[Angajat] Depozitul nu are {needed} sau nu există scriptul!");
+
+                        // ✅ ÎNCHIDE UȘA DEPOZITULUI
+                        CloseLastOpenedDoor();
+
                         currentState = RestockerState.Idle;
                     }
                 }
@@ -203,6 +216,10 @@ public class Employee : MonoBehaviour
                     productsInHand = 0;
                     if (boxVisual != null) boxVisual.SetActive(false);
                 }
+
+                // ✅ ÎNCHIDE UȘA RAFTULUI înainte de a pleca
+                CloseLastOpenedDoor();
+
                 currentState = RestockerState.Idle; // Gata tura
             }
         }
@@ -225,10 +242,17 @@ public class Employee : MonoBehaviour
                         if (boxVisual != null) boxVisual.SetActive(true);
 
                         Debug.Log($"[Angajat] Am scos marfa veche. O duc la depozit.");
+
+                        // ✅ ÎNCHIDE UȘA RAFTULUI înainte de a pleca
+                        CloseLastOpenedDoor();
+
                         currentState = RestockerState.MovingToStorage;
                     }
                     else
                     {
+                        // ✅ ÎNCHIDE UȘA RAFTULUI
+                        CloseLastOpenedDoor();
+
                         currentState = RestockerState.Idle;
                     }
                 }
@@ -244,6 +268,9 @@ public class Employee : MonoBehaviour
 
                 productsInHand = 0;
                 if (boxVisual != null) boxVisual.SetActive(false);
+
+                // ✅ ÎNCHIDE UȘA DEPOZITULUI înainte de a pleca
+                CloseLastOpenedDoor();
 
                 currentState = RestockerState.Idle;
             }
@@ -314,6 +341,90 @@ public class Employee : MonoBehaviour
         NavMeshHit navHit;
         NavMesh.SamplePosition(randDirection, out navHit, dist, layermask);
         return navHit.position;
+    }
+
+    // ✅ ACTUALIZAT: Deschide ușa și salvează referința
+    private void OpenDoorAtCurrentTarget()
+    {
+        if (secondaryTarget == null)
+        {
+            Debug.LogWarning("[Angajat] secondaryTarget este NULL!");
+            return;
+        }
+
+        WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
+
+        if (station == null)
+        {
+            Debug.LogWarning($"[Angajat] Nu am găsit WorkStation pe {secondaryTarget.name}!");
+            return;
+        }
+
+        if (station.doorController == null)
+        {
+            Debug.LogWarning($"[Angajat] WorkStation '{station.name}' NU ARE doorController setat în Inspector!");
+            return;
+        }
+
+        Debug.Log($"[Angajat] Deschid ușa la {station.name}");
+        station.doorController.Open();
+
+        // ✅ Salvăm referința pentru a o închide mai târziu
+        lastOpenedDoor = station.doorController;
+    }
+
+    // ✅ ACTUALIZAT: Deschide ușa depozitului
+    private void OpenDoorAtStorage()
+    {
+        if (myWorkStation == null)
+        {
+            Debug.LogWarning("[Angajat] myWorkStation (Storage) este NULL!");
+            return;
+        }
+
+        WorkStation storage = myWorkStation.GetComponentInParent<WorkStation>();
+
+        if (storage == null)
+        {
+            Debug.LogWarning($"[Angajat] Nu am găsit WorkStation pe depozit!");
+            return;
+        }
+
+        if (storage.doorController == null)
+        {
+            Debug.LogWarning($"[Angajat] Depozitul '{storage.name}' NU ARE doorController setat!");
+            return;
+        }
+
+        Debug.Log($"[Angajat] Deschid ușa depozitului {storage.name}");
+        storage.doorController.Open();
+
+        // ✅ Salvăm referința
+        lastOpenedDoor = storage.doorController;
+    }
+
+    // ✅ NOU: Închide ultima ușă deschisă
+    private void CloseLastOpenedDoor()
+    {
+        if (lastOpenedDoor != null)
+        {
+            Debug.Log($"[Angajat] Închid ușa");
+            lastOpenedDoor.Close();
+            lastOpenedDoor = null; // Reset
+        }
+    }
+
+    // ✅ DEPRECATED: Păstrăm pentru compatibilitate dar nu mai folosim
+    private void CloseDoorAtCurrentTarget()
+    {
+        if (secondaryTarget != null)
+        {
+            WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
+            if (station != null && station.doorController != null)
+            {
+                station.doorController.Close();
+            }
+        }
     }
 }
 
