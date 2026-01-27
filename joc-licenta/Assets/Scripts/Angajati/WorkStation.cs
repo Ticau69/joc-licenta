@@ -75,30 +75,7 @@ public class WorkStation : MonoBehaviour
             _hasEventBus = ServiceLocator.Instance.TryGet(out _eventBus);
         }
 
-        InitializeStorage();
         _isInitialized = true;
-    }
-
-    private void InitializeStorage()
-    {
-        // Inițializare automată DOAR pentru Depozit
-        if (stationType != StationType.Storage) return;
-
-        foreach (ProductType type in System.Enum.GetValues(typeof(ProductType)))
-        {
-            if (type == ProductType.None) continue;
-
-            if (!storageInventory.ContainsKey(type))
-            {
-                storageInventory.Add(type, 50);
-            }
-            else
-            {
-                storageInventory[type] = 50;
-            }
-        }
-
-        Debug.Log($"[DEPOZIT] {name} a fost aprovizionat automat cu stoc de start!");
     }
 
     // === STORAGE OPERATIONS (cu event support) ===

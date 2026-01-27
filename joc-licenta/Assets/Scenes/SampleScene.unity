@@ -1368,6 +1368,8 @@ GameObject:
   - component: {fileID: 1644672769}
   - component: {fileID: 1644672770}
   - component: {fileID: 1644672771}
+  - component: {fileID: 1644672772}
+  - component: {fileID: 1644672773}
   m_Layer: 0
   m_Name: GameManager
   m_TagString: Untagged
@@ -1446,6 +1448,40 @@ MonoBehaviour:
   dayDurationInSeconds: 45
   openHour: 8
   closeHour: 22
+--- !u!114 &1644672772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644672766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3c05ababc8cf1764886d7ee76ffb7980, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DeliveryManager
+  uiDocument: {fileID: 784697281}
+  deliveryItemTemplate: {fileID: 9197481963319205126, guid: 5634188c94615e347b8ecc2721303c40, type: 3}
+  catalogItemTemplate: {fileID: 9197481963319205126, guid: 18fadae59c6d607479cb9f647ed8e179, type: 3}
+  productDatabase: {fileID: 11400000, guid: f5077b9aad56b2049bf7ec0cdb4acb06, type: 2}
+  deliverySpeedBase: 15
+  fleetManager: {fileID: 1644672773}
+--- !u!114 &1644672773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644672766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4676fc1e9027a65498eac2a95a211201, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FleetManager
+  initialTrucks: 1
+  maxTrucksLimit: 10
+  upgradeCostBase: 500
+  costMultiplier: 1.5
 --- !u!1 &1681826857
 GameObject:
   m_ObjectHideFlags: 0

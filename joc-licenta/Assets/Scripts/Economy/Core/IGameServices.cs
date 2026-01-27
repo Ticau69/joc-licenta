@@ -48,6 +48,9 @@ public interface IInventoryService
     WorkStation MainStorage { get; }
     int GetStock(ProductType type);
     bool HasStock(ProductType type, int minimumAmount = 1);
+    void AddStock(ProductType type, int amount);           // ← NOU
+    bool TryRemoveStock(ProductType type, int amount);     // ← NOU
+    void ForceRefreshCache();                              // ← NOU
     event Action<ProductType, int> OnStockChanged;
 }
 

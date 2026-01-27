@@ -1,0 +1,9 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; background-color: rgba(255, 255, 255, 0.05); border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding: 10px; margin-bottom: 5px; border-radius: 4px;">
+        <ui:Label name="ProductName" text="Nume Produs (Preț)" style="color: white; font-size: 14px; -unity-font-style: bold; width: 45%; white-space: normal;"/>
+        <ui:VisualElement style="flex-direction: row; align-items: center;">
+            <ui:IntegerField name="QuantityInput" value="0" style="width: 60px; margin-right: 10px;"/>
+            <ui:Button name="AddBtn" text="ADAUGA" style="background-color: rgb(40, 167, 69); color: white; border-radius: 4px; border-width: 0; height: 30px; -unity-font-style: bold;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>
