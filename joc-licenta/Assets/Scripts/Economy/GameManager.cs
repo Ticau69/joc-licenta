@@ -162,10 +162,10 @@ public class GameManager : MonoBehaviour
         (_money as MoneyManager)?.Initialize(root);
 
         // Create UI Controllers
-        _inventoryUI = gameObject.AddComponent<InventoryUIController>();
-        _shelfUI = gameObject.AddComponent<ShelfUIController>();
+        if (_inventoryUI == null) _inventoryUI = gameObject.AddComponent<InventoryUIController>();
+        if (_shelfUI == null) _shelfUI = gameObject.AddComponent<ShelfUIController>();
 
-        _inventoryUI.Initialize(root, _economy, _eventBus, gameConfig);
+        _inventoryUI.Initialize(root, _economy, _eventBus, gameConfig, _inventory, productDB);
         _shelfUI.Initialize(root, _economy, _shop, _eventBus, _objectRegistry, gameConfig);
 
         if (gameConfig.verboseLogging)

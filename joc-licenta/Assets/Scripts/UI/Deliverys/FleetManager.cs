@@ -19,6 +19,20 @@ public class FleetManager : MonoBehaviour
 
     void Awake()
     {
+        InitializeFleet();
+    }
+
+    private void InitializeFleet()
+    {
+        // Siguranță: Dacă cumva e 0, forțăm valoarea din config
+        if (CurrentMaxTrucks == 0)
+        {
+            CurrentMaxTrucks = initialTrucks > 0 ? initialTrucks : 1;
+        }
+    }
+
+    void OnValidate()
+    {
         CurrentMaxTrucks = initialTrucks;
     }
 

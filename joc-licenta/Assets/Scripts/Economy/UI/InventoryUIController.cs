@@ -20,6 +20,8 @@ public class InventoryUIController : MonoBehaviour
     private Label _profitDisplayLabel;
 
     private IEconomyService _economy;
+    private IInventoryService _inventory;
+    private ProductDataSO _productDB;
     private IEventBus _eventBus;
     private GameConfigSO _config;
 
@@ -31,9 +33,11 @@ public class InventoryUIController : MonoBehaviour
         = new Dictionary<ProductType, (int, string, Color)>();
     private bool _needsRefresh = true;
 
-    public void Initialize(VisualElement root, IEconomyService economy, IEventBus eventBus, GameConfigSO config)
+    public void Initialize(VisualElement root, IEconomyService economy, IEventBus eventBus, GameConfigSO config, IInventoryService inventory, ProductDataSO productDB)
     {
         _economy = economy ?? throw new ArgumentNullException(nameof(economy));
+        _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
+        _productDB = productDB ?? throw new ArgumentNullException(nameof(productDB));
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _config = config ?? throw new ArgumentNullException(nameof(config));
 
@@ -59,11 +63,8 @@ public class InventoryUIController : MonoBehaviour
         _priceDisplayLabel = root.Q<Label>("PriceDisplay");
         _profitDisplayLabel = root.Q<Label>("ProfitDisplay");
 
-        // Validation
-        if (_inventoryList == null)
-            Debug.LogError("[InventoryUI] InventoryList not found in UI!");
-        if (_detailsPanel == null)
-            Debug.LogError("[InventoryUI] DetailsPanel not found in UI!");
+        if (_inventoryList == null) Debug.LogError("[InventoryUI] InventoryList not found in UI!");
+        if (_detailsPanel == null) Debug.LogError("[InventoryUI] DetailsPanel not found in UI!");
     }
 
     private void SetupEventListeners()
@@ -72,16 +73,12 @@ public class InventoryUIController : MonoBehaviour
         {
             _priceSlider.RegisterValueChangedCallback(OnPriceChanged);
         }
-
-        // Subscribe to stock changes
         _eventBus.Subscribe<StockChangedEvent>(OnStockChanged);
     }
 
     private void OnStockChanged(StockChangedEvent evt)
     {
         _needsRefresh = true;
-
-        // If viewing this product, update immediately
         if (evt.Product == _currentViewingProduct)
         {
             UpdateCurrentProductDetails();
@@ -103,32 +100,48 @@ public class InventoryUIController : MonoBehaviour
         }
     }
 
+    // --- MODIFICARE PRINCIPALĂ AICI ---
     private void RefreshInventoryList()
     {
         if (_inventoryList == null) return;
 
-        var inventory = ServiceLocator.Instance.Get<IInventoryService>();
-        if (inventory?.MainStorage == null) return;
+        // Folosim direct referința _inventory (salvată în Initialize)
+        if (_inventory?.MainStorage == null) return;
+
+        // Verificăm dacă avem baza de date conectată
+        if (_productDB == null)
+        {
+            Debug.LogError("[InventoryUI] Nu pot genera lista - ProductDB lipsește!");
+            return;
+        }
 
         _inventoryList.Clear();
         _cachedStockData.Clear();
 
-        foreach (ProductType type in Enum.GetValues(typeof(ProductType)))
+        // Iterăm prin produsele din Baza de Date (Lista Master)
+        // Asta asigură că vedem TOATE produsele definite, chiar dacă stocul e 0.
+        foreach (var productData in _productDB.allProducts)
         {
+            ProductType type = productData.type;
             if (type == ProductType.None) continue;
 
-            int amount = inventory.GetStock(type);
+            int amount = _inventory.GetStock(type);
             var (color, status) = _config.GetStockStatus(amount);
 
             _cachedStockData[type] = (amount, status, color);
 
+            // Creăm rândul în UI
             var row = UIRowFactory.CreateInventoryRow(
-                type, amount, status, color,
+                type,
+                amount,
+                status,
+                color,
                 () => ShowProductDetails(type));
 
             _inventoryList.Add(row);
         }
     }
+    // ----------------------------------
 
     private void ShowProductDetails(ProductType type)
     {
@@ -136,8 +149,10 @@ public class InventoryUIController : MonoBehaviour
 
         if (!_cachedStockData.TryGetValue(type, out var stockData))
         {
-            Debug.LogWarning($"[InventoryUI] No cached data for {type}");
-            return;
+            // Fallback dacă cumva datele lipsesc (ex: update întârziat)
+            int amount = _inventory.GetStock(type);
+            var (color, status) = _config.GetStockStatus(amount);
+            stockData = (amount, status, color);
         }
 
         UpdateProductInfo(type);
