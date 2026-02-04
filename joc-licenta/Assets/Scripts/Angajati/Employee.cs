@@ -1,322 +1,192 @@
 using UnityEngine;
 using UnityEngine.AI;
 using System.Linq;
-using System.Collections.Generic; // Necesar pentru List
+using System.Collections.Generic;
 
 [RequireComponent(typeof(NavMeshAgent))]
 public class Employee : MonoBehaviour
 {
-    // ... (Variabilele tale existente rămân la fel) ...
-    [Header("Identitate")]
-    public string employeeName;
-    public EmployeeRole role;
-    public Transform myWorkStation;
-    public Transform secondaryTarget;
-    public GameObject boxVisual;
+    #region Configuration Constants
+    private const int MAX_CARRY_CAPACITY = 5;
+    private const float WORK_DURATION = 1.0f;
+    private const float WANDER_INTERVAL = 3.0f;
+    private const float WANDER_RADIUS = 8f;
+    private const float DESTINATION_THRESHOLD = 0.5f;
+    private const float STORAGE_THRESHOLD_OFFSET = 0.5f;
+    private const float HOME_THRESHOLD = 1.0f;
+    private const int TASK_CHECK_FRAME_INTERVAL = 30;
+    private const float ROTATION_SPEED = 5f;
+    #endregion
 
-    private enum RestockerState
+    #region Inspector Fields
+    [Header("Identity")]
+    [SerializeField] private string _employeeName;
+    [SerializeField] private EmployeeRole _role;
+    [SerializeField] private Transform _myWorkStation;
+    [SerializeField] private Transform _secondaryTarget;
+    [SerializeField] private GameObject boxVisual;
+    #endregion
+
+    #region Public Properties
+    public string employeeName
     {
-        Idle,               // Stă degeaba / Se plimbă
-        MovingToShelf,      // Merge spre un raft (să pună sau să ia marfă)
-        MovingToStorage,    // Merge spre depozit (să pună sau să ia marfă)
-        WorkingAtLocation   // A ajuns și execută acțiunea (animație/timp)
+        get => _employeeName;
+        set => _employeeName = value;
     }
-    private enum TaskType
+
+    public EmployeeRole role
     {
-        None,       // Nimic
-        Restocking, // Aprovizionare (Depozit -> Raft)
-        Clearing    // Curățare (Raft -> Depozit)
+        get => _role;
+        set => _role = value;
     }
-    private RestockerState currentState = RestockerState.Idle;
-    private TaskType currentTask = TaskType.None;
 
-    private int productsInHand = 0;
-    private ProductType productInHandType = ProductType.None;
-    private int maxCarryCapacity = 5;
+    public Transform myWorkStation
+    {
+        get => _myWorkStation;
+        set => _myWorkStation = value;
+    }
 
+    public Transform secondaryTarget
+    {
+        get => _secondaryTarget;
+        set => _secondaryTarget = value;
+    }
+    #endregion
+
+    #region Private Fields
     private NavMeshAgent agent;
     private bool isWorking = false;
     private Vector3 homePosition;
     private float workTimer = 0f;
 
-    // ✅ ADĂUGAT: Tracking pentru ultima ușă deschisă
-    private SimpleDoorController lastOpenedDoor = null;
+    // Restocker specific
+    private RestockerStateMachine restockerStateMachine;
+    private DoorManager doorManager;
+    #endregion
 
-    void Awake()
+    #region Unity Lifecycle
+    private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
-        if (boxVisual != null) boxVisual.SetActive(false);
+        doorManager = new DoorManager();
+        restockerStateMachine = new RestockerStateMachine(this, doorManager, MAX_CARRY_CAPACITY);
+
+        if (boxVisual != null)
+        {
+            boxVisual.SetActive(false);
+        }
     }
 
-    // ... (Metodele AssignRole, StartShift, EndShift rămân la fel) ...
-    public void AssignRole(EmployeeRole newRole, Transform station) { role = newRole; myWorkStation = station; }
-    public void StartShift(Vector3 spawnPos) { homePosition = spawnPos; isWorking = true; gameObject.SetActive(true); agent.Warp(spawnPos); }
-    public void EndShift() { isWorking = false; if (boxVisual != null) boxVisual.SetActive(false); agent.SetDestination(homePosition); }
-
-    void Update()
+    private void Update()
     {
         if (!isWorking)
         {
-            if (Vector3.Distance(transform.position, homePosition) < 1.0f) gameObject.SetActive(false);
+            HandleEndShiftMovement();
             return;
         }
 
-        switch (role)
+        ExecuteRoleSpecificWork();
+    }
+    #endregion
+
+    #region Public Methods
+    public void AssignRole(EmployeeRole newRole, Transform station)
+    {
+        _role = newRole;
+        _myWorkStation = station;
+    }
+
+    public void StartShift(Vector3 spawnPos)
+    {
+        homePosition = spawnPos;
+        isWorking = true;
+        gameObject.SetActive(true);
+        agent.Warp(spawnPos);
+    }
+
+    public void EndShift()
+    {
+        isWorking = false;
+
+        if (boxVisual != null)
         {
-            case EmployeeRole.Janitor: DoJanitorWork(); break;
-            case EmployeeRole.Cashier: DoCashierWork(); break;
-            case EmployeeRole.Restocker: DoRestockerWork(); break;
+            boxVisual.SetActive(false);
         }
+
+        agent.SetDestination(homePosition);
     }
 
     public void WakeUpAndWork()
     {
-        if (role == EmployeeRole.Restocker && currentState == RestockerState.Idle)
+        if (_role == EmployeeRole.Restocker)
         {
-            if (agent != null && agent.isActiveAndEnabled) agent.ResetPath();
-            workTimer = 0;
-            FindTask();
+            restockerStateMachine.WakeUp(agent);
         }
     }
+    #endregion
 
-    // --- LOGICĂ RESTOCKER ACTUALIZATĂ ---
-    private void DoRestockerWork()
+    #region Private Methods - Role Execution
+    private void ExecuteRoleSpecificWork()
     {
-        if (myWorkStation == null) { WanderBehavior(); return; }
-
-        switch (currentState)
+        switch (_role)
         {
-            case RestockerState.Idle:
-                WanderBehavior();
-                if (Time.frameCount % 30 == 0) FindTask(); // Căutăm de muncă
+            case EmployeeRole.Janitor:
+                DoJanitorWork();
                 break;
-
-            case RestockerState.MovingToShelf:
-                if (secondaryTarget == null) { currentState = RestockerState.Idle; return; }
-
-                agent.SetDestination(secondaryTarget.position);
-                if (!agent.pathPending && agent.remainingDistance < 0.5f)
-                {
-                    currentState = RestockerState.WorkingAtLocation;
-                    OpenDoorAtCurrentTarget();
-                    workTimer = 0;
-                }
+            case EmployeeRole.Cashier:
+                DoCashierWork();
                 break;
-
-            case RestockerState.MovingToStorage:
-                agent.SetDestination(myWorkStation.position);
-                // Toleranță mai mare la depozit
-                if (!agent.pathPending && agent.remainingDistance < agent.stoppingDistance + 0.5f)
-                {
-                    currentState = RestockerState.WorkingAtLocation;
-                    OpenDoorAtStorage(); // ✅ Deschidem ușa depozitului
-                    workTimer = 0;
-                }
-                break;
-
-            case RestockerState.WorkingAtLocation:
-                workTimer += Time.deltaTime;
-                if (workTimer > 1.0f) // Timp de muncă (încărcare/descărcare)
-                {
-                    HandleWorkAction();
-                }
+            case EmployeeRole.Restocker:
+                DoRestockerWork();
                 break;
         }
     }
 
-    private void FindTask()
+    private void DoJanitorWork()
     {
-        var allShelves = FindObjectsByType<WorkStation>(FindObjectsSortMode.None)
-            .Where(x => x.stationType == StationType.Shelf).ToList();
-
-        // PRIORITATE 1: Curățarea rafturilor (Când jucătorul schimbă produsul)
-        var shelvesToClear = allShelves.Where(x => x.NeedsClearing).ToList();
-
-        if (shelvesToClear.Count > 0)
-        {
-            WorkStation target = shelvesToClear[Random.Range(0, shelvesToClear.Count)];
-            AssignTarget(target);
-            currentTask = TaskType.Clearing;
-            currentState = RestockerState.MovingToShelf; // Mergem întâi la raft să luăm marfa
-            Debug.Log($"[Angajat] Mă duc să golesc raftul {target.name}");
-            return;
-        }
-
-        // PRIORITATE 2: Aprovizionare (Restock)
-        var shelvesToStock = allShelves.Where(x => x.NeedsRestocking).ToList();
-
-        if (shelvesToStock.Count > 0)
-        {
-            WorkStation target = shelvesToStock[Random.Range(0, shelvesToStock.Count)];
-            AssignTarget(target);
-            currentTask = TaskType.Restocking;
-            currentState = RestockerState.MovingToStorage; // Mergem întâi la depozit să luăm marfa
-            // Debug.Log($"[Angajat] Mă duc să aprovizionez raftul {target.name}");
-            return;
-        }
+        WanderBehavior();
     }
-
-    private void AssignTarget(WorkStation station)
-    {
-        if (station.interactionPoint != null) secondaryTarget = station.interactionPoint;
-        else secondaryTarget = station.transform;
-    }
-
-    private void HandleWorkAction()
-    {
-        WorkStation shelfScript = null;
-        if (secondaryTarget != null) shelfScript = secondaryTarget.GetComponentInParent<WorkStation>();
-        WorkStation storageScript = myWorkStation.GetComponentInParent<WorkStation>();
-
-        // == SCENARIUL 1: APROVIZIONARE (RESTOCKING) ==
-        if (currentTask == TaskType.Restocking)
-        {
-            // CUM ȘTIM UNDE SUNTEM?
-            // Dacă nu avem produse în mână, înseamnă că abia am ajuns la DEPOZIT să luăm.
-            // Nu mai verificăm Vector3.Distance, avem încredere în StateMachine.
-            if (productsInHand == 0)
-            {
-                if (shelfScript != null)
-                {
-                    ProductType needed = shelfScript.slot1Product;
-
-                    // Încercăm să luăm marfa
-                    if (storageScript != null && storageScript.TakeFromStorage(needed, maxCarryCapacity))
-                    {
-                        productsInHand = maxCarryCapacity;
-                        productInHandType = needed;
-                        if (boxVisual != null) boxVisual.SetActive(true);
-
-                        Debug.Log($"[Angajat] Am luat {needed} din depozit. Plec la raft.");
-
-                        // ✅ ÎNCHIDE UȘA DEPOZITULUI înainte de a pleca
-                        CloseLastOpenedDoor();
-
-                        currentState = RestockerState.MovingToShelf;
-                    }
-                    else
-                    {
-                        Debug.Log($"[Angajat] Depozitul nu are {needed} sau nu există scriptul!");
-
-                        // ✅ ÎNCHIDE UȘA DEPOZITULUI
-                        CloseLastOpenedDoor();
-
-                        currentState = RestockerState.Idle;
-                    }
-                }
-            }
-            // Dacă AVEM produse în mână, înseamnă că suntem la RAFT să le punem.
-            else
-            {
-                if (shelfScript != null)
-                {
-                    shelfScript.AddProduct(productsInHand);
-                    Debug.Log($"[Angajat] Am pus marfa pe raft.");
-
-                    productsInHand = 0;
-                    if (boxVisual != null) boxVisual.SetActive(false);
-                }
-
-                // ✅ ÎNCHIDE UȘA RAFTULUI înainte de a pleca
-                CloseLastOpenedDoor();
-
-                currentState = RestockerState.Idle; // Gata tura
-            }
-        }
-
-        // == SCENARIUL 2: CURĂȚARE (CLEARING) ==
-        else if (currentTask == TaskType.Clearing)
-        {
-            // Aici e invers: 
-            // Dacă NU avem produse, suntem la RAFT să le scoatem.
-            if (productsInHand == 0)
-            {
-                if (shelfScript != null)
-                {
-                    int taken = shelfScript.TakeProduct(maxCarryCapacity);
-
-                    if (taken > 0)
-                    {
-                        productsInHand = taken;
-                        productInHandType = shelfScript.slot1Product;
-                        if (boxVisual != null) boxVisual.SetActive(true);
-
-                        Debug.Log($"[Angajat] Am scos marfa veche. O duc la depozit.");
-
-                        // ✅ ÎNCHIDE UȘA RAFTULUI înainte de a pleca
-                        CloseLastOpenedDoor();
-
-                        currentState = RestockerState.MovingToStorage;
-                    }
-                    else
-                    {
-                        // ✅ ÎNCHIDE UȘA RAFTULUI
-                        CloseLastOpenedDoor();
-
-                        currentState = RestockerState.Idle;
-                    }
-                }
-            }
-            // Dacă AVEM produse, suntem la DEPOZIT să le lăsăm.
-            else
-            {
-                if (storageScript != null)
-                {
-                    storageScript.AddToStorage(productInHandType, productsInHand);
-                    Debug.Log($"[Angajat] Returnat marfa în depozit.");
-                }
-
-                productsInHand = 0;
-                if (boxVisual != null) boxVisual.SetActive(false);
-
-                // ✅ ÎNCHIDE UȘA DEPOZITULUI înainte de a pleca
-                CloseLastOpenedDoor();
-
-                currentState = RestockerState.Idle;
-            }
-        }
-    }
-
-    // Returnează TRUE dacă a găsit un raft care are nevoie de marfă
-    private bool FindTargetShelf()
-    {
-        // Găsim toate rafturile
-        var allShelves = FindObjectsByType<WorkStation>(FindObjectsSortMode.None)
-                      .Where(x => x.stationType == StationType.Shelf).ToList();
-
-        // FIX: Adăugăm condiția && x.slot1Product != ProductType.None
-        var needyShelves = allShelves.Where(x => x.NeedsRestocking && x.slot1Product != ProductType.None).ToList();
-
-        if (needyShelves.Count > 0)
-        {
-            // Alegem un raft random
-            WorkStation chosenShelf = needyShelves[Random.Range(0, needyShelves.Count)];
-
-            // Mergem la interactionPoint dacă există
-            if (chosenShelf.interactionPoint != null)
-                secondaryTarget = chosenShelf.interactionPoint;
-            else
-                secondaryTarget = chosenShelf.transform;
-
-            return true;
-        }
-        else
-        {
-            secondaryTarget = null;
-            return false;
-        }
-    }
-
-    // --- ALTE JOBURI ---
-    private void DoJanitorWork() { WanderBehavior(); }
 
     private void DoCashierWork()
     {
-        if (myWorkStation != null)
+        if (_myWorkStation == null) return;
+
+        agent.SetDestination(_myWorkStation.position);
+
+        if (agent.remainingDistance <= agent.stoppingDistance)
         {
-            agent.SetDestination(myWorkStation.position);
-            if (agent.remainingDistance <= agent.stoppingDistance)
-                transform.rotation = Quaternion.Slerp(transform.rotation, myWorkStation.rotation, Time.deltaTime * 5f);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                _myWorkStation.rotation,
+                Time.deltaTime * ROTATION_SPEED
+            );
+        }
+    }
+
+    private void DoRestockerWork()
+    {
+        if (_myWorkStation == null)
+        {
+            WanderBehavior();
+            return;
+        }
+
+        restockerStateMachine.Update(
+            agent,
+            _myWorkStation,
+            _secondaryTarget,
+            boxVisual,
+            ref workTimer
+        );
+    }
+    #endregion
+
+    #region Private Methods - Movement
+    private void HandleEndShiftMovement()
+    {
+        if (Vector3.Distance(transform.position, homePosition) < HOME_THRESHOLD)
+        {
+            gameObject.SetActive(false);
         }
     }
 
@@ -325,9 +195,10 @@ public class Employee : MonoBehaviour
         if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
         {
             workTimer += Time.deltaTime;
-            if (workTimer >= 3.0f)
+
+            if (workTimer >= WANDER_INTERVAL)
             {
-                Vector3 newPos = RandomNavSphere(transform.position, 8f, -1);
+                Vector3 newPos = RandomNavSphere(transform.position, WANDER_RADIUS, -1);
                 agent.SetDestination(newPos);
                 workTimer = 0;
             }
@@ -338,100 +209,361 @@ public class Employee : MonoBehaviour
     {
         Vector3 randDirection = Random.insideUnitSphere * dist;
         randDirection += origin;
-        NavMeshHit navHit;
-        NavMesh.SamplePosition(randDirection, out navHit, dist, layermask);
+
+        NavMesh.SamplePosition(randDirection, out NavMeshHit navHit, dist, layermask);
         return navHit.position;
     }
+    #endregion
 
-    // ✅ ACTUALIZAT: Deschide ușa și salvează referința
-    private void OpenDoorAtCurrentTarget()
+    #region Internal Getters (for RestockerStateMachine)
+    internal float DestinationThreshold => DESTINATION_THRESHOLD;
+    internal float StorageThresholdOffset => STORAGE_THRESHOLD_OFFSET;
+    internal float WorkDuration => WORK_DURATION;
+    internal int TaskCheckFrameInterval => TASK_CHECK_FRAME_INTERVAL;
+    internal void SetSecondaryTarget(Transform target) => _secondaryTarget = target;
+    #endregion
+}
+
+#region Supporting Classes
+
+/// <summary>
+/// Manages door operations for employees
+/// </summary>
+public class DoorManager
+{
+    private SimpleDoorController lastOpenedDoor = null;
+
+    public void OpenDoor(WorkStation station, string context)
     {
-        if (secondaryTarget == null)
-        {
-            Debug.LogWarning("[Angajat] secondaryTarget este NULL!");
-            return;
-        }
-
-        WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
-
         if (station == null)
         {
-            Debug.LogWarning($"[Angajat] Nu am găsit WorkStation pe {secondaryTarget.name}!");
+            Debug.LogWarning($"[DoorManager] Station is NULL in context: {context}");
             return;
         }
 
         if (station.doorController == null)
         {
-            Debug.LogWarning($"[Angajat] WorkStation '{station.name}' NU ARE doorController setat în Inspector!");
+            Debug.LogWarning($"[DoorManager] Station '{station.name}' has no doorController assigned!");
             return;
         }
 
-        Debug.Log($"[Angajat] Deschid ușa la {station.name}");
+        Debug.Log($"[DoorManager] Opening door at {station.name} ({context})");
         station.doorController.Open();
-
-        // ✅ Salvăm referința pentru a o închide mai târziu
         lastOpenedDoor = station.doorController;
     }
 
-    // ✅ ACTUALIZAT: Deschide ușa depozitului
-    private void OpenDoorAtStorage()
-    {
-        if (myWorkStation == null)
-        {
-            Debug.LogWarning("[Angajat] myWorkStation (Storage) este NULL!");
-            return;
-        }
-
-        WorkStation storage = myWorkStation.GetComponentInParent<WorkStation>();
-
-        if (storage == null)
-        {
-            Debug.LogWarning($"[Angajat] Nu am găsit WorkStation pe depozit!");
-            return;
-        }
-
-        if (storage.doorController == null)
-        {
-            Debug.LogWarning($"[Angajat] Depozitul '{storage.name}' NU ARE doorController setat!");
-            return;
-        }
-
-        Debug.Log($"[Angajat] Deschid ușa depozitului {storage.name}");
-        storage.doorController.Open();
-
-        // ✅ Salvăm referința
-        lastOpenedDoor = storage.doorController;
-    }
-
-    // ✅ NOU: Închide ultima ușă deschisă
-    private void CloseLastOpenedDoor()
+    public void CloseLastDoor()
     {
         if (lastOpenedDoor != null)
         {
-            Debug.Log($"[Angajat] Închid ușa");
+            Debug.Log("[DoorManager] Closing door");
             lastOpenedDoor.Close();
-            lastOpenedDoor = null; // Reset
-        }
-    }
-
-    // ✅ DEPRECATED: Păstrăm pentru compatibilitate dar nu mai folosim
-    private void CloseDoorAtCurrentTarget()
-    {
-        if (secondaryTarget != null)
-        {
-            WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
-            if (station != null && station.doorController != null)
-            {
-                station.doorController.Close();
-            }
+            lastOpenedDoor = null;
         }
     }
 }
 
+/// <summary>
+/// State machine for Restocker employee logic
+/// </summary>
+public class RestockerStateMachine
+{
+    private enum State
+    {
+        Idle,
+        MovingToShelf,
+        MovingToStorage,
+        WorkingAtLocation
+    }
+
+    private enum TaskType
+    {
+        None,
+        Restocking,
+        Clearing
+    }
+
+    private State currentState = State.Idle;
+    private TaskType currentTask = TaskType.None;
+    private int productsInHand = 0;
+    private ProductType productInHandType = ProductType.None;
+    private readonly int maxCarryCapacity;
+    private readonly Employee owner;
+    private readonly DoorManager doorManager;
+
+    public RestockerStateMachine(Employee owner, DoorManager doorManager, int maxCapacity)
+    {
+        this.owner = owner;
+        this.doorManager = doorManager;
+        this.maxCarryCapacity = maxCapacity;
+    }
+
+    public void WakeUp(NavMeshAgent agent)
+    {
+        if (currentState == State.Idle)
+        {
+            if (agent != null && agent.isActiveAndEnabled)
+            {
+                agent.ResetPath();
+            }
+            FindTask();
+        }
+    }
+
+    public void Update(NavMeshAgent agent, Transform workStation, Transform secondaryTarget,
+                       GameObject boxVisual, ref float workTimer)
+    {
+        switch (currentState)
+        {
+            case State.Idle:
+                HandleIdleState(agent, ref workTimer);
+                break;
+
+            case State.MovingToShelf:
+                HandleMovingToShelf(agent, secondaryTarget, ref workTimer);
+                break;
+
+            case State.MovingToStorage:
+                HandleMovingToStorage(agent, workStation, ref workTimer);
+                break;
+
+            case State.WorkingAtLocation:
+                HandleWorking(workStation, secondaryTarget, boxVisual, ref workTimer);
+                break;
+        }
+    }
+
+    private void HandleIdleState(NavMeshAgent agent, ref float workTimer)
+    {
+        if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
+        {
+            workTimer += Time.deltaTime;
+
+            if (workTimer >= 3.0f)
+            {
+                Vector3 newPos = Employee.RandomNavSphere(agent.transform.position, 8f, -1);
+                agent.SetDestination(newPos);
+                workTimer = 0;
+            }
+        }
+
+        if (Time.frameCount % owner.TaskCheckFrameInterval == 0)
+        {
+            FindTask();
+        }
+    }
+
+    private void HandleMovingToShelf(NavMeshAgent agent, Transform secondaryTarget, ref float workTimer)
+    {
+        if (secondaryTarget == null)
+        {
+            currentState = State.Idle;
+            return;
+        }
+
+        agent.SetDestination(secondaryTarget.position);
+
+        if (!agent.pathPending && agent.remainingDistance < owner.DestinationThreshold)
+        {
+            WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
+            if (station != null)
+            {
+                doorManager.OpenDoor(station, "Shelf");
+            }
+
+            currentState = State.WorkingAtLocation;
+            workTimer = 0;
+        }
+    }
+
+    private void HandleMovingToStorage(NavMeshAgent agent, Transform workStation, ref float workTimer)
+    {
+        agent.SetDestination(workStation.position);
+
+        float threshold = agent.stoppingDistance + owner.StorageThresholdOffset;
+        if (!agent.pathPending && agent.remainingDistance < threshold)
+        {
+            currentState = State.WorkingAtLocation;
+            workTimer = 0;
+        }
+    }
+
+    private void HandleWorking(Transform workStation, Transform secondaryTarget,
+                              GameObject boxVisual, ref float workTimer)
+    {
+        workTimer += Time.deltaTime;
+
+        if (workTimer > owner.WorkDuration)
+        {
+            ExecuteWorkAction(workStation, secondaryTarget, boxVisual);
+        }
+    }
+
+    private void FindTask()
+    {
+        var allShelves = Object.FindObjectsByType<WorkStation>(FindObjectsSortMode.None)
+            .Where(x => x.stationType == StationType.Shelf)
+            .ToList();
+
+        // Priority 1: Clearing shelves
+        var shelvesToClear = allShelves.Where(x => x.NeedsClearing).ToList();
+        if (TryAssignClearingTask(shelvesToClear))
+        {
+            return;
+        }
+
+        // Priority 2: Restocking
+        var shelvesToStock = allShelves.Where(x => x.NeedsRestocking).ToList();
+        TryAssignRestockingTask(shelvesToStock);
+    }
+
+    private bool TryAssignClearingTask(List<WorkStation> shelvesToClear)
+    {
+        if (shelvesToClear.Count == 0) return false;
+
+        WorkStation target = shelvesToClear[Random.Range(0, shelvesToClear.Count)];
+        AssignTarget(target);
+        currentTask = TaskType.Clearing;
+        currentState = State.MovingToShelf;
+        Debug.Log($"[Restocker] Going to clear shelf {target.name}");
+        return true;
+    }
+
+    private bool TryAssignRestockingTask(List<WorkStation> shelvesToStock)
+    {
+        if (shelvesToStock.Count == 0) return false;
+
+        WorkStation target = shelvesToStock[Random.Range(0, shelvesToStock.Count)];
+        AssignTarget(target);
+        currentTask = TaskType.Restocking;
+        currentState = State.MovingToStorage;
+        return true;
+    }
+
+    private void AssignTarget(WorkStation station)
+    {
+        Transform targetTransform = station.interactionPoint != null
+            ? station.interactionPoint
+            : station.transform;
+
+        owner.SetSecondaryTarget(targetTransform);
+    }
+
+    private void ExecuteWorkAction(Transform workStation, Transform secondaryTarget, GameObject boxVisual)
+    {
+        WorkStation shelfScript = secondaryTarget?.GetComponentInParent<WorkStation>();
+        WorkStation storageScript = workStation?.GetComponentInParent<WorkStation>();
+
+        if (currentTask == TaskType.Restocking)
+        {
+            HandleRestockingAction(shelfScript, storageScript, boxVisual);
+        }
+        else if (currentTask == TaskType.Clearing)
+        {
+            HandleClearingAction(shelfScript, storageScript, boxVisual);
+        }
+    }
+
+    private void HandleRestockingAction(WorkStation shelf, WorkStation storage, GameObject boxVisual)
+    {
+        if (productsInHand == 0)
+        {
+            // At storage, picking up products
+            if (shelf != null && storage != null)
+            {
+                ProductType needed = shelf.slot1Product;
+
+                if (storage.TakeFromStorage(needed, maxCarryCapacity))
+                {
+                    productsInHand = maxCarryCapacity;
+                    productInHandType = needed;
+                    SetBoxVisibility(boxVisual, true);
+                    Debug.Log($"[Restocker] Picked up {needed} from storage. Going to shelf.");
+
+                    doorManager.CloseLastDoor();
+                    currentState = State.MovingToShelf;
+                }
+                else
+                {
+                    Debug.Log($"[Restocker] Storage doesn't have {needed}");
+                    doorManager.CloseLastDoor();
+                    currentState = State.Idle;
+                }
+            }
+        }
+        else
+        {
+            // At shelf, putting products down
+            if (shelf != null)
+            {
+                shelf.AddProduct(productsInHand);
+                Debug.Log("[Restocker] Placed products on shelf.");
+                productsInHand = 0;
+                SetBoxVisibility(boxVisual, false);
+            }
+
+            doorManager.CloseLastDoor();
+            currentState = State.Idle;
+        }
+    }
+
+    private void HandleClearingAction(WorkStation shelf, WorkStation storage, GameObject boxVisual)
+    {
+        if (productsInHand == 0)
+        {
+            // At shelf, picking up products
+            if (shelf != null)
+            {
+                int taken = shelf.TakeProduct(maxCarryCapacity);
+
+                if (taken > 0)
+                {
+                    productsInHand = taken;
+                    productInHandType = shelf.slot1Product;
+                    SetBoxVisibility(boxVisual, true);
+                    Debug.Log("[Restocker] Removed old products. Taking to storage.");
+
+                    doorManager.CloseLastDoor();
+                    currentState = State.MovingToStorage;
+                }
+                else
+                {
+                    doorManager.CloseLastDoor();
+                    currentState = State.Idle;
+                }
+            }
+        }
+        else
+        {
+            // At storage, putting products down
+            if (storage != null)
+            {
+                storage.AddToStorage(productInHandType, productsInHand);
+                Debug.Log("[Restocker] Returned products to storage.");
+            }
+
+            productsInHand = 0;
+            SetBoxVisibility(boxVisual, false);
+            doorManager.CloseLastDoor();
+            currentState = State.Idle;
+        }
+    }
+
+    private void SetBoxVisibility(GameObject boxVisual, bool visible)
+    {
+        if (boxVisual != null)
+        {
+            boxVisual.SetActive(visible);
+        }
+    }
+}
+
+#endregion
+
 public enum EmployeeRole
 {
     None,
-    Janitor,    // Îngrijitor
-    Cashier,    // Casier
-    Restocker   // Aranjator marfă
+    Janitor,
+    Cashier,
+    Restocker
 }
