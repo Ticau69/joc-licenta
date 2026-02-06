@@ -18,6 +18,13 @@ public class Employee : MonoBehaviour
     private const float ROTATION_SPEED = 5f;
     #endregion
 
+    #region Notification Variables
+    private EmployeeNotification _notificationSystem;
+    private string _currentProblemMessage = null;
+    private float _problemCooldown = 0f;
+    private const float PROBLEM_COOLDOWN_DURATION = 5f; // Nu spam-ui notificări
+    #endregion
+
     #region Inspector Fields
     [Header("Identity")]
     [SerializeField] private string _employeeName;
@@ -67,9 +74,13 @@ public class Employee : MonoBehaviour
     #region Unity Lifecycle
     private void Awake()
     {
+        // Setup Notification System
         agent = GetComponent<NavMeshAgent>();
         doorManager = new DoorManager();
         restockerStateMachine = new RestockerStateMachine(this, doorManager, MAX_CARRY_CAPACITY);
+
+        // Adaugă:
+        _notificationSystem = GetComponent<EmployeeNotification>();
 
         if (boxVisual != null)
         {
@@ -79,6 +90,12 @@ public class Employee : MonoBehaviour
 
     private void Update()
     {
+        // Cooldown pentru probleme
+        if (_problemCooldown > 0)
+        {
+            _problemCooldown -= Time.deltaTime;
+        }
+
         if (!isWorking)
         {
             HandleEndShiftMovement();
@@ -100,6 +117,16 @@ public class Employee : MonoBehaviour
     {
         homePosition = spawnPos;
         isWorking = true;
+
+        _currentProblemMessage = null; // Resetăm memoria din Employee
+        _problemCooldown = 0f;         // Resetăm cooldown-ul
+        ClearProblem();
+
+        if (_role == EmployeeRole.Restocker && restockerStateMachine != null)
+        {
+            restockerStateMachine.ResetDailyMemory();
+        }
+
         gameObject.SetActive(true);
         agent.Warp(spawnPos);
     }
@@ -123,6 +150,36 @@ public class Employee : MonoBehaviour
             restockerStateMachine.WakeUp(agent);
         }
     }
+
+    /// Raportează o problemă vizibilă jucătorului
+    public void ReportProblem(string problemMessage)
+    {
+        // Evită spam de notificări pentru aceeași problemă
+        if (_currentProblemMessage == problemMessage) return;
+        if (_problemCooldown > 0) return;
+
+        _currentProblemMessage = problemMessage;
+        _problemCooldown = PROBLEM_COOLDOWN_DURATION;
+
+        if (_notificationSystem != null)
+        {
+            _notificationSystem.ShowNotification(problemMessage);
+        }
+        else
+        {
+            Debug.LogWarning($"[{employeeName}] EmployeeNotification component missing!");
+        }
+    }
+
+    /// Șterge problema curentă
+    public void ClearProblem()
+    {
+        _currentProblemMessage = null;
+        _notificationSystem?.HideNotification();
+    }
+
+    /// /// Verifică dacă angajatul are o problemă activă
+    public bool HasActiveProblem => !string.IsNullOrEmpty(_currentProblemMessage);
     #endregion
 
     #region Private Methods - Role Execution
@@ -222,6 +279,7 @@ public class Employee : MonoBehaviour
     internal int TaskCheckFrameInterval => TASK_CHECK_FRAME_INTERVAL;
     internal void SetSecondaryTarget(Transform target) => _secondaryTarget = target;
     #endregion
+
 }
 
 #region Supporting Classes
@@ -296,6 +354,33 @@ public class RestockerStateMachine
         this.owner = owner;
         this.doorManager = doorManager;
         this.maxCarryCapacity = maxCapacity;
+    }
+
+    private string lastReportedProblem = null;
+
+    // Metodă helper pentru raportare probleme
+    private void ReportProblem(string problem)
+    {
+        if (lastReportedProblem == problem) return; // Evită duplicate
+
+        lastReportedProblem = problem;
+        owner.ReportProblem(problem);
+    }
+
+    private void ClearProblem()
+    {
+        lastReportedProblem = null;
+        owner.ClearProblem();
+    }
+
+    // În interiorul clasei RestockerStateMachine
+    public void ResetDailyMemory()
+    {
+        lastReportedProblem = null; // Aici e cheia: uităm ce am zis ieri
+        currentState = State.Idle;
+        currentTask = TaskType.None;
+        // Opțional: Poți reseta și produsele din mână dacă vrei să înceapă "curat"
+        productsInHand = 0;
     }
 
     public void WakeUp(NavMeshAgent agent)
@@ -480,15 +565,26 @@ public class RestockerStateMachine
                     SetBoxVisibility(boxVisual, true);
                     Debug.Log($"[Restocker] Picked up {needed} from storage. Going to shelf.");
 
+                    ClearProblem();
+
                     doorManager.CloseLastDoor();
                     currentState = State.MovingToShelf;
                 }
                 else
                 {
+                    ReportProblem($"Depozitul nu are {needed}!");
+
                     Debug.Log($"[Restocker] Storage doesn't have {needed}");
                     doorManager.CloseLastDoor();
                     currentState = State.Idle;
                 }
+            }
+            else
+            {
+                if (shelf == null) ReportProblem("Raftul a dispărut!");
+                if (storage == null) ReportProblem("Depozitul a dispărut!");
+
+                currentState = State.Idle;
             }
         }
         else
@@ -500,6 +596,8 @@ public class RestockerStateMachine
                 Debug.Log("[Restocker] Placed products on shelf.");
                 productsInHand = 0;
                 SetBoxVisibility(boxVisual, false);
+
+                ClearProblem();
             }
 
             doorManager.CloseLastDoor();

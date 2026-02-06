@@ -144,4 +144,5 @@
         <ui:VisualElement name="Content" style="flex-grow: 1; width: 90%;"/>
         <ui:Button text="Button" name="AdaugareProdus"/>
     </ui:VisualElement>
+    <ui:VisualElement name="NotificationContainer" picking-mode="Ignore" style="flex-grow: 1; right: 0%; position: absolute; width: 361px; height: 75%; display: flex;"/>
 </ui:UXML>

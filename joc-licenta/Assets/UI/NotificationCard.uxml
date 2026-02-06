@@ -1,6 +1,13 @@
-<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
-    <ui:VisualElement name="Card" style="flex-grow: 1; right: 0%; position: absolute; width: 30%; height: 10%; top: 5%; background-color: rgba(0, 0, 0, 0.46); border-top-left-radius: 13px; border-top-right-radius: 13px; border-bottom-right-radius: 13px; border-bottom-left-radius: 13px; border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); flex-direction: row;">
-        <ui:Image style="left: 0%; position: relative; width: 20%; height: 100%;"/>
-        <ui:Label text="Label" style="left: 1%; position: relative; width: 75%; color: rgb(255, 255, 255); -unity-font-style: normal; -unity-text-align: middle-center;"/>
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <Style src="project://database/Assets/UI/notificationCard.uss?fileID=7433441132597879392&amp;guid=56dc4679f90048b4b96a848f0242653a&amp;type=3#notificationCard"/>
+    <ui:VisualElement name="NotificationCard" class="notification-card" style="border-top-left-radius: 8px; border-top-right-radius: 8px; border-bottom-right-radius: 8px; border-bottom-left-radius: 8px; border-top-width: 4px; border-right-width: 4px; border-bottom-width: 4px; border-left-width: 4px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255);">
+        <ui:VisualElement class="notification-content">
+            <ui:VisualElement name="Icon" class="notification-icon"/>
+            <ui:VisualElement class="notification-text">
+                <ui:Label name="Title" text="Title" class="notification-title"/>
+                <ui:Label name="Message" text="Message" class="notification-message"/>
+            </ui:VisualElement>
+            <ui:Button name="CloseButton" text="×" class="notification-close-btn"/>
+        </ui:VisualElement>
     </ui:VisualElement>
 </ui:UXML>
