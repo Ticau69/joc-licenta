@@ -357,6 +357,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EmployeeNotification
   notificationDocument: {fileID: 47071957350955936}
+  clickSound: {fileID: 8300000, guid: be6b7b39fbdadda43a8cd63c26b6b6ea, type: 3}
   showDebugLogs: 1
 --- !u!1 &6522859755500650812
 GameObject:

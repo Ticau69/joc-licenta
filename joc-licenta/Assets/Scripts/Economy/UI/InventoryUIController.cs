@@ -8,6 +8,7 @@ using System.Collections.Generic;
 /// </summary>
 public class InventoryUIController : MonoBehaviour
 {
+    private InflationManager inflationManager; // Referință directă pentru a obține prețurile actualizate
     private VisualElement _inventoryTab;
     private ScrollView _inventoryList;
     private VisualElement _detailsPanel;
@@ -196,12 +197,14 @@ public class InventoryUIController : MonoBehaviour
 
         if (_priceSlider != null)
         {
-            float minPrice = data.CurrentBaseCost * _config.minPriceMultiplier;
-            float maxPrice = data.CurrentBaseCost * _config.maxPriceMultiplier;
+            float inflationAdjustedCost = ServiceLocator.Instance.Get<InflationManager>().GetPrice(data.data.baseCost);
+
+            float minPrice = inflationAdjustedCost * _config.minPriceMultiplier;
+            float maxPrice = inflationAdjustedCost * _config.maxPriceMultiplier;
 
             _priceSlider.lowValue = minPrice;
             _priceSlider.highValue = maxPrice;
-            _priceSlider.SetValueWithoutNotify(data.sellingPrice);
+            _priceSlider.SetValueWithoutNotify(data.sellingPrice * ServiceLocator.Instance.Get<InflationManager>().CurrentInflation);
         }
 
         UpdatePriceLabels(data);
@@ -222,11 +225,11 @@ public class InventoryUIController : MonoBehaviour
     private void UpdatePriceLabels(ProductEconomics data)
     {
         if (_priceDisplayLabel != null)
-            _priceDisplayLabel.text = $"{data.sellingPrice:F2} RON";
+            _priceDisplayLabel.text = $"{data.sellingPrice * ServiceLocator.Instance.Get<InflationManager>().CurrentInflation:F2} RON";
 
         if (_profitDisplayLabel != null)
         {
-            float profit = data.Profit;
+            float profit = data.Profit * ServiceLocator.Instance.Get<InflationManager>().CurrentInflation;
             _profitDisplayLabel.text = $"Profit: {(profit >= 0 ? "+" : "")}{profit:F2} RON";
             _profitDisplayLabel.style.color = profit >= 0 ? _config.goodStockColor : _config.criticalStockColor;
         }

@@ -15,6 +15,10 @@ public class CameraController : MonoBehaviour
     public float panSpeed = 20f;
     public float scrollSpeed = 20f;
     public float panBorderThickness = 5f;
+    [Header("Auto Limits")]
+    [Tooltip("Trage aici obiectul Ground/Floor din scenă")]
+    public Renderer mapRenderer; // Referința la MeshRenderer-ul podelei
+    public bool autoCalculateLimits = true; // Bifează ca să calculeze singur
     public Vector2 panLimit;
 
     [Header("Zoom Settings")]
@@ -49,6 +53,24 @@ public class CameraController : MonoBehaviour
     {
         targetPosition = transform.position;
         targetRotationY = transform.eulerAngles.y; // Inițializăm cu rotația curentă
+
+        if (autoCalculateLimits && mapRenderer != null)
+        {
+            // bounds.extents returnează jumătate din mărimea totală (de la centru la margine)
+            // Exact de ce avem nevoie pentru Clamp(-x, x)
+
+            // Putem scădea o mică marjă (ex: 5 unități) ca să nu vedem chiar buza hărții
+            float margin = 2f;
+
+            panLimit.x = mapRenderer.bounds.extents.x + margin;
+            panLimit.y = mapRenderer.bounds.extents.z + margin; // Pe Z este "înălțimea" hărții top-down
+
+            Debug.Log($"[Camera] Limite setate automat la: X={panLimit.x}, Z={panLimit.y}");
+        }
+        else if (autoCalculateLimits && mapRenderer == null)
+        {
+            Debug.LogError("[Camera] Ai bifat 'Auto Calculate' dar nu ai asignat 'Map Renderer' în Inspector!");
+        }
     }
 
     void onMovemmentInput(InputAction.CallbackContext context)

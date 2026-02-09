@@ -112,8 +112,7 @@ public partial class LineChart : VisualElement
             float normalizedValue = (series.Values[i] - min) / (max - min);
 
             float x = i * stepX;
-            float y = h - (normalizedValue * h); // Inversăm Y
-            y = Mathf.Lerp(h * 0.95f, h * 0.05f, normalizedValue); // Padding
+            float y = Mathf.Lerp(h * 0.95f, h * 0.05f, normalizedValue); // Padding
 
             Vector2 point = new Vector2(x, y);
 

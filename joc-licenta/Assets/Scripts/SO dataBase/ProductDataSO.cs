@@ -17,5 +17,5 @@ public class ProductData
 
     [Header("Economie")]
     public float baseCost;           // Preț achiziție (Inflație)
-    public float defaultSellingPrice; // Preț vânzare recomandat
+    public float baseSellPrice;
 }

@@ -6,6 +6,8 @@ public class EmployeeNotification : MonoBehaviour
     [Header("Configurare")]
     [Tooltip("Asigură-te că acest UIDocument are un PanelSettings setat pe 'World Space'")]
     public UIDocument notificationDocument;
+    [Header("Configurare Audio")] // --- AUDIO ---
+    [SerializeField] private AudioClip clickSound;
 
     [Header("Debug")]
     [SerializeField] private bool showDebugLogs = true;
@@ -131,6 +133,8 @@ public class EmployeeNotification : MonoBehaviour
 
     private void OnNotificationClicked(ClickEvent evt)
     {
+        SoundFXManager.Instance.PlaySound(SoundType.UiClick, transform); // Redăm sunetul de click  
+
         Debug.Log($"[EmployeeNotification] ★★★ CLICK DETECTED ★★★ on {employee?.employeeName}");
 
         if (eventBus == null)
@@ -196,15 +200,4 @@ public class EmployeeNotification : MonoBehaviour
             clickButton.UnregisterCallback<ClickEvent>(OnNotificationClicked);
         }
     }
-
-    // void OnDestroy()
-    // {
-    //     if (clickButton != null)
-    //     {
-    //         clickButton.UnregisterCallback<ClickEvent>(evt =>
-    //         {
-    //             OnNotificationClicked();
-    //         });
-    //     }
-    // }
 }

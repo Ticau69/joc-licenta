@@ -50,7 +50,7 @@ public class ProductEconomics
         }
 
         data = sourceData;
-        sellingPrice = sourceData.defaultSellingPrice;
+        sellingPrice = sourceData.baseSellPrice;
     }
 
     /// <summary>

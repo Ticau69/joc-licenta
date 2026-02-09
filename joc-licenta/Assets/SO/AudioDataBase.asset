@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 068bfe2c7da21c245a2f1719b2bd163c, type: 3}
+  m_Name: AudioDataBase
+  m_EditorClassIdentifier: Assembly-CSharp::AudioDataBase
+  sounds:
+  - name: ShopClose_Register
+    type: 2
+    commonClips:
+    - {fileID: 8300000, guid: 3cc435e454e19f74eaf58544a64a0181, type: 3}
+    rareClips: []
+    rareChance: 0.1
+    volume: 1
+  - name: UiClick
+    type: 1
+    commonClips:
+    - {fileID: 8300000, guid: be6b7b39fbdadda43a8cd63c26b6b6ea, type: 3}
+    rareClips:
+    - {fileID: 8300000, guid: b4b2b7ce7d52a224b8103dd023d2697d, type: 3}
+    rareChance: 0.1
+    volume: 1
+  - name: ShopOpen
+    type: 0
+    commonClips:
+    - {fileID: 8300000, guid: dc5caf29901a29749a99929607a29f3c, type: 3}
+    rareClips: []
+    rareChance: 0.1
+    volume: 1
+  - name: ShopClose_Jingle
+    type: 3
+    commonClips:
+    - {fileID: 8300000, guid: 6e8dc0b5b8d138a459531c24ae21af85, type: 3}
+    rareClips:
+    - {fileID: 8300000, guid: b4b2b7ce7d52a224b8103dd023d2697d, type: 3}
+    rareChance: 0.1
+    volume: 1

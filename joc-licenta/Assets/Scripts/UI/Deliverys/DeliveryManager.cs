@@ -137,7 +137,8 @@ public class DeliveryManager : MonoBehaviour
             // 3. Populăm datele
             if (nameLabel != null)
             {
-                nameLabel.text = $"{product.productName}\n{product.baseCost} RON/buc";
+                float productCostWithInflation = ServiceLocator.Instance.Get<InflationManager>().GetPrice(product.baseCost);
+                nameLabel.text = $"{product.productName}\n{productCostWithInflation} RON/buc";
             }
 
             // 4. Configurăm logica
@@ -181,7 +182,8 @@ public class DeliveryManager : MonoBehaviour
         {
             ProductData product = item.Key;
             int qty = item.Value;
-            float lineCost = product.baseCost * qty;
+            float productCostWithInflation = ServiceLocator.Instance.Get<InflationManager>().GetPrice(product.baseCost);
+            float lineCost = productCostWithInflation * qty;
             totalCost += lineCost;
 
             VisualElement cartRow = new VisualElement();

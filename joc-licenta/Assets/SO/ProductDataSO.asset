@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: ProductDataSO
   m_EditorClassIdentifier: Assembly-CSharp::ProductDataSO
   allProducts:
-  - productName: Bread
+  - productName: Paine
     type: 1
     icon: {fileID: 0}
     baseCost: 3
-    defaultSellingPrice: 3
+    baseSellPrice: 3
