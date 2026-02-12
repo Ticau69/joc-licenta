@@ -17,7 +17,7 @@ public class EmployeeManager : MonoBehaviour
 
     #region Private Fields
     private List<Employee> allEmployees = new List<Employee>();
-    private WorkStationRegistry stationRegistry = new WorkStationRegistry();
+    public WorkStationRegistry StationRegistry { get; private set; }
     #endregion
 
     #region Unity Lifecycle
@@ -29,12 +29,15 @@ public class EmployeeManager : MonoBehaviour
             return;
         }
         Instance = this;
+
+        StationRegistry = new WorkStationRegistry();
+        StationRegistry.RefreshAllStations();
     }
 
     private void Start()
     {
         RegisterTimeManagerEvents();
-        stationRegistry.RefreshAllStations();
+        StationRegistry.RefreshAllStations();
     }
 
     private void OnDestroy()
@@ -66,12 +69,12 @@ public class EmployeeManager : MonoBehaviour
     #region Public Methods - Station Management
     public void FindAllWorkStations()
     {
-        stationRegistry.RefreshAllStations();
+        StationRegistry.RefreshAllStations();
     }
 
     public void RefreshStations()
     {
-        stationRegistry.RefreshAllStations();
+        StationRegistry.RefreshAllStations();
 
         // Reassign stations to employees without one
         foreach (var emp in allEmployees)
@@ -216,7 +219,7 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignCashierStation(Employee employee)
     {
-        WorkStation station = stationRegistry.GetAvailableCashRegister();
+        WorkStation station = StationRegistry.GetAnyCashRegister();
 
         if (station != null)
         {
@@ -235,10 +238,12 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignRestockerStation(Employee employee)
     {
-        WorkStation storage = stationRegistry.GetAvailableStorage();
+        List<WorkStation> allShelves = StationRegistry.GetAllShelves();
 
-        if (storage != null)
+        if (allShelves.Count > 0)
         {
+            WorkStation storage = allShelves[0]; // Assign first available shelf
+
             Transform targetPos = storage.interactionPoint != null
                 ? storage.interactionPoint
                 : storage.transform;
@@ -284,59 +289,3 @@ public class EmployeeManager : MonoBehaviour
     public List<Employee> AllEmployees => new List<Employee>(allEmployees); // Return copy for safety
     #endregion
 }
-
-#region Supporting Classes
-
-/// <summary>
-/// Manages and tracks all work stations in the scene
-/// </summary>
-public class WorkStationRegistry
-{
-    private List<WorkStation> cashRegisters = new List<WorkStation>();
-    private List<WorkStation> storages = new List<WorkStation>();
-    private List<WorkStation> shelves = new List<WorkStation>();
-
-    public void RefreshAllStations()
-    {
-        var allStations = Object.FindObjectsByType<WorkStation>(FindObjectsSortMode.None);
-
-        cashRegisters = allStations.Where(x => x.stationType == StationType.CashRegister).ToList();
-        storages = allStations.Where(x => x.stationType == StationType.Storage).ToList();
-        shelves = allStations.Where(x => x.stationType == StationType.Shelf).ToList();
-
-        LogStationCounts();
-    }
-
-    public WorkStation GetAvailableCashRegister()
-    {
-        CleanNullStations(cashRegisters);
-        return cashRegisters.Count > 0 ? cashRegisters[0] : null;
-    }
-
-    public WorkStation GetAvailableStorage()
-    {
-        CleanNullStations(storages);
-        return storages.Count > 0 ? storages[0] : null;
-    }
-
-    public List<WorkStation> GetAllShelves()
-    {
-        CleanNullStations(shelves);
-        return new List<WorkStation>(shelves);
-    }
-
-    private void CleanNullStations(List<WorkStation> stationList)
-    {
-        stationList.RemoveAll(x => x == null);
-    }
-
-    private void LogStationCounts()
-    {
-        Debug.Log($"[WorkStationRegistry] Found stations - " +
-                  $"Cash Registers: {cashRegisters.Count}, " +
-                  $"Storages: {storages.Count}, " +
-                  $"Shelves: {shelves.Count}");
-    }
-}
-
-#endregion
