@@ -41,7 +41,32 @@ public class WorkStationRegistry
         return new List<WorkStation>(shelves);
     }
 
-    //PENTRU CLIENȚI
+    public List<WorkStation> GetAllStorages()
+    {
+        CleanNullStations(storages);
+        return new List<WorkStation>(storages);
+    }
+
+    /// <summary>
+    /// Returnează rafturile DESTINATE acestui produs, indiferent de stoc.
+    /// Clientul nu știe dacă e sau nu în stoc — va descoperi când ajunge la raft.
+    /// </summary>
+    public List<WorkStation> GetShelvesForProduct(ProductType product)
+    {
+        CleanNullStations(shelves);
+
+        return shelves
+            .Where(s =>
+                s != null &&
+                s.stationType == StationType.Shelf &&
+                s.slot1Product == product)
+            .ToList();
+    }
+
+    /// <summary>
+    /// Versiunea veche — folosită intern de angajați/sisteme care chiar au nevoie să știe stocul.
+    /// NU folosiți pentru clienți.
+    /// </summary>
     public List<WorkStation> GetShelvesWithProductInStock(ProductType product)
     {
         CleanNullStations(shelves);
@@ -73,5 +98,4 @@ public class WorkStationRegistry
                   $"Storages: {storages.Count}, " +
                   $"Shelves: {shelves.Count}");
     }
-
 }

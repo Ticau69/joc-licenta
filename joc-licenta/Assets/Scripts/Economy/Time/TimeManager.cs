@@ -23,9 +23,6 @@ public class TimeManager : MonoBehaviour
     [Range(0, 23)] public int openHour = 8;
     [Range(0, 24)] public int closeHour = 22;
 
-    [Header("Sunete Magazin (opțional)")]
-    [SerializeField] private List<AudioClip> shopSounds; // momentan nefolosit
-
     // Proprietăți Publice (Read-Only)
     public float CurrentTimeOfDay { get; private set; } // 0.0 la 1.0
     public int CurrentDay { get; private set; } = 1;

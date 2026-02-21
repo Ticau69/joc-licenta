@@ -238,11 +238,11 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignRestockerStation(Employee employee)
     {
-        List<WorkStation> allShelves = StationRegistry.GetAllShelves();
+        List<WorkStation> allStorages = StationRegistry.GetAllStorages();
 
-        if (allShelves.Count > 0)
+        if (allStorages.Count > 0)
         {
-            WorkStation storage = allShelves[0]; // Assign first available shelf
+            WorkStation storage = allStorages[0]; // Assign first available storage
 
             Transform targetPos = storage.interactionPoint != null
                 ? storage.interactionPoint
@@ -254,6 +254,7 @@ public class EmployeeManager : MonoBehaviour
             // Let the employee find shelves dynamically - don't assign specific shelf
             employee.secondaryTarget = null;
 
+            Debug.Log($"[MANAGER] Rol schimbat pentru {employee.employeeName}: {employee.role}");
             Debug.Log($"[EmployeeManager] Assigned {employee.employeeName} to storage at {targetPos.name}");
         }
         else

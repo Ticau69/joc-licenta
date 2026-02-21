@@ -1351,7 +1351,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::WorkStation
   stationType: 1
-  interactionPoint: {fileID: 0}
+  interactionPoint: {fileID: 1124307594}
   shelfVariant: 0
   slot1Product: 0
   pendingProduct: 0
@@ -1549,8 +1549,8 @@ MonoBehaviour:
   - {fileID: 1522268933}
   exitPoint: {fileID: 1522268933}
   spawnInterval: 6
-  maxAliveCustomers: 8
-  spawnOnStart: 1
+  maxAliveCustomers: 1
+  spawnOnStart: 0
   employeeManager: {fileID: 1413553009}
 --- !u!1 &1524395618
 GameObject:
@@ -1712,12 +1712,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d58a5a5a9a0103419c0dc1976833243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  dayDurationInSeconds: 15
+  dayDurationInSeconds: 20
   startHour: 0
   startMinute: 0
   openHour: 8
   closeHour: 22
-  shopSounds: []
 --- !u!114 &1644672772
 MonoBehaviour:
   m_ObjectHideFlags: 0

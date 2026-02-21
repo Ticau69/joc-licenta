@@ -18,3 +18,8 @@ MonoBehaviour:
     icon: {fileID: 0}
     baseCost: 3
     baseSellPrice: 3
+  - productName: Apa Plata
+    type: 6
+    icon: {fileID: 0}
+    baseCost: 2
+    baseSellPrice: 2

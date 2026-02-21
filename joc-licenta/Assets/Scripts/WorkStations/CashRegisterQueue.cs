@@ -22,6 +22,31 @@ public class CashRegisterQueue : MonoBehaviour
 
     public int QueueCount => _queue.Count;
 
+    // ── NOU: expus pentru CustomerAI să poată verifica dacă coada e plină ──
+    public int MaxQueueSize => maxQueueSize;
+
+    /// <summary>
+    /// Returnează poziția în coadă unde s-ar așeza clientul următor.
+    /// Folosit de CustomerAI pentru a calcula distanța corectă față de coadă.
+    /// </summary>
+    public Vector3 GetNextQueuePosition()
+    {
+        int nextIndex = _queue.Count; // indexul spotului unde s-ar băga clientul nou
+
+        // 1) Spot manual setat în Inspector
+        if (queueSpots != null && nextIndex < queueSpots.Length && queueSpots[nextIndex] != null)
+            return queueSpots[nextIndex].position;
+
+        // 2) Fallback: calculăm poziția în spatele interactionPoint (același calcul ca GetQueueSpot)
+        if (_ws != null && _ws.interactionPoint != null)
+        {
+            Vector3 backDir = -_ws.interactionPoint.forward;
+            return _ws.interactionPoint.position + backDir * (queueSpacing * (nextIndex + 1));
+        }
+
+        return transform.position;
+    }
+
     private void Awake()
     {
         _ws = GetComponent<WorkStation>();
@@ -97,7 +122,6 @@ public class CashRegisterQueue : MonoBehaviour
 
         Vector3 backDir = -_ws.interactionPoint.forward;
         Vector3 pos = _ws.interactionPoint.position + backDir * (queueSpacing * (index + 1));
-        // (index+1) ca să nu fie fix pe pay point
 
         var go = new GameObject($"{name}_QueueSpot_{index}");
         go.transform.position = pos;
@@ -105,7 +129,6 @@ public class CashRegisterQueue : MonoBehaviour
         go.transform.SetParent(transform);
         return go.transform;
     }
-
 
     private bool IsCashierPresent()
     {
@@ -118,11 +141,9 @@ public class CashRegisterQueue : MonoBehaviour
             if (e.role != EmployeeRole.Cashier) continue;
             if (e.myWorkStation == null) continue;
 
-            // Cashier asignat la această casă? (aprox: stația e aceeași zonă)
             float dStation = Vector3.Distance(e.myWorkStation.position, _ws.interactionPoint.position);
             if (dStation > 0.75f) continue;
 
-            // Cashier chiar e “prezent” lângă casă
             float d = Vector3.Distance(e.transform.position, _ws.interactionPoint.position);
             if (d <= cashierDetectRadius) return true;
         }
