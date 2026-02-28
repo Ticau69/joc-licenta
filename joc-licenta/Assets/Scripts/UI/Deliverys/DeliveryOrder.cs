@@ -1,21 +1,27 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class DeliveryOrder
 {
-    public string id;               // ID unic (ex: "CMD-104")
-    public ProductType product;     // Ce aduce
-    public int amount;              // Cantitate
-    public float totalTime;         // Cât durează total
-    public float timeRemaining;     // Cât a mai rămas
+    public string id;
+
+    // --- SCHIMBARE: Acum ține o listă cu toate produsele din comandă ---
+    public Dictionary<ProductType, int> products;
+
+    public float totalTime;
+    public float timeRemaining;
 
     public bool IsCompleted => timeRemaining <= 0;
 
-    public DeliveryOrder(ProductType type, int qty, float duration)
+    // --- SCHIMBARE: Constructorul primește dicționarul ---
+    public DeliveryOrder(Dictionary<ProductType, int> items, float duration)
     {
         id = $"CMD-{Random.Range(100, 999)}";
-        product = type;
-        amount = qty;
+
+        // Copiem itemele pentru a le salva în această comandă
+        products = new Dictionary<ProductType, int>(items);
+
         totalTime = duration;
         timeRemaining = duration;
     }

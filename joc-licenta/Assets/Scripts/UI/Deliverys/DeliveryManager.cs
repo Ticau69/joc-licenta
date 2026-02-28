@@ -16,6 +16,7 @@ public class DeliveryManager : MonoBehaviour
 
     [Header("Config")]
     [SerializeField] private float deliverySpeedBase = 15f;
+    [SerializeField] private int maxItemPerOrder = 100;
     [Header("Fleet Reference")]
     [SerializeField] private FleetManager fleetManager;
     private Label fleetCapacityLabel;
@@ -31,6 +32,7 @@ public class DeliveryManager : MonoBehaviour
     private ScrollView productCatalogList;
     private ScrollView cartList;
     private Label orderTotalLabel;
+    private Label capacityLabel;
     private Button confirmOrderBtn;
     private Button cancelOrderBtn;
 
@@ -59,6 +61,7 @@ public class DeliveryManager : MonoBehaviour
         confirmOrderBtn = root.Q<Button>("ConfirmOrderBtn");
         cancelOrderBtn = root.Q<Button>("CancelOrderBtn");
 
+        capacityLabel = orderPopup.Q<Label>("Capactitate");
         fleetCapacityLabel = root.Q<Label>("FleetCapacityLabel");
         upgradeFleetBtn = root.Q<Button>("UpgradeFleetBtn");
 
@@ -100,6 +103,16 @@ public class DeliveryManager : MonoBehaviour
         PopulateCatalog();
 
         orderPopup.style.display = DisplayStyle.Flex;
+    }
+
+    private int GetTotalItemsInCart()
+    {
+        int total = 0;
+        foreach (var quantity in currentCart.Values) // Asigură-te că folosești numele dicționarului tău (ex: currentCart)
+        {
+            total += quantity;
+        }
+        return total;
     }
 
     private void CloseSupplyMenu()
@@ -144,13 +157,24 @@ public class DeliveryManager : MonoBehaviour
             // 4. Configurăm logica
             if (qtyInput != null && addBtn != null)
             {
-                // Ne asigurăm că nu scrie valori negative
+                // Setăm o valoare implicită la început
+                qtyInput.value = 1;
+
+                // Auto-corectare când jucătorul tastează
                 qtyInput.RegisterValueChangedCallback(evt =>
                 {
-                    if (evt.newValue < 1) qtyInput.value = 1;
+                    if (evt.newValue < 1)
+                    {
+                        // Dacă scrie 0 sau negativ, forțăm 1
+                        qtyInput.SetValueWithoutNotify(1);
+                    }
+                    else if (evt.newValue > maxItemPerOrder)
+                    {
+                        // Dacă scrie peste limită (ex: 999), forțăm limita (ex: 50)
+                        qtyInput.SetValueWithoutNotify(maxItemPerOrder);
+                    }
                 });
 
-                // Când apasă butonul, citim valoarea CURENTĂ din input-ul de lângă el
                 addBtn.clicked += () =>
                 {
                     AddToCart(product, qtyInput.value);
@@ -164,6 +188,14 @@ public class DeliveryManager : MonoBehaviour
 
     private void AddToCart(ProductData product, int amount)
     {
+        int currentTotalProducts = GetTotalItemsInCart();
+
+        if (currentTotalProducts + amount > maxItemPerOrder)
+        {
+            Debug.LogWarning($"Nu poți adăuga {amount} bucăți din {product.productName}. Limita maximă pe comandă este {maxItemPerOrder} și ai deja {currentTotalProducts} în coș.");
+            return;
+        }
+
         if (currentCart.ContainsKey(product))
             currentCart[product] += amount;
         else
@@ -199,6 +231,20 @@ public class DeliveryManager : MonoBehaviour
             cartRow.Add(name);
             cartRow.Add(cost);
             cartList.Add(cartRow);
+        }
+
+
+
+        if (capacityLabel != null)
+        {
+            int currentItems = GetTotalItemsInCart();
+            capacityLabel.text = $"Capacitate: {currentItems} / {maxItemPerOrder}";
+
+            // Dacă e plin, facem textul roșu ca să atragă atenția
+            if (currentItems >= maxItemPerOrder)
+                capacityLabel.style.color = Color.red;
+            else
+                capacityLabel.style.color = Color.white;
         }
 
         if (orderTotalLabel != null)
@@ -241,33 +287,42 @@ public class DeliveryManager : MonoBehaviour
 
     private void FinalizeOrder()
     {
-        // 1. Calculăm costul
+        // 1. Calculăm costul și numărul total de cutii
         float totalCost = 0;
-        foreach (var item in currentCart) totalCost += item.Key.baseCost * item.Value;
+        int totalItems = 0;
+        foreach (var item in currentCart)
+        {
+            totalCost += item.Key.baseCost * item.Value;
+            totalItems += item.Value;
+        }
 
-        // 2. Calculăm CÂTE camioane ne trebuie
-        // (Presupunem 1 camion per tip de produs, cum am discutat)
-        int trucksNeeded = currentCart.Count;
+        // 2. UN SINGUR CAMION PE COMANDĂ!
+        int trucksNeeded = 1;
 
         // 3. VERIFICARE FLOTĂ
         if (!fleetManager.HasAvailableTrucks(trucksNeeded))
         {
-            Debug.LogWarning("Nu ai destule camioane libere pentru această comandă!");
-            // Aici poți schimba textul butonului în "LIPSĂ CAMIOANE" pentru 2 secunde
+            Debug.LogWarning("Nu ai camioane libere!");
             confirmOrderBtn.text = "LIPSĂ CAMIOANE!";
             return;
         }
 
-        // 4. Dacă avem bani ȘI camioane -> Executăm
+        // 4. Procesăm plata și trimitem camionul
         if (GameManager.Instance.TrySpendMoney((int)totalCost))
         {
+            // Timpul crește puțin în funcție de câte cutii totale ai
+            float deliveryTime = deliverySpeedBase + (totalItems / 10f);
+
+            // Convertim 'currentCart' (care e cu ProductDataSO) într-un dicționar simplu cu ProductType pentru Comandă
+            Dictionary<ProductType, int> itemsForOrder = new Dictionary<ProductType, int>();
             foreach (var item in currentCart)
             {
-                float deliveryTime = deliverySpeedBase + (item.Value / 10f);
-
-                // Chemăm funcția care consumă camionul
-                CreateNewDelivery(item.Key.type, item.Value, deliveryTime);
+                itemsForOrder.Add(item.Key.type, item.Value);
             }
+
+            // Chemăm o singură dată funcția, creând 1 singură comandă
+            CreateNewDelivery(itemsForOrder, deliveryTime);
+
             CloseSupplyMenu();
         }
     }
@@ -290,12 +345,12 @@ public class DeliveryManager : MonoBehaviour
         }
     }
 
-    public void CreateNewDelivery(ProductType type, int amount, float duration)
+    public void CreateNewDelivery(Dictionary<ProductType, int> items, float duration)
     {
-        // Ocupăm un camion
+        // Ocupăm 1 singur camion per comandă
         fleetManager.RentTruck();
 
-        DeliveryOrder newOrder = new DeliveryOrder(type, amount, duration);
+        DeliveryOrder newOrder = new DeliveryOrder(items, duration);
         activeOrders.Add(newOrder);
         CreateVisualEntry(newOrder);
     }
@@ -305,7 +360,22 @@ public class DeliveryManager : MonoBehaviour
         VisualElement itemInstance = deliveryItemTemplate.Instantiate();
 
         Label nameLabel = itemInstance.Q<Label>("OrderName");
-        if (nameLabel != null) nameLabel.text = $"{order.product} ({order.amount} buc)";
+        if (nameLabel != null)
+        {
+            // Calculăm totalul bucăților din această comandă
+            int totalAmount = 0;
+            foreach (var qty in order.products.Values) totalAmount += qty;
+
+            // Dacă e doar un produs, îi zicem pe nume. Dacă sunt mai multe, scriem "Comandă Mixtă"
+            if (order.products.Count == 1)
+            {
+                nameLabel.text = $"{order.products.Keys.First()} ({totalAmount} buc)";
+            }
+            else
+            {
+                nameLabel.text = $"Comandă Mixtă ({totalAmount} buc)";
+            }
+        }
 
         Button urgentBtn = itemInstance.Q<Button>("UrgentBtn");
         if (urgentBtn != null) urgentBtn.clicked += () => SpeedUpDelivery(order);
@@ -330,12 +400,16 @@ public class DeliveryManager : MonoBehaviour
 
     private void CompleteOrder(DeliveryOrder order)
     {
-        // Eliberăm camionul
+        // Eliberăm camionul înapoi în flotă
         fleetManager.ReturnTruck();
 
+        // Adăugăm toate produsele în inventar
         if (ServiceLocator.Instance.TryGet(out IInventoryService inventory))
         {
-            inventory.AddStock(order.product, order.amount);
+            foreach (var item in order.products)
+            {
+                inventory.AddStock(item.Key, item.Value);
+            }
         }
 
         if (orderToVisualMap.ContainsKey(order))

@@ -122,10 +122,10 @@ public class PlacementSystem : MonoBehaviour
         if (playerInput.IsPointerOverUI())
             return;
 
-        Vector3 mousePosition = playerInput.GetSelectedMapPostion();
-        Vector3Int gridPosition = grid.WorldToCell(mousePosition);
+        //Vector3 mousePosition = playerInput.GetSelectedMapPostion();
+        //Vector3Int gridPosition = grid.WorldToCell(mousePosition);
 
-        buildingState.OnAction(gridPosition);
+        buildingState.OnAction(lastDetectedPosition);
     }
 
     // Pentru anularea segmentului curent de perete

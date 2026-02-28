@@ -12,6 +12,7 @@ public class StatsUIController : MonoBehaviour
     private Label maxValLabel; // Doar o etichetă sus e suficientă la BarChart
     private Button statsButton;
     private VisualElement statsPanel; // Păstrăm referința aici
+    private CircularProgress playerLevelBar;
     private bool isStatsPanelOpen = false; // Ținem minte starea
 
     // Lista cu datele pe zile
@@ -32,6 +33,7 @@ public class StatsUIController : MonoBehaviour
         maxValLabel = root.Q<Label>("MaxMoneyLabel"); // Folosim label-ul de sus
         statsButton = root.Q<Button>("Stats");
         statsPanel = root.Q<VisualElement>("StatsPanel");
+        playerLevelBar = root.Q<CircularProgress>("PlayerLevel");
 
         gameManager = GetComponent<GameManager>();
         clockManager = GetComponent<ClockManager>();
@@ -59,6 +61,16 @@ public class StatsUIController : MonoBehaviour
         {
             statsPanel.style.display = DisplayStyle.None; // Îl ascundem vizual
             isStatsPanelOpen = false; // Setăm variabila pe false
+        }
+
+        if (PlayerXPManager.Instance != null)
+        {
+            // NU abonăm UpdateXPBar direct! Folosim funcții separate (Handle)
+            PlayerXPManager.Instance.OnXpChanged += HandleXpChanged;
+            PlayerXPManager.Instance.OnLevelChanged += HandleLevelChanged;
+
+            // Forțăm o actualizare la început
+            UpdateXPBar(PlayerXPManager.Instance.Level, PlayerXPManager.Instance.XpInLevel, PlayerXPManager.Instance.XpToNext);
         }
 
         if (statsButton != null)
@@ -95,6 +107,40 @@ public class StatsUIController : MonoBehaviour
         {
             timeManager.OnDayChanged -= OnNewDayStarted; // <--- LINIE NOUĂ
         }
+
+        if (PlayerXPManager.Instance != null)
+        {
+            PlayerXPManager.Instance.OnXpChanged -= HandleXpChanged;
+            PlayerXPManager.Instance.OnLevelChanged -= HandleLevelChanged;
+        }
+    }
+
+    private void HandleXpChanged(int oldXp, int newXp, int xpToNext)
+    {
+        int currentLevel = PlayerXPManager.Instance.Level;
+        UpdateXPBar(currentLevel, newXp, xpToNext);
+    }
+
+    private void HandleLevelChanged(int oldLevel, int newLevel)
+    {
+        int currentXp = PlayerXPManager.Instance.XpInLevel;
+        int targetXp = PlayerXPManager.Instance.XpToNext;
+        UpdateXPBar(newLevel, currentXp, targetXp);
+    }
+
+    // Funcția finală care doar desenează UI-ul
+    private void UpdateXPBar(int levelToShow, int currentXp, int targetXp)
+    {
+        if (playerLevelBar == null) return;
+
+        // Calculăm la sută (folosim float ca să nu dea erori de rotunjire)
+        float progressPercentage = ((float)currentXp / targetXp) * 100f;
+
+        // Desenăm cercul
+        playerLevelBar.Progress = progressPercentage;
+
+        // AICI scriem textul! Acum va fi mereu 'levelToShow'
+        playerLevelBar.CenterText = levelToShow.ToString();
     }
 
     // Se apelează la fiecare tranzacție

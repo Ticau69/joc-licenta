@@ -14,6 +14,7 @@ public class CashRegisterQueue : MonoBehaviour
     [SerializeField] private float checkoutCooldown = 0.25f;
 
     private WorkStation _ws;
+    private PlayerXPManager _xpManager;
     private readonly List<CustomerAI> _queue = new();
     private float _cooldown;
 
@@ -79,6 +80,8 @@ public class CashRegisterQueue : MonoBehaviour
         int total = first.CalculateTotalPriceRON();
         if (total > 0 && _money != null)
             _money.Add(total);
+        if (PlayerXPManager.Instance != null)
+            PlayerXPManager.Instance.AddXP(Mathf.Max(1, total / 10)); // 1 XP la fiecare 10 RON câștigați (sau măcar 1 XP)
 
         first.OnCheckoutComplete();
         _queue.RemoveAt(0);

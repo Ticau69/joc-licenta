@@ -14,11 +14,19 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private int maxAliveCustomers = 8;
     [SerializeField] private bool spawnOnStart = true;
 
-    [Header("Registry Source")]
+    [Header("References")]
     [SerializeField] private EmployeeManager employeeManager;
 
+    [Header("Conditions")]
+    [SerializeField] private bool requireAtLeastOneCashRegister = true;
+    [SerializeField] private bool requireAtLeastOneShelf = true;
+    [SerializeField] private float registryRefreshInterval = 2f;
+
     private WorkStationRegistry _registry;
-    private float _timer;
+    private float _spawnTimer;
+    private float _refreshTimer;
+
+    private float _lastNoSpawnLogTime;
 
     private void Start()
     {
@@ -32,36 +40,15 @@ public class CustomerSpawner : MonoBehaviour
 
         if (_registry == null)
         {
-            Debug.LogError("[CustomerSpawner] WorkStationRegistry is missing. " +
-                           "Verifică să existe EmployeeManager în scenă și să fie activ.");
+            Debug.LogError("[CustomerSpawner] Registry missing. Spawner disabled.");
             enabled = false;
             return;
         }
 
         _registry.RefreshAllStations();
+        _refreshTimer = registryRefreshInterval;
 
-        // Abonăm evenimentele de deschis/închis
-        if (TimeManager.Instance != null)
-        {
-            TimeManager.Instance.OnShopOpen += OnShopOpened;
-            TimeManager.Instance.OnShopClose += OnShopClosed;
-        }
-        else
-        {
-            Debug.LogWarning("[CustomerSpawner] TimeManager.Instance e null. " +
-                             "Clienții vor spawna indiferent de orar.");
-        }
-
-        _timer = spawnOnStart ? 0f : spawnInterval;
-    }
-
-    private void OnDestroy()
-    {
-        if (TimeManager.Instance != null)
-        {
-            TimeManager.Instance.OnShopOpen -= OnShopOpened;
-            TimeManager.Instance.OnShopClose -= OnShopClosed;
-        }
+        _spawnTimer = spawnOnStart ? 0f : spawnInterval;
     }
 
     private void Update()
@@ -71,59 +58,83 @@ public class CustomerSpawner : MonoBehaviour
         if (exitPoint == null) return;
         if (_registry == null) return;
 
-        // Nu spawna dacă magazinul e închis
-        if (!IsShopOpen()) return;
+        // refresh la registry periodic (pentru tycoon: când playerul plasează rafturi/case)
+        _refreshTimer -= Time.deltaTime;
+        if (_refreshTimer <= 0f)
+        {
+            _registry.RefreshAllStations();
+            _refreshTimer = registryRefreshInterval;
+        }
 
-        _timer -= Time.deltaTime;
-        if (_timer > 0f) return;
+        _spawnTimer -= Time.deltaTime;
+        if (_spawnTimer > 0f) return;
+
+        if (!CanSpawnCustomers())
+        {
+            LogNoSpawnReasonOccasionally();
+            _spawnTimer = spawnInterval;
+            return;
+        }
 
         int alive = FindObjectsByType<CustomerAI>(FindObjectsSortMode.None).Length;
         if (alive < maxAliveCustomers)
+        {
             SpawnOne();
+        }
 
-        _timer = spawnInterval;
+        _spawnTimer = spawnInterval;
+    }
+
+    private bool CanSpawnCustomers()
+    {
+        if (requireAtLeastOneShelf)
+        {
+            var shelves = _registry.GetAllShelves();
+            if (shelves == null || shelves.Count == 0)
+                return false;
+        }
+
+        if (requireAtLeastOneCashRegister)
+        {
+            // prefer: caută casele care chiar au CashRegisterQueue (case funcționale)
+            var queues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
+            if (queues == null || queues.Length == 0)
+                return false;
+        }
+
+        return true;
+    }
+
+    private void LogNoSpawnReasonOccasionally()
+    {
+        // log max o dată la 3 sec ca să nu spammeze
+        if (Time.time - _lastNoSpawnLogTime < 3f) return;
+        _lastNoSpawnLogTime = Time.time;
+
+        string reason = "";
+
+        if (requireAtLeastOneShelf)
+        {
+            var shelves = _registry.GetAllShelves();
+            if (shelves == null || shelves.Count == 0)
+                reason += "no shelves; ";
+        }
+
+        if (requireAtLeastOneCashRegister)
+        {
+            var queues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
+            if (queues == null || queues.Length == 0)
+                reason += "no cash registers (CashRegisterQueue); ";
+        }
+
+        Debug.Log($"[CustomerSpawner] Not spawning customers: {reason}");
     }
 
     private void SpawnOne()
     {
-        Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        Transform sp = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
         var customer = Instantiate(customerPrefab, sp.position, sp.rotation);
+
         customer.Initialize(_registry, exitPoint);
-    }
-
-    /// <summary>
-    /// Returnează true dacă magazinul e deschis conform TimeManager.
-    /// Dacă TimeManager lipsește, considerăm magazinul mereu deschis (fallback).
-    /// </summary>
-    private bool IsShopOpen()
-    {
-        if (TimeManager.Instance == null) return true;
-
-        int hour = TimeManager.Instance.CurrentHour;
-        int open = TimeManager.Instance.openHour;
-        int close = TimeManager.Instance.closeHour;
-
-        // Același calcul ca în TimeManager.IsWithinShopHours()
-        int effectiveClose = Mathf.Clamp(close, 0, 24);
-
-        if (open < effectiveClose)
-            return hour >= open && hour < effectiveClose;
-
-        if (open > effectiveClose)
-            return hour >= open || hour < effectiveClose;
-
-        return false;
-    }
-
-    // ── Opțional: log când magazinul se deschide/închide ────────────────────
-    private void OnShopOpened()
-    {
-        Debug.Log("[CustomerSpawner] Magazin deschis — clienții pot intra.");
-        _timer = 0f; // spawn imediat la deschidere
-    }
-
-    private void OnShopClosed()
-    {
-        Debug.Log("[CustomerSpawner] Magazin închis — nu mai spawnam clienți.");
     }
 }
