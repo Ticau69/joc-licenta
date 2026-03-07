@@ -14,6 +14,10 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private int maxAliveCustomers = 8;
     [SerializeField] private bool spawnOnStart = true;
 
+    [Header("Economy")]
+    [SerializeField] private int minCustomerBudget = 50;
+    [SerializeField] private int maxCustomerBudget = 250;
+
     [Header("References")]
     [SerializeField] private EmployeeManager employeeManager;
 
@@ -87,6 +91,19 @@ public class CustomerSpawner : MonoBehaviour
 
     private bool CanSpawnCustomers()
     {
+        // --- NOU: Verificăm programul magazinului din TimeManager ---
+        if (TimeManager.Instance != null)
+        {
+            int currentHour = TimeManager.Instance.CurrentHour;
+
+            // Dacă ora este în afara programului, oprim spawnarea
+            if (currentHour < TimeManager.Instance.openHour || currentHour >= TimeManager.Instance.closeHour)
+            {
+                return false;
+            }
+        }
+
+        // --- Verificările tale existente ---
         if (requireAtLeastOneShelf)
         {
             var shelves = _registry.GetAllShelves();
@@ -96,7 +113,6 @@ public class CustomerSpawner : MonoBehaviour
 
         if (requireAtLeastOneCashRegister)
         {
-            // prefer: caută casele care chiar au CashRegisterQueue (case funcționale)
             var queues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
             if (queues == null || queues.Length == 0)
                 return false;
@@ -112,6 +128,16 @@ public class CustomerSpawner : MonoBehaviour
         _lastNoSpawnLogTime = Time.time;
 
         string reason = "";
+
+        // --- NOU: Logăm dacă e închis magazinul ---
+        if (TimeManager.Instance != null)
+        {
+            int currentHour = TimeManager.Instance.CurrentHour;
+            if (currentHour < TimeManager.Instance.openHour || currentHour >= TimeManager.Instance.closeHour)
+            {
+                reason += $"shop is closed (Hour: {currentHour}); ";
+            }
+        }
 
         if (requireAtLeastOneShelf)
         {
@@ -133,8 +159,17 @@ public class CustomerSpawner : MonoBehaviour
     private void SpawnOne()
     {
         Transform sp = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
-        var customer = Instantiate(customerPrefab, sp.position, sp.rotation);
+        GameObject go = Instantiate(customerPrefab.gameObject, sp.position, sp.rotation);
 
-        customer.Initialize(_registry, exitPoint);
+        var customer = go.GetComponent<CustomerAI>();
+
+        if (customer != null)
+        {
+            // 1. Generăm un buget random pentru acest client
+            int randomBudget = UnityEngine.Random.Range(minCustomerBudget, maxCustomerBudget + 1);
+
+            // 2. Transmitem bugetul prin Initialize
+            customer.Initialize(_registry, exitPoint, randomBudget);
+        }
     }
 }

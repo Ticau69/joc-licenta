@@ -34,6 +34,14 @@ public class CustomerAI : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float arriveDistance = 1f;
 
+    [Header("Checkout")]
+    [SerializeField] private float cashierDetectRadius = 1.5f;
+    [SerializeField] private float checkoutCooldown = 0.25f; // Pauza între clienți
+
+    // --- ADAUGĂ ASTA ---
+    [SerializeField] private float checkoutDuration = 2.0f; // Cât durează plata efectivă
+    private bool _isProcessing = false;
+
     private NavMeshAgent _agent;
     private Transform _exitPoint;
     private WorkStationRegistry _registry;
@@ -53,6 +61,7 @@ public class CustomerAI : MonoBehaviour
     private bool _destinationSet = false;
     private float _destinationSetTime = 0f;
     private const float DestinationSettleDelay = 0.1f;
+    private int _budget;
 
     [SerializeField]
     private State currentState;
@@ -68,22 +77,17 @@ public class CustomerAI : MonoBehaviour
         _agent = GetComponent<NavMeshAgent>();
     }
 
-    public void Initialize(WorkStationRegistry registry, Transform exitPoint)
+    public void Initialize(WorkStationRegistry registry, Transform exitPoint, int startingBudget)
     {
         _registry = registry;
         _exitPoint = exitPoint;
+        _budget = startingBudget; // Salvăm bugetul primit
         ServiceLocator.Instance.TryGet(out _eventBus);
 
         GenerateShoppingList();
         _currentIndex = 0;
 
-        // ─── DEBUG: afișăm lista generată ───────────────────────────────────
-        if (_list.Count == 0)
-            Debug.LogWarning($"[CustomerAI] {name} - Lista de cumpărături e GOALĂ! " +
-                             "Verifică ProductDataBase.Instance și că are produse înregistrate.");
-        else
-            Debug.Log($"[CustomerAI] {name} - Lista generată: {_list.Count} iteme.");
-        // ────────────────────────────────────────────────────────────────────
+        Debug.Log($"[CustomerAI] {name} - Spawnat cu buget: {_budget} RON. Listă: {_list.Count} iteme.");
 
         GoNextItemOrCheckout();
     }
@@ -200,6 +204,23 @@ public class CustomerAI : MonoBehaviour
     // =========================================================================
     //  FLOW PRINCIPAL
     // =========================================================================
+    private int GetProductUnitPrice(ProductType productType)
+    {
+        bool hasEconomy = ServiceLocator.Instance.TryGet(out IEconomyService economyService);
+        bool hasInflation = ServiceLocator.Instance.TryGet(out InflationManager inflationManager);
+        float currentInflation = hasInflation ? inflationManager.CurrentInflation : 1.0f;
+
+        if (hasEconomy && economyService.TryGetProductData(productType, out var data))
+        {
+            return Mathf.RoundToInt(data.sellingPrice * currentInflation);
+        }
+        else if (ProductDataBase.Instance != null && ProductDataBase.Instance.TryGetSellPrice(productType, out float basePrice))
+        {
+            return Mathf.RoundToInt(basePrice * currentInflation);
+        }
+        return 10; // Super-fallback
+    }
+
 
     private void GoNextItemOrCheckout()
     {
@@ -277,19 +298,41 @@ public class CustomerAI : MonoBehaviour
 
         var item = _list[_currentIndex];
 
-        // Clientul a ajuns la raft și vede că produsul nu mai este
         if (_targetShelf.slot1Product != item.product || _targetShelf.slot1Stock <= 0)
         {
-            Debug.Log($"[CustomerAI] {name} - Raftul pentru {item.product} e gol. Renunț la acest item.");
+            Debug.Log($"[CustomerAI] {name} - Raftul e gol. Sar peste {item.product}.");
             NotifyProductNotFound(item.product);
             _currentIndex++;
             GoNextItemOrCheckout();
             return;
         }
 
-        int taken = _targetShelf.TakeProduct(item.amount);
+        // --- NOU: LOGICA DE BUGET ---
+        int unitPrice = GetProductUnitPrice(item.product);
+
+        // Câte bucăți își permite din acest produs? (Dacă ai 15 lei și costă 10, își permite 1.5 -> adică 1 bucată)
+        int affordableAmount = Mathf.FloorToInt((float)_budget / unitPrice);
+
+        // Vrea să ia cantitatea de pe listă, dar nu mai mult decât își permite
+        int desiredAmount = Mathf.Min(item.amount, affordableAmount);
+
+        if (desiredAmount <= 0)
+        {
+            Debug.Log($"[CustomerAI] {name} - Nu am bani de {item.product}! Costă {unitPrice} dar mai am doar {_budget}. Sar peste.");
+            _currentIndex++;
+            GoNextItemOrCheckout();
+            return; // iese din funcție și trece la produsul următor
+        }
+
+        // Ia produsul efectiv de pe raft
+        int taken = _targetShelf.TakeProduct(desiredAmount);
+
         if (taken > 0)
         {
+            // Scade banii din buget
+            int cost = taken * unitPrice;
+            _budget -= cost;
+
             if (_basket.ContainsKey(item.product))
                 _basket[item.product] += taken;
             else
@@ -298,13 +341,20 @@ public class CustomerAI : MonoBehaviour
             item.amount -= taken;
             _list[_currentIndex] = item;
 
-            Debug.Log($"[CustomerAI] {name} - Am luat {taken}x {item.product}. " +
-                      $"Mai vreau: {item.amount}");
+            Debug.Log($"[CustomerAI] {name} - Am luat {taken}x {item.product} (Cost: {cost} RON). Buget rămas: {_budget} RON");
         }
 
-        // Trece la itemul următor indiferent dacă a luat tot sau nu
-        // (clientul nu știe că mai există alt raft cu același produs)
-        _currentIndex++;
+        // --- NOU: Verificare finală de bani ---
+        if (_budget <= 0)
+        {
+            Debug.Log($"[CustomerAI] {name} - Am rămas falit! Abandonez restul listei și merg direct la casă.");
+            _currentIndex = _list.Count; // Setând indexul la capăt, `GoNextItemOrCheckout` îl va trimite la checkout
+        }
+        else
+        {
+            _currentIndex++; // Altfel, trece la următorul item normal
+        }
+
         GoNextItemOrCheckout();
     }
 
@@ -382,7 +432,7 @@ public class CustomerAI : MonoBehaviour
 
         // ── FIX PRINCIPAL: setăm GoingToRegister și navigăm spre casă ──────
         // NU intrăm în coadă aici! Intrăm în coadă abia când ajungem (în Update).
-        SetDestination(_targetRegister.transform.position);
+        SetDestination(_targetRegister.GetNextQueuePosition());
         CurrentState = State.GoingToRegister;
     }
 
@@ -519,20 +569,12 @@ public class CustomerAI : MonoBehaviour
     public int CalculateTotalPriceRON()
     {
         int total = 0;
-
         foreach (var kv in _basket)
         {
-            if (ProductDataBase.Instance != null &&
-                ProductDataBase.Instance.TryGetSellPrice(kv.Key, out float price))
-            {
-                total += Mathf.RoundToInt(price) * kv.Value;
-            }
-            else
-            {
-                total += 10 * kv.Value; // fallback
-            }
+            // Folosește aceeași funcție pe care a folosit-o să verifice la raft
+            int pricePerUnit = GetProductUnitPrice(kv.Key);
+            total += pricePerUnit * kv.Value;
         }
-
         return total;
     }
 

@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -111,13 +112,13 @@ public class CameraController : MonoBehaviour
         // 1. Calculăm ținta rotației
         if (currentRotationInput != 0)
         {
-            targetRotationY += currentRotationInput * rotationSpeed * Time.deltaTime;
+            targetRotationY += currentRotationInput * rotationSpeed * Time.unscaledDeltaTime;
         }
 
         // 2. Aplicăm rotația fluidă pe obiect
         float currentY = transform.eulerAngles.y;
         // SmoothDampAngle este esențial pentru a gestiona corect trecerea de la 360 la 0 grade
-        float smoothedY = Mathf.SmoothDampAngle(currentY, targetRotationY, ref _rotateVelocity, smoothTime);
+        float smoothedY = Mathf.SmoothDampAngle(currentY, targetRotationY, ref _rotateVelocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
 
         transform.rotation = Quaternion.Euler(60, smoothedY, 0);
     }
@@ -156,7 +157,7 @@ public class CameraController : MonoBehaviour
         moveDir.Normalize(); // Previne viteza dublă pe diagonală
 
         // Adăugăm la poziția țintă
-        targetPosition += moveDir * panSpeed * Time.deltaTime;
+        targetPosition += moveDir * panSpeed * Time.unscaledDeltaTime;
 
         // Zoom Logic
         float scroll = inputSystem.CameraControl.Zoom.ReadValue<float>();
@@ -164,7 +165,7 @@ public class CameraController : MonoBehaviour
         {
             // Normalizăm scroll-ul pentru consistență
             float scrollDir = scroll > 0 ? 1 : -1;
-            targetPosition.y += scrollDir * scrollSpeed * 10f * Time.deltaTime;
+            targetPosition.y += scrollDir * scrollSpeed * 10f * Time.unscaledDeltaTime;
         }
 
         // Limitări (Clamp)
@@ -173,7 +174,7 @@ public class CameraController : MonoBehaviour
         targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
 
         // Aplicăm mișcarea finală
-        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref _moveVelocity, smoothTime);
+        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref _moveVelocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
     }
 
     void Update()

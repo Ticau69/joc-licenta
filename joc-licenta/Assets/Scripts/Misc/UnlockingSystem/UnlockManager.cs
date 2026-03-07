@@ -55,16 +55,36 @@ public class UnlockManager : MonoBehaviour
     {
         Debug.Log($"[UnlockManager] Unlock at level {u.levelRequired}");
 
+        // 1. Extinderea podelei
         if (u.expandPlacementArea && placementExpander != null)
         {
             placementExpander.SetPlaneScaleXZ(u.newPlaneScaleXZ);
             Debug.Log($"[UnlockManager] Expanded placement plane to XZ={u.newPlaneScaleXZ}");
         }
 
-        // aici în viitor:
-        // - unlock raft tier
-        // - unlock produse
-        // - unlock angajați
-        // - etc
+        // 2. Limita de Angajați
+        if (u.maxEmployees > 0 && EmployeeManager.Instance != null)
+        {
+            EmployeeManager.Instance.SetMaxEmployees(u.maxEmployees);
+            Debug.Log($"[UnlockManager] Max Employees set to {u.maxEmployees}");
+        }
+
+        // 3. Limita de Clienți (Vom lega asta de Spawner-ul tău de clienți)
+        if (u.maxCustomers > 0)
+        {
+            // Aici vei apela funcția din managerul tău de clienți
+            // ex: CustomerSpawner.Instance.SetMaxCustomers(u.maxCustomers);
+            Debug.Log($"[UnlockManager] Max Customers limit increased to {u.maxCustomers}");
+        }
+
+        // 4. Capacitatea Depozitului
+        if (u.maxStorageCapacity > 0)
+        {
+            // Aici vei apela funcția din sistemul tău de depozit
+            // ex: StorageManager.Instance.SetMaxStorage(u.maxStorageCapacity);
+            Debug.Log($"[UnlockManager] Storage Capacity increased to {u.maxStorageCapacity}");
+        }
+
+        // aici în viitor: unlock raft tier, unlock produse, etc
     }
 }

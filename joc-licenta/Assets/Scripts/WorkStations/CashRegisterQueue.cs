@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -12,6 +13,9 @@ public class CashRegisterQueue : MonoBehaviour
     [Header("Checkout")]
     [SerializeField] private float cashierDetectRadius = 1.5f;
     [SerializeField] private float checkoutCooldown = 0.25f;
+    [SerializeField] private float checkoutDuration = 2.0f; // Cât durează plata efectivă
+    private bool _isProcessing = false;
+
 
     private WorkStation _ws;
     private PlayerXPManager _xpManager;
@@ -19,7 +23,7 @@ public class CashRegisterQueue : MonoBehaviour
     private float _cooldown;
 
     private IMoneyService _money;
-    private IEconomyService _economy; // optional
+    private Employee _currentCashier;
 
     public int QueueCount => _queue.Count;
 
@@ -55,7 +59,6 @@ public class CashRegisterQueue : MonoBehaviour
             Debug.LogWarning($"[{name}] CashRegisterQueue pe un WorkStation care nu e CashRegister!");
 
         ServiceLocator.Instance.TryGet(out _money);
-        ServiceLocator.Instance.TryGet(out _economy);
     }
 
     private void Update()
@@ -65,7 +68,9 @@ public class CashRegisterQueue : MonoBehaviour
         if (_queue.Count == 0) return;
         if (_cooldown > 0f) return;
 
-        // Dacă primul client e la punctul de plată + avem cashier, procesăm
+        // NOU: Dacă deja scanăm produsele cuiva, nu facem nimic
+        if (_isProcessing) return;
+
         var first = _queue[0];
         if (first == null)
         {
@@ -77,17 +82,50 @@ public class CashRegisterQueue : MonoBehaviour
         if (!IsCashierPresent()) return;
         if (!first.IsAtDestination()) return;
 
-        int total = first.CalculateTotalPriceRON();
-        if (total > 0 && _money != null)
-            _money.Add(total);
-        if (PlayerXPManager.Instance != null)
-            PlayerXPManager.Instance.AddXP(Mathf.Max(1, total / 10)); // 1 XP la fiecare 10 RON câștigați (sau măcar 1 XP)
+        // NOU: În loc să îi luăm banii instant, începem procesul care durează 2 secunde
+        StartCoroutine(ProcessCheckoutRoutine(first));
+    }
 
-        first.OnCheckoutComplete();
-        _queue.RemoveAt(0);
+    private IEnumerator ProcessCheckoutRoutine(CustomerAI first)
+    {
+        _isProcessing = true;
+
+        // Aici poți aplica viitorul "Buff de Viteză" din Mood!
+        // De exemplu, dacă _currentCashier.mood > 80, timpul scade la 1.5 secunde.
+        float actualDuration = checkoutDuration * (_currentCashier != null ? _currentCashier.GetWorkDurationMultiplier() : 1f);
+
+        yield return new WaitForSeconds(actualDuration);
+
+        if (first != null)
+        {
+            int total = first.CalculateTotalPriceRON();
+            if (total > 0 && _money != null)
+                _money.Add(total);
+
+            // NOU: Acordăm XP Casierului pentru că a servit un client
+            if (_currentCashier != null)
+            {
+                // Îi dăm 5 XP pe client servit, sau 1 XP per produs (total / 10). 
+                // Alege formula care îți place mai mult! Aici îi dăm 5 XP fix.
+                _currentCashier.AddXP(5);
+            }
+
+            // XP pentru jucător (managerul magazinului)
+            if (PlayerXPManager.Instance != null)
+                PlayerXPManager.Instance.AddXP(Mathf.Max(1, total / 10));
+
+            first.OnCheckoutComplete();
+        }
+
+        if (_queue.Count > 0 && _queue[0] == first)
+        {
+            _queue.RemoveAt(0);
+        }
 
         UpdateQueueDestinations();
+
         _cooldown = checkoutCooldown;
+        _isProcessing = false;
     }
 
     public bool TryEnqueue(CustomerAI customer)
@@ -148,8 +186,14 @@ public class CashRegisterQueue : MonoBehaviour
             if (dStation > 0.75f) continue;
 
             float d = Vector3.Distance(e.transform.position, _ws.interactionPoint.position);
-            if (d <= cashierDetectRadius) return true;
+            if (d <= cashierDetectRadius)
+            {
+                _currentCashier = e; // NOU: Salvăm referința la casierul care lucrează aici
+                return true;
+            }
         }
+
+        _currentCashier = null; // NOU: Nu e niciun casier aici
         return false;
     }
 }

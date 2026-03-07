@@ -35,6 +35,28 @@ public class Employee : MonoBehaviour
     #endregion
 
     #region Public Properties
+
+    [Header("Progression & Mood")]
+    [SerializeField] private int _level = 1;
+    [SerializeField] private int _currentXP = 0;
+    [SerializeField] private int _currentSalary = 150;
+    [SerializeField] private float _mood = 100f; // 0% - 100%
+
+    public int XPForNextLevel => _level * 100;
+
+    public int ExpectedSalary => 50 + (_level * 100);
+
+    public int level => _level;
+    public int currentXP => _currentXP;
+
+    public int currentSalary
+    {
+        get => _currentSalary;
+        set => _currentSalary = value; // UI-ul va modifica această valoare prin Slider
+    }
+
+    public float mood => _mood;
+
     public string employeeName
     {
         get => _employeeName;
@@ -65,6 +87,7 @@ public class Employee : MonoBehaviour
     private bool isWorking = false;
     private Vector3 homePosition;
     private float workTimer = 0f;
+    private float baseSpeed = 3.5f;
 
     // Restocker specific
     private RestockerStateMachine restockerStateMachine;
@@ -81,7 +104,7 @@ public class Employee : MonoBehaviour
 
         // Adaugă:
         _notificationSystem = GetComponent<EmployeeNotification>();
-
+        baseSpeed = agent.speed;
         if (boxVisual != null)
         {
             boxVisual.SetActive(false);
@@ -107,6 +130,39 @@ public class Employee : MonoBehaviour
     #endregion
 
     #region Public Methods
+
+    public void AddXP(int amount)
+    {
+        _currentXP += amount;
+        Debug.Log($"[{employeeName}] a primit +{amount} XP. Total: {_currentXP}/{XPForNextLevel}");
+
+        // Verificăm dacă a făcut Level Up
+        if (_currentXP >= XPForNextLevel)
+        {
+            _currentXP -= XPForNextLevel; // Păstrăm restul de XP pentru nivelul următor
+            _level++;
+
+            // Când face level up, se simte mândru, deci îi dăm un mic bonus la mood
+            _mood = Mathf.Clamp(_mood + 20f, 0f, 100f);
+
+            Debug.Log($"🎉 [{employeeName}] a ajuns la Nivelul {_level}! Acum se așteaptă la un salariu de {ExpectedSalary} RON.");
+        }
+    }
+    //Employee Buffs bazate pe mood
+    public float GetWorkDurationMultiplier()
+    {
+        if (_mood >= 80f) return 0.75f; // Fericit: Termină treaba cu 25% mai repede
+        if (_mood >= 30f) return 1.0f;  // Normal: Viteza standard (1x)
+        return 1.5f;                    // Supărat: Durează cu 50% mai mult să facă ceva!
+    }
+
+    public float GetMovementSpeedMultiplier()
+    {
+        if (_mood >= 80f) return 1.25f; // Fericit: Fuge pe hartă (1.25x viteză)
+        if (_mood >= 30f) return 1.0f;  // Normal
+        return 0.7f;                    // Supărat: Merge târșâit
+    }
+
     public void AssignRole(EmployeeRole newRole, Transform station)
     {
         _role = newRole;
@@ -128,6 +184,7 @@ public class Employee : MonoBehaviour
         }
 
         gameObject.SetActive(true);
+        agent.speed = baseSpeed * GetMovementSpeedMultiplier();
         agent.Warp(spawnPos);
     }
 
@@ -141,6 +198,63 @@ public class Employee : MonoBehaviour
         }
 
         agent.SetDestination(homePosition);
+
+        // --- NOU: CALCULUL MORALULUI LA FINAL DE ZI ---
+        CalculateDailyMood();
+    }
+
+    private void CalculateDailyMood()
+    {
+        int difference = _currentSalary - ExpectedSalary;
+
+        if (difference >= 50)
+        {
+            // Plătit foarte bine
+            _mood = Mathf.Clamp(_mood + 15f, 0f, 100f);
+            Debug.Log($"[{employeeName}] este foarte fericit pentru bonus! Mood: {_mood}%");
+        }
+        else if (difference >= 0)
+        {
+            // Plătit corect
+            _mood = Mathf.Clamp(_mood + 5f, 0f, 100f);
+            Debug.Log($"[{employeeName}] este mulțumit de salariu. Mood: {_mood}%");
+        }
+        else
+        {
+            // Sub-plătit
+            float moodPenalty = Mathf.Abs(difference) * 0.2f;
+            _mood = Mathf.Clamp(_mood - moodPenalty, 0f, 100f);
+
+            Debug.LogWarning($"[{employeeName}] este supărat pe salariul mic ({_currentSalary} vs {ExpectedSalary})! Mood scade la: {_mood}%");
+
+            if (_mood <= 0)
+            {
+                Debug.LogError($"🚨 [{employeeName}] și-a dat demisia din cauza condițiilor de muncă!");
+
+                // --- NOU: TRIMITEM NOTIFICARE CĂTRE JUCĂTOR ---
+                if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+                {
+                    eventBus.Publish(new ShowNotificationEvent(
+                        "Demisie!",
+                        $"{employeeName} a plecat din cauza salariului prea mic ({_currentSalary} RON).",
+                        NotificationType.Error,
+                        8f // Îl lăsăm mai mult pe ecran ca să fie sigur văzut
+                    ));
+                }
+
+                if (EmployeeManager.Instance != null)
+                {
+                    EmployeeManager.Instance.FireEmployee(this);
+                }
+            }
+        }
+
+        if (ServiceLocator.Instance.TryGet(out IMoneyService money))
+        {
+            // Atenție: Dacă metoda ta din IMoneyService se numește altfel (ex: Subtract, Spend, Remove), modifică cuvântul "Spend" de mai jos:
+            money.TrySpend(_currentSalary);
+            Debug.Log($"S-au plătit {_currentSalary} RON pentru salariul lui {employeeName}.");
+        }
     }
 
     public void WakeUpAndWork()
@@ -275,7 +389,7 @@ public class Employee : MonoBehaviour
     #region Internal Getters (for RestockerStateMachine)
     internal float DestinationThreshold => DESTINATION_THRESHOLD;
     internal float StorageThresholdOffset => STORAGE_THRESHOLD_OFFSET;
-    internal float WorkDuration => WORK_DURATION;
+    internal float WorkDuration => WORK_DURATION * GetWorkDurationMultiplier();
     internal int TaskCheckFrameInterval => TASK_CHECK_FRAME_INTERVAL;
     internal void SetSecondaryTarget(Transform target) => _secondaryTarget = target;
     #endregion
@@ -595,6 +709,7 @@ public class RestockerStateMachine
                 shelf.AddProduct(productsInHand);
                 Debug.Log("[Restocker] Placed products on shelf.");
                 productsInHand = 0;
+                owner.AddXP(20);
                 SetBoxVisibility(boxVisual, false);
 
                 ClearProblem();

@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.Collections.Generic;
-using System.Linq;
 
 public class EmployeeManager : MonoBehaviour
 {
@@ -70,6 +69,12 @@ public class EmployeeManager : MonoBehaviour
     public void FindAllWorkStations()
     {
         StationRegistry.RefreshAllStations();
+    }
+
+    public void SetMaxEmployees(int newLimit)
+    {
+        maxEmployees = newLimit;
+        Debug.Log($"[EmployeeManager] Limita maximă de angajați a fost actualizată la {maxEmployees}.");
     }
 
     public void RefreshStations()
@@ -277,9 +282,14 @@ public class EmployeeManager : MonoBehaviour
     private void EndWorkDay()
     {
         Debug.Log("[EmployeeManager] Ending work day for all employees");
-        foreach (var emp in allEmployees)
+
+        // Folosim un FOR INVERS pentru a preveni crash-urile dacă cineva își dă demisia
+        for (int i = allEmployees.Count - 1; i >= 0; i--)
         {
-            emp.EndShift();
+            if (allEmployees[i] != null)
+            {
+                allEmployees[i].EndShift();
+            }
         }
     }
     #endregion

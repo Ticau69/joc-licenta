@@ -13,7 +13,17 @@ MonoBehaviour:
   m_Name: LevelUnlocksSO
   m_EditorClassIdentifier: Assembly-CSharp::LevelUnlocksSO
   unlocks:
+  - levelRequired: 1
+    expandPlacementArea: 1
+    newPlaneScaleXZ: {x: 2, y: 2}
+    maxEmployees: 2
+    maxCustomers: 3
+    maxStorageCapacity: 50
+    unlockId: 
   - levelRequired: 2
     expandPlacementArea: 1
     newPlaneScaleXZ: {x: 2, y: 2}
+    maxEmployees: 4
+    maxCustomers: 4
+    maxStorageCapacity: 70
     unlockId: 
