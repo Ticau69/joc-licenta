@@ -11,6 +11,9 @@ public class EmployeeUIManager : MonoBehaviour
     [Header("UI Templates")]
     public VisualTreeAsset employeeCardTemplate;
 
+    [Header("Economie")]
+    public int hireCost = 500;
+
     private VisualElement _employeePanel;
     private ScrollView _employeeListScrollView;
 
@@ -31,6 +34,15 @@ public class EmployeeUIManager : MonoBehaviour
     private Label _expectedSalaryText;
 
     private Employee _selectedEmployee;
+
+    private void Start()
+    {
+        // Ne abonăm în Start, ca să fim siguri că EventBus a fost creat deja!
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Subscribe<CloseAllUIEvent>(OnCloseAllUIReceived);
+        }
+    }
 
     private void OnEnable()
     {
@@ -80,6 +92,24 @@ public class EmployeeUIManager : MonoBehaviour
         }
     }
 
+    private void OnDestroy()
+    {
+        if (_openButton != null) _openButton.clicked -= OpenPanel;
+        if (_closeButton != null) _closeButton.clicked -= ClosePanel;
+        if (_hireButton != null) _hireButton.clicked -= RequestHireEmployee;
+        if (_fireButton != null) _fireButton.clicked -= RequestFireEmployee;
+
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Unsubscribe<CloseAllUIEvent>(OnCloseAllUIReceived);
+        }
+    }
+
+    private void OnCloseAllUIReceived(CloseAllUIEvent e)
+    {
+        ClosePanel();
+    }
+
     private string GetMoodEmoji(float mood)
     {
         if (mood >= 80f) return "😁";
@@ -87,17 +117,22 @@ public class EmployeeUIManager : MonoBehaviour
         return "😠";
     }
 
-    private void OnDisable()
-    {
-        if (_openButton != null) _openButton.clicked -= OpenPanel;
-        if (_closeButton != null) _closeButton.clicked -= ClosePanel;
-        if (_hireButton != null) _hireButton.clicked -= RequestHireEmployee;
-        if (_fireButton != null) _fireButton.clicked -= RequestFireEmployee;
-    }
-
     public void OpenPanel()
     {
         if (_employeePanel == null) return;
+
+        bool wasAlreadyOpen = _employeePanel.style.display == DisplayStyle.Flex;
+
+        // 1. STRIGĂM PRIN RADIO să se închidă restul panourilor!
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Publish(new CloseAllUIEvent());
+        }
+
+        // 2. Dacă era deja deschis, ne oprim aici
+        if (wasAlreadyOpen) return;
+
+        // 3. Altfel, îl deschidem
         _employeePanel.style.display = DisplayStyle.Flex;
         PopulateEmployeeList();
         ClearRightPanel();
@@ -115,7 +150,7 @@ public class EmployeeUIManager : MonoBehaviour
     {
         if (EmployeeManager.Instance == null) return;
 
-        // --- NOU: Plasa de siguranță ---
+        // 1. Verificăm mai întâi limita de angajați
         if (EmployeeManager.Instance.CurrentEmployeeCount >= EmployeeManager.Instance.MaxEmployeeCount)
         {
             if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
@@ -126,14 +161,47 @@ public class EmployeeUIManager : MonoBehaviour
                     NotificationType.Warning
                 ));
             }
-            return;
+            return; // Oprim execuția
         }
 
-        string[] randomNames = { "Andrei", "Elena", "Mihai", "Ana", "George", "Ioana" };
+        // 2. Verificăm dacă jucătorul are bani suficienți
+        if (ServiceLocator.Instance.TryGet(out IMoneyService money))
+        {
+            /* ATENȚIE: Aici folosesc o metodă fictivă numită "HasEnough". 
+               Va trebui să o înlocuiești cu proprietatea reală din IMoneyService-ul tău 
+               care verifică balanța (ex: money.Balance >= hireCost sau money.CanAfford(hireCost)) */
+
+            if (!money.CanAfford(hireCost)) // <-- Verifică numele acestei funcții în IMoneyService-ul tău!
+            {
+                if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+                {
+                    eventBus.Publish(new ShowNotificationEvent(
+                        "Fonduri insuficiente!",
+                        $"Costul de recrutare este de {hireCost} RON. Nu îți permiți acum.",
+                        NotificationType.Error
+                    ));
+                }
+                return; // Oprim execuția (nu primește angajatul)
+            }
+
+            // Dacă are bani, îi luăm!
+            money.TrySpend(hireCost);
+        }
+        else
+        {
+            Debug.LogWarning("[EmployeeUI] Nu s-a găsit IMoneyService! Trecem peste cost (Mod Test).");
+        }
+
+        // 3. Dacă am ajuns aici, totul e OK (are loc liber și a plătit). Facem angajarea!
+        string[] randomNames = { "Andrei", "Elena", "Mihai", "Ana", "George", "Ioana", "Vasile" };
         string generatedName = randomNames[UnityEngine.Random.Range(0, randomNames.Length)];
 
         Employee newEmp = EmployeeManager.Instance.HireEmployee(generatedName);
-        if (newEmp != null) PopulateEmployeeList();
+
+        if (newEmp != null)
+        {
+            PopulateEmployeeList(); // Reîmprospătăm interfața (care va actualiza și numărul de pe buton)
+        }
     }
 
     private void RequestFireEmployee()
@@ -156,6 +224,9 @@ public class EmployeeUIManager : MonoBehaviour
             VisualElement newCard = employeeCardTemplate.Instantiate();
             newCard.Q<Label>("EmployeeNameLabel").text = emp.employeeName;
             newCard.Q<Label>("EmployeeRoleLabel").text = TranslateRoleToRomanian(emp.role);
+
+            // Acum emoji-ul din stânga se va actualiza cu valoarea reală!
+            newCard.Q<Label>("EmployeeMoodEmoji").text = GetMoodEmoji(emp.mood);
 
             // Setăm și emoji-ul (dacă ai implementat partea cu Mood-ul)
             // newCard.Q<Label>("EmployeeMoodEmoji").text = GetMoodEmoji(emp.mood);
@@ -247,7 +318,6 @@ public class EmployeeUIManager : MonoBehaviour
         }
     }
 
-    // --- NOU: LOGICA PENTRU STAREA BUTONULUI DE ANGAJARE ---
     private void UpdateHireButtonState()
     {
         if (_hireButton == null || EmployeeManager.Instance == null) return;
@@ -257,15 +327,14 @@ public class EmployeeUIManager : MonoBehaviour
 
         if (currentCount >= maxCount)
         {
-            // Dezactivăm butonul
             _hireButton.SetEnabled(false);
             _hireButton.text = $"LIMITĂ ATINSĂ ({currentCount}/{maxCount})";
         }
         else
         {
-            // Activăm butonul
             _hireButton.SetEnabled(true);
-            _hireButton.text = $"+ ANGAJEAZĂ NOU ({currentCount}/{maxCount})";
+            // NOU: Afișăm și costul pe buton
+            _hireButton.text = $"+ ANGAJEAZĂ NOU - {hireCost} RON ({currentCount}/{maxCount})";
         }
     }
 

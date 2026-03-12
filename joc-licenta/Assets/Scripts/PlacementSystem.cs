@@ -1,12 +1,14 @@
-using System;
 using UnityEngine;
+using System.Collections.Generic;
 
 public class PlacementSystem : MonoBehaviour
 {
     [SerializeField] private PlayerInput playerInput;
     [SerializeField] private Grid grid;
     [SerializeField] private ObjectDataBase database;
-    [SerializeField] private GameObject gridVisualization;
+    [Header("Grid Visuals")]
+    [Tooltip("Trage aici toate obiectele gridVisualization din scenă")]
+    [SerializeField] private List<GameObject> gridVisualizations = new List<GameObject>();
     [SerializeField] private PreviewSystem previewSystem;
     [SerializeField] private ObjectPlacer objectPlacer;
     [SerializeField] private GameManager gameManager;
@@ -23,7 +25,7 @@ public class PlacementSystem : MonoBehaviour
 
     private void Start()
     {
-        gridVisualization.SetActive(false);
+        ToggleGridVisuals(false);
         floorData = new();
         furnitureData = new();
         wallData = new WallGridData();
@@ -39,17 +41,53 @@ public class PlacementSystem : MonoBehaviour
         Vector3 mousePosition = playerInput.GetSelectedMapPostion();
         Vector3Int gridPosition = grid.WorldToCell(mousePosition);
 
-        if (lastDetectedPosition != gridPosition || isWallMode)
+        // --- NOU: Verificăm dacă suntem în modul de ștergere ---
+        bool isRemoving = buildingState is RemovingState;
+
+        // Dacă suntem pe un grid nou SAU e modul de perete SAU e modul de ștergere, dăm update!
+        if (lastDetectedPosition != gridPosition || isWallMode || isRemoving)
         {
             buildingState.UpdateState(gridPosition);
             lastDetectedPosition = gridPosition;
         }
     }
 
+    private void ToggleGridVisuals(bool isActive)
+    {
+        foreach (GameObject visual in gridVisualizations)
+        {
+            if (visual != null)
+            {
+                visual.SetActive(isActive);
+            }
+        }
+    }
+
+    public void AddGridVisual(GameObject newVisual)
+    {
+        if (newVisual != null && !gridVisualizations.Contains(newVisual))
+        {
+            gridVisualizations.Add(newVisual);
+
+            // Verificăm dacă primul grid din listă (cel al magazinului) este aprins.
+            // Dacă da, înseamnă că suntem în modul Build, deci aprindem și noul grid instant!
+            if (gridVisualizations.Count > 0 && gridVisualizations[0].activeSelf)
+            {
+                newVisual.SetActive(true);
+            }
+            else
+            {
+                newVisual.SetActive(false); // Altfel îl ținem ascuns până deschide meniul
+            }
+        }
+    }
+
     public void StartPlacement(int ID)
     {
         StopPlacement();
-        gridVisualization.SetActive(true);
+        ToggleGridVisuals(true);
+
+        playerInput.canInteract = false;
 
         if (ID == 0) // Podea
         {
@@ -96,8 +134,10 @@ public class PlacementSystem : MonoBehaviour
     public void StartRemoving()
     {
         StopPlacement();
-        gridVisualization.SetActive(true);
+        ToggleGridVisuals(true);
         isWallMode = false;
+
+        playerInput.canInteract = false;
 
         // ACTUALIZAT: Trimitem și segmentData, și doorData
         buildingState = new RemovingState(
@@ -156,8 +196,10 @@ public class PlacementSystem : MonoBehaviour
         if (buildingState == null)
             return;
 
-        gridVisualization.SetActive(false);
+        ToggleGridVisuals(false);
         buildingState.EndState();
+
+        playerInput.canInteract = true;
 
         // Unsubscribe de la toate evenimentele
         playerInput.OnClick -= PlaceStructure;

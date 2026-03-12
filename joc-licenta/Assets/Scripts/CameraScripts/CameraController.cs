@@ -1,4 +1,4 @@
-using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -16,11 +16,14 @@ public class CameraController : MonoBehaviour
     public float panSpeed = 20f;
     public float scrollSpeed = 20f;
     public float panBorderThickness = 5f;
+
     [Header("Auto Limits")]
-    [Tooltip("Trage aici obiectul Ground/Floor din scenă")]
-    public Renderer mapRenderer; // Referința la MeshRenderer-ul podelei
-    public bool autoCalculateLimits = true; // Bifează ca să calculeze singur
-    public Vector2 panLimit;
+    [Tooltip("Trage aici podeaua/podelele de start din scenă")]
+    public List<Renderer> mapRenderers = new List<Renderer>();
+    public bool autoCalculateLimits = true;
+
+    // NOU: O cutie limitatoare precisă (înlocuiește panLimit-ul vechi)
+    private Bounds _cameraLimits;
 
     [Header("Zoom Settings")]
     public float minY = 6f;
@@ -53,27 +56,47 @@ public class CameraController : MonoBehaviour
     void Start()
     {
         targetPosition = transform.position;
-        targetRotationY = transform.eulerAngles.y; // Inițializăm cu rotația curentă
+        targetRotationY = transform.eulerAngles.y;
 
-        if (autoCalculateLimits && mapRenderer != null)
+        // Apelăm funcția la începutul jocului
+        RecalculateLimits();
+    }
+
+    // Funcție pe care o apelăm când se deblochează o parcelă nouă
+    public void AddMapRenderer(Renderer newRenderer)
+    {
+        if (newRenderer != null && !mapRenderers.Contains(newRenderer))
         {
-            // bounds.extents returnează jumătate din mărimea totală (de la centru la margine)
-            // Exact de ce avem nevoie pentru Clamp(-x, x)
-
-            // Putem scădea o mică marjă (ex: 5 unități) ca să nu vedem chiar buza hărții
-            float margin = 2f;
-
-            panLimit.x = mapRenderer.bounds.extents.x + margin;
-            panLimit.y = mapRenderer.bounds.extents.z + margin; // Pe Z este "înălțimea" hărții top-down
-
-            Debug.Log($"[Camera] Limite setate automat la: X={panLimit.x}, Z={panLimit.y}");
-        }
-        else if (autoCalculateLimits && mapRenderer == null)
-        {
-            Debug.LogError("[Camera] Ai bifat 'Auto Calculate' dar nu ai asignat 'Map Renderer' în Inspector!");
+            mapRenderers.Add(newRenderer);
+            RecalculateLimits();
         }
     }
 
+    public void RecalculateLimits()
+    {
+        if (autoCalculateLimits && mapRenderers.Count > 0)
+        {
+            // 1. Luăm forma primei podele din listă
+            Bounds combinedBounds = mapRenderers[0].bounds;
+
+            // 2. O extindem ca să cuprindă și restul podelelor adăugate
+            for (int i = 1; i < mapRenderers.Count; i++)
+            {
+                if (mapRenderers[i] != null)
+                {
+                    combinedBounds.Encapsulate(mapRenderers[i].bounds);
+                }
+            }
+
+            // 3. Adăugăm marginea de siguranță (panBorder)
+            float margin = 5f;
+            combinedBounds.Expand(new Vector3(margin * 2, 0, margin * 2));
+
+            _cameraLimits = combinedBounds;
+
+            Debug.Log($"[Camera] Limite asimetrice recalculate! Acoperă {mapRenderers.Count} parcele.");
+        }
+    }
     void onMovemmentInput(InputAction.CallbackContext context)
     {
         currentMovementInput = context.ReadValue<Vector2>();
@@ -169,8 +192,8 @@ public class CameraController : MonoBehaviour
         }
 
         // Limitări (Clamp)
-        targetPosition.x = Mathf.Clamp(targetPosition.x, -panLimit.x, panLimit.x);
-        targetPosition.z = Mathf.Clamp(targetPosition.z, -panLimit.y, panLimit.y);
+        targetPosition.x = Mathf.Clamp(targetPosition.x, _cameraLimits.min.x, _cameraLimits.max.x);
+        targetPosition.z = Mathf.Clamp(targetPosition.z, _cameraLimits.min.z, _cameraLimits.max.z);
         targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
 
         // Aplicăm mișcarea finală

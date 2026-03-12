@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using System.Linq;
+using System.Collections.Generic;
 
 public class RemovingState : IBuldingState
 {
@@ -15,6 +15,11 @@ public class RemovingState : IBuldingState
     private ObjectDataBase dataBase;
 
     private Camera mainCamera;
+
+    // --- NOU: Sistemul profesional de Highlight ---
+    private GameObject _currentHighlightedObject;
+    private Dictionary<Renderer, bool> _highlightedRenderers = new Dictionary<Renderer, bool>();
+    private MaterialPropertyBlock _propBlock;
 
     public RemovingState(
         Grid grid,
@@ -38,113 +43,225 @@ public class RemovingState : IBuldingState
         this.doorData = doorData;
 
         this.mainCamera = Camera.main;
+        _propBlock = new MaterialPropertyBlock(); // Inițializăm filtrul de culoare
+
         previewSystem.StartShowingRemovePreview();
     }
 
     public void EndState()
     {
+        ClearHighlight();
         previewSystem.StopShowingPreview();
     }
 
     public void OnAction(Vector3Int gridPosition)
     {
+        ClearHighlight(); // Curățăm filtrul roșu înainte de ștergere!
+
         if (mainCamera == null) mainCamera = Camera.main;
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-
-        // LayerMask: Ignorăm "Placement" și "Ignore Raycast"
         int layerMask = ~LayerMask.GetMask("Placement", "Ignore Raycast");
-
         RaycastHit[] hits = Physics.RaycastAll(ray, 100f, layerMask);
 
-        // Sortăm după distanță
         System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+        int interactionLayer = LayerMask.NameToLayer("ObjectInteraction");
 
         foreach (RaycastHit hit in hits)
         {
             GameObject hitObject = hit.collider.gameObject;
 
-            // --- FIX 1: SIGURANȚĂ PENTRU GRID ---
-            // Dacă layer-ul nu e setat corect pe copii, verificăm și numele
             if (hitObject.name.Contains("gridVisualization") ||
                 hitObject.transform.root.name.Contains("gridVisualization") ||
-                hit.collider.isTrigger)
-            {
-                continue; // Ignorăm și trecem la următorul obiect (din spate)
-            }
+                hit.collider.isTrigger) continue;
 
-            Debug.Log($"Raycast a lovit valid: {hitObject.name}");
-
-            // --- 1. VERIFICARE UȘI ---
             if (doorData != null)
             {
-                // Căutăm ușa folosind poziția obiectului lovit (Centrul ușii)
-                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f);
-
-                // Fallback la punctul de impact
-                if (door == null) door = doorData.FindDoorNearPoint(hit.point, 1.0f);
-
+                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f)
+                             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
                 if (door != null)
                 {
                     RestoreResources(door.DoorID);
                     doorData.RemoveDoor(door.Position);
-                    Debug.Log("Ușă ștearsă!");
                     return;
                 }
             }
 
-            // --- 2. VERIFICARE PEREȚI ---
             if (segmentData != null)
             {
                 ProceduralWall wallScript = hitObject.GetComponentInParent<ProceduralWall>();
-
                 if (wallScript != null)
                 {
-                    // --- FIX 2: PRECIZIE ȘTERGERE ---
-                    // În loc să folosim hit.point (care e la margine), folosim transform.position
-                    // al obiectului lovit. ProceduralWall își setează pivotul exact în centru.
-                    // Astfel distanța va fi 0, și ștergerea e garantată.
-
-                    Vector3 segmentCenter = wallScript.transform.position;
-
-                    int removedCount;
-                    segmentData.RemoveSegmentsInRange(segmentCenter, 0.5f, out removedCount);
-
-                    if (removedCount > 0)
-                    {
-                        Debug.Log("Perete șters!");
-                        return;
-                    }
+                    segmentData.RemoveSegmentsInRange(wallScript.transform.position, 0.5f, out int removedCount);
+                    if (removedCount > 0) return;
                 }
             }
 
-            // --- 3. VERIFICARE MOBILĂ ---
-            Vector3Int objectGridPos = grid.WorldToCell(hit.point);
-            int furnitureID = furnitureData.GetObjectIDAt(objectGridPos);
-
-            if (furnitureID != -1)
+            // DOAR dacă e obiect interactiv căutăm baza lui (previne erorile când dai click pe podea)
+            if (hitObject.layer == interactionLayer)
             {
-                RemoveObjectAt(objectGridPos, furnitureData);
-                Debug.Log("Mobilă ștearsă!");
-                return;
-            }
-
-            // --- 4. VERIFICARE PODEA ---
-            // Dacă lovim ceva ce pare a fi podeaua (Ground, Default layer)
-            if (hitObject.name.Contains("Ground") || hitObject.layer == 0)
-            {
-                int floorID = floorData.GetObjectIDAt(objectGridPos);
-                if (floorID != -1)
+                Vector3Int posFromRoot = grid.WorldToCell(hitObject.transform.root.position);
+                if (furnitureData.GetObjectIDAt(posFromRoot) != -1)
                 {
-                    RemoveObjectAt(objectGridPos, floorData);
-                    Debug.Log("Podea ștearsă!");
+                    RemoveObjectAt(posFromRoot, furnitureData);
                     return;
                 }
+            }
 
-                // Dacă am lovit pământul și nu era podea, ne oprim.
-                break;
+            if (hitObject.name.Contains("Ground") || hitObject.layer == 0 || hitObject.name.Contains("Floor"))
+            {
+                if (floorData.GetObjectIDAt(gridPosition) != -1)
+                {
+                    RemoveObjectAt(gridPosition, floorData);
+                    return;
+                }
             }
         }
+
+        if (furnitureData.GetObjectIDAt(gridPosition) != -1)
+        {
+            RemoveObjectAt(gridPosition, furnitureData);
+            return;
+        }
+
+        if (floorData.GetObjectIDAt(gridPosition) != -1)
+        {
+            RemoveObjectAt(gridPosition, floorData);
+            return;
+        }
+    }
+
+    public void UpdateState(Vector3Int gridPosition)
+    {
+        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), false);
+
+        GameObject target = GetTargetForHighlight(gridPosition);
+        HighlightObject(target);
+    }
+
+    private GameObject GetTargetForHighlight(Vector3Int gridPosition)
+    {
+        // Dacă mouse-ul e pe UI (Butonul de Delete, meniu etc.), nu colorăm nimic
+        if (UnityEngine.EventSystems.EventSystem.current != null &&
+            UnityEngine.EventSystems.EventSystem.current.IsPointerOverGameObject())
+        {
+            return null;
+        }
+
+        if (mainCamera == null) mainCamera = Camera.main;
+
+        Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
+        int layerMask = ~LayerMask.GetMask("Placement", "Ignore Raycast");
+        RaycastHit[] hits = Physics.RaycastAll(ray, 100f, layerMask);
+        System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+
+        int interactionLayer = LayerMask.NameToLayer("ObjectInteraction");
+
+        foreach (RaycastHit hit in hits)
+        {
+            GameObject hitObject = hit.collider.gameObject;
+
+            if (hitObject.name.Contains("gridVisualization") ||
+                hitObject.transform.root.name.Contains("gridVisualization") ||
+                hit.collider.isTrigger) continue;
+
+            if (doorData != null)
+            {
+                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f)
+                             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
+                if (door != null) return hitObject;
+            }
+
+            if (segmentData != null)
+            {
+                ProceduralWall wallScript = hitObject.GetComponentInParent<ProceduralWall>();
+                if (wallScript != null) return wallScript.gameObject;
+            }
+
+            if (hitObject.layer == interactionLayer)
+            {
+                Vector3Int posFromRoot = grid.WorldToCell(hitObject.transform.root.position);
+                if (furnitureData.GetObjectIDAt(posFromRoot) != -1)
+                {
+                    int index = furnitureData.GetRepresentationIndex(posFromRoot);
+                    if (index != -1) return objectPlacer.GetPlacedObject(index);
+                }
+            }
+
+            if (hitObject.name.Contains("Ground") || hitObject.layer == 0 || hitObject.name.Contains("Floor"))
+            {
+                if (furnitureData.GetObjectIDAt(gridPosition) != -1)
+                {
+                    int index = furnitureData.GetRepresentationIndex(gridPosition);
+                    if (index != -1) return objectPlacer.GetPlacedObject(index);
+                }
+
+                if (floorData.GetObjectIDAt(gridPosition) != -1)
+                {
+                    int index = floorData.GetRepresentationIndex(gridPosition);
+                    if (index != -1) return objectPlacer.GetPlacedObject(index);
+                }
+            }
+        }
+
+        if (furnitureData.GetObjectIDAt(gridPosition) != -1)
+        {
+            int index = furnitureData.GetRepresentationIndex(gridPosition);
+            if (index != -1) return objectPlacer.GetPlacedObject(index);
+        }
+
+        if (floorData.GetObjectIDAt(gridPosition) != -1)
+        {
+            int index = floorData.GetRepresentationIndex(gridPosition);
+            if (index != -1) return objectPlacer.GetPlacedObject(index);
+        }
+
+        return null;
+    }
+
+    private void HighlightObject(GameObject obj)
+    {
+        if (_currentHighlightedObject == obj) return;
+
+        ClearHighlight();
+
+        if (obj == null) return;
+
+        _currentHighlightedObject = obj;
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+
+        foreach (Renderer r in renderers)
+        {
+            _highlightedRenderers[r] = true;
+
+            // Luăm setările curente
+            r.GetPropertyBlock(_propBlock);
+
+            // Suprascriem cu Roșu
+            _propBlock.SetColor("_Color", new Color(1f, 0.2f, 0.2f, 1f));
+            _propBlock.SetColor("_BaseColor", new Color(1f, 0.2f, 0.2f, 1f));
+
+            // Aplicăm filtrul pe obiect
+            r.SetPropertyBlock(_propBlock);
+        }
+    }
+
+    private void ClearHighlight()
+    {
+        if (_currentHighlightedObject != null)
+        {
+            foreach (Renderer r in _highlightedRenderers.Keys)
+            {
+                if (r != null)
+                {
+                    r.GetPropertyBlock(_propBlock);
+                    _propBlock.Clear(); // Eliminăm suprascrierea culorii
+                    r.SetPropertyBlock(_propBlock); // Obiectul revine automat la normal
+                }
+            }
+        }
+        _highlightedRenderers.Clear();
+        _currentHighlightedObject = null;
     }
 
     private void RemoveObjectAt(Vector3Int pos, GridData data)
@@ -173,11 +290,4 @@ public class RemovingState : IBuldingState
             }
         }
     }
-
-    public void UpdateState(Vector3Int gridPosition)
-    {
-        previewSystem.UpdatePosition(grid.CellToWorld(gridPosition), false);
-    }
-
-    public bool CheckIfSelectionIsValid(Vector3Int gridPosition) => true;
 }

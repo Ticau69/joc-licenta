@@ -14,32 +14,62 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ObjectDataBase
   objectsData:
   - <Name>k__BackingField: Floor
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 0
-    <Size>k__BackingField: {x: 1, y: 1}
+    <Category>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 604535264888599239, guid: 22b4be6421ffcbd4aa04ae14376bf60d, type: 3}
-    <Cost>k__BackingField: 100
-    <PowerConsumption>k__BackingField: 0
-  - <Name>k__BackingField: Wall
-    <ID>k__BackingField: 1
     <Size>k__BackingField: {x: 1, y: 1}
+    <Cost>k__BackingField: 100
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 0
+  - <Name>k__BackingField: Wall
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 1
+    <Category>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 5886555951527748466, guid: 57977ed4b43fa8148abfb0bd6ba175a3, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 0
   - <Name>k__BackingField: Usa
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 2
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Category>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 5785866022173266267, guid: 7e1237167c195fc4d82d24c52f71887c, type: 3}
+    <Size>k__BackingField: {x: 2, y: 1}
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 0
   - <Name>k__BackingField: Casierie
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 3
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Category>k__BackingField: 0
     <Prefab>k__BackingField: {fileID: 7650287880413670760, guid: 984e0302f1653c442addd47f1130e051, type: 3}
+    <Size>k__BackingField: {x: 2, y: 1}
     <Cost>k__BackingField: 150
     <PowerConsumption>k__BackingField: 0
-  - <Name>k__BackingField: Big_Fridge
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 0
+    <ShelfVariant>k__BackingField: 0
+  - <Name>k__BackingField: Frigider Mare
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 4
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Category>k__BackingField: 0
     <Prefab>k__BackingField: {fileID: 942758342410213492, guid: 81635eeee72d7d84d8d22bd900df7fa3, type: 3}
+    <Size>k__BackingField: {x: 2, y: 1}
     <Cost>k__BackingField: 250
     <PowerConsumption>k__BackingField: 25
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 1

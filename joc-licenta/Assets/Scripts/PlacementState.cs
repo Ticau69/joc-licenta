@@ -65,38 +65,28 @@ public class PlacementState : IBuldingState
         }
 
         Quaternion currentRotation = previewSystem.GetCurrentRotation();
-
-        // 1. Luăm poziția colțului
         Vector3 worldPosition = grid.CellToWorld(gridPosition);
 
-        // 2. --- FIX: Calculăm poziția CENTRATĂ (exact ca în PreviewSystem) ---
         Vector3 centeredPosition = new Vector3(
             worldPosition.x + (currentSize.x / 2f),
             worldPosition.y,
             worldPosition.z + (currentSize.y / 2f)
         );
-        // ---------------------------------------------------------------------
 
-        // 3. Trimitem poziția CENTRATĂ la ObjectPlacer
         int index = objectPlacer.PlaceObject(
             dataBase.objectsData[selectedObjectIndex].Prefab,
-            centeredPosition, // <--- AICI am schimbat din worldPosition în centeredPosition
+            centeredPosition,
             currentRotation);
 
         int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
-        if (consumption > 0)
+        if (consumption > 0 && PowerManager.Instance != null)
         {
-            if (PowerManager.Instance != null)
-            {
-                Debug.Log(consumption);
-                PowerManager.Instance.RegisterConsumer(consumption);
-            }
+            PowerManager.Instance.RegisterConsumer(consumption);
         }
 
-        // ... Restul codului rămâne la fel (AddObjectAt folosește gridPosition, e corect) ...
-        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
-            ? floorData
-            : furnitureData;
+        // --- REPARAT AICI: Folosim Categoria în loc de ID == 0 ---
+        bool isFloor = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
+        GridData selectedData = isFloor ? floorData : furnitureData;
 
         selectedData.AddObjectAt(
             gridPosition,
@@ -110,48 +100,38 @@ public class PlacementState : IBuldingState
             EmployeeManager.Instance.RefreshStations();
         }
 
-        // Update vizual
         previewSystem.UpdatePosition(worldPosition, false);
     }
 
     private bool CheckPlacementValidity(Vector3Int gridPosition, Vector2Int size)
     {
-        // 1. Identificăm ce fel de date folosim (Podea sau Mobilă?)
-        GridData selectedData = dataBase.objectsData[selectedObjectIndex].ID == 0
-            ? floorData
-            : furnitureData;
+        // 1. --- IDENTIFICARE TIP (Podea vs Mobilă) ---
+        bool isFloor = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
+        GridData selectedData = isFloor ? floorData : furnitureData;
 
-        // 2. Verificarea Standard: Spațiul este liber de alte obiecte de același tip?
-        // (Ex: Nu punem scaun peste scaun)
+        // 2. --- Verificarea Standard (Același layer e ocupat?) ---
         if (selectedData.canPlaceObjectAt(gridPosition, size) == false)
         {
-            return false; // E ocupat, deci invalid
+            return false;
         }
 
-        // 3. --- VERIFICARE NOUĂ: Mobila are nevoie de Podea ---
-        // Dacă obiectul curent NU este podea (deci e mobilă)
-        if (dataBase.objectsData[selectedObjectIndex].ID != 0)
+        // 3. --- VERIFICARE: Mobila are nevoie de Podea ---
+        if (!isFloor)
         {
-            // Trebuie să verificăm fiecare pătrățel pe care îl ocupă mobila
             for (int x = 0; x < size.x; x++)
             {
                 for (int y = 0; y < size.y; y++)
                 {
                     Vector3Int positionToCheck = gridPosition + new Vector3Int(x, 0, y);
 
-                    // Întrebăm floorData: "Pot plasa o podea aici?"
-                    // Dacă răspunsul este DA (true), înseamnă că e GOL -> deci NU avem podea.
-                    // Dacă răspunsul este NU (false), înseamnă că e OCUPAT -> deci AVEM podea.
-
+                    // Dacă e liber în floorData, înseamnă că lipsește podeaua!
                     if (floorData.canPlaceObjectAt(positionToCheck, Vector2Int.one) == true)
                     {
-                        // E gol pe jos (lipsă podea), deci nu putem pune mobila
                         return false;
                     }
                 }
             }
         }
-        // ------------------------------------------------------
 
         return true;
     }

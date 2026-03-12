@@ -55,11 +55,17 @@ public class UnlockManager : MonoBehaviour
     {
         Debug.Log($"[UnlockManager] Unlock at level {u.levelRequired}");
 
-        // 1. Extinderea podelei
         if (u.expandPlacementArea && placementExpander != null)
         {
             placementExpander.SetPlaneScaleXZ(u.newPlaneScaleXZ);
             Debug.Log($"[UnlockManager] Expanded placement plane to XZ={u.newPlaneScaleXZ}");
+
+            // --- NOU: Găsim camera și îi spunem să își refacă limitele! ---
+            CameraController cam = Object.FindFirstObjectByType<CameraController>();
+            if (cam != null)
+            {
+                cam.RecalculateLimits();
+            }
         }
 
         // 2. Limita de Angajați

@@ -21,6 +21,7 @@ public class PlayerInput : MonoBehaviour
     public event Action<GameObject> OnObjectClicked;
 
     private bool isMouseDown = false;
+    public bool canInteract = true;
 
     void Update()
     {
@@ -29,6 +30,7 @@ public class PlayerInput : MonoBehaviour
             // Detectăm CLICK STÂNGA
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
+
                 // 1. Verificăm dacă nu dăm click prin UI
                 if (!IsPointerOverUI())
                 {
@@ -80,7 +82,7 @@ public class PlayerInput : MonoBehaviour
         RaycastHit hit;
 
         // Tragem raza doar pe layerele de selecție (ex: Default sau Interactive)
-        if (Physics.Raycast(ray, out hit, 100, selectionLayerMask))
+        if (Physics.Raycast(ray, out hit, 100, selectionLayerMask) && canInteract == true)
         {
             Debug.Log($"[Input] Click pe: {hit.collider.name}");
 

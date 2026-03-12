@@ -4,116 +4,179 @@ using System.Collections.Generic;
 
 public class StatsUIController : MonoBehaviour
 {
-    [SerializeField] private UIDocument gameUIDoc;
-    private GameManager gameManager;
-    private ClockManager clockManager;
-    private TimeManager timeManager;
-    private BarChart barChart; // Am schimbat tipul aici
-    private Label maxValLabel; // Doar o etichetă sus e suficientă la BarChart
-    private Button statsButton;
-    private VisualElement statsPanel; // Păstrăm referința aici
-    private CircularProgress playerLevelBar;
-    private bool isStatsPanelOpen = false; // Ținem minte starea
+    [Header("Referințe Document UI")]
+    [SerializeField] private UIDocument _gameUIDoc;
 
-    // Lista cu datele pe zile
-    private List<DayData> history = new List<DayData>();
+    [Header("Setări Grafic")]
+    private const int MAX_HISTORY_DAYS = 5;
 
-    // Tracking pentru ziua curentă
-    private float lastKnownMoney;
-    private float currentDayIncome = 0;
-    private float currentDayExpense = 0;
+    // --- Componente / Manageri ---
+    private GameManager _gameManager;
+    private ClockManager _clockManager;
+    private TimeManager _timeManager;
 
-    void Start()
+    // --- Referințe UI ---
+    private BarChart _barChart;
+    private Label _maxValLabel;
+    private Button _statsButton;
+    private VisualElement _statsPanel;
+    private CircularProgress _playerLevelBar;
+
+    // --- Stare ---
+    private bool _isStatsPanelOpen = false;
+
+    // --- Date Financiare ---
+    private List<DayData> _history = new List<DayData>();
+    private float _lastKnownMoney;
+    private float _currentDayIncome = 0;
+    private float _currentDayExpense = 0;
+
+    #region Unity Lifecycle
+
+    private void Awake()
     {
-        if (gameUIDoc == null) gameUIDoc = GetComponent<UIDocument>();
-        var root = gameUIDoc.rootVisualElement;
+        // Preluăm componentele de pe același GameObject
+        _gameManager = GetComponent<GameManager>();
+        _clockManager = GetComponent<ClockManager>();
+        _timeManager = GetComponent<TimeManager>();
 
-        // Găsim BarChart-ul (asigură-te că are numele "ProfitChart" în UXML)
-        barChart = root.Q<BarChart>("ProfitChart");
-        maxValLabel = root.Q<Label>("MaxMoneyLabel"); // Folosim label-ul de sus
-        statsButton = root.Q<Button>("Stats");
-        statsPanel = root.Q<VisualElement>("StatsPanel");
-        playerLevelBar = root.Q<CircularProgress>("PlayerLevel");
+        if (_gameUIDoc == null)
+            _gameUIDoc = GetComponent<UIDocument>();
+    }
 
-        gameManager = GetComponent<GameManager>();
-        clockManager = GetComponent<ClockManager>();
-        timeManager = GetComponent<TimeManager>();
+    private void Start()
+    {
+        InitializeUI();
+        SubscribeEvents();
+        InitializeData();
+    }
 
-        if (gameManager != null && barChart != null)
+    private void OnDestroy()
+    {
+        UnsubscribeEvents();
+    }
+
+    #endregion
+
+    #region Inițializare
+
+    private void InitializeUI()
+    {
+        if (_gameUIDoc == null) return;
+
+        var root = _gameUIDoc.rootVisualElement;
+
+        _barChart = root.Q<BarChart>("ProfitChart");
+        _maxValLabel = root.Q<Label>("MaxMoneyLabel");
+        _statsButton = root.Q<Button>("Stats");
+        _statsPanel = root.Q<VisualElement>("StatsPanel");
+        _playerLevelBar = root.Q<CircularProgress>("PlayerLevel");
+
+        // Ascundem panoul la început
+        if (_statsPanel != null)
         {
-            gameManager.OnMoneyChanged += UpdateCurrentDayStats;
-
-            // Setăm referința de bani
-            lastKnownMoney = gameManager.CurrentMoney;
-
-            // --- GENERARE DATE FICTIVE PENTRU TEST ---
-            // Ca să nu arate gol la început, simulăm "ultimele 5 zile"
-            history.Clear();
-
-            // Ziua Curentă (Ziua 5) - Începe de la 0
-            history.Add(new DayData(clockManager.currentDate.ToString("dd MMM"), 0, 0));
-
-            UpdateChartDisplay();
+            _statsPanel.style.display = DisplayStyle.None;
+            _isStatsPanelOpen = false;
         }
 
-        // Buton pentru deschiderea/închiderea meniului de statistici
-        if (statsPanel != null)
+        // Conectăm butonul de toggle
+        if (_statsButton != null)
         {
-            statsPanel.style.display = DisplayStyle.None; // Îl ascundem vizual
-            isStatsPanelOpen = false; // Setăm variabila pe false
+            _statsButton.clicked += ToggleStatsPanel;
         }
 
-        if (PlayerXPManager.Instance != null)
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
         {
-            // NU abonăm UpdateXPBar direct! Folosim funcții separate (Handle)
-            PlayerXPManager.Instance.OnXpChanged += HandleXpChanged;
-            PlayerXPManager.Instance.OnLevelChanged += HandleLevelChanged;
-
-            // Forțăm o actualizare la început
-            UpdateXPBar(PlayerXPManager.Instance.Level, PlayerXPManager.Instance.XpInLevel, PlayerXPManager.Instance.XpToNext);
-        }
-
-        if (statsButton != null)
-        {
-            statsButton.clicked += () =>
-            {
-                if (statsPanel == null) return;
-
-                // Inversăm starea (True -> False, False -> True)
-                isStatsPanelOpen = !isStatsPanelOpen;
-
-                // Aplicăm vizual
-                if (isStatsPanelOpen)
-                    statsPanel.style.display = DisplayStyle.Flex;
-                else
-                    statsPanel.style.display = DisplayStyle.None;
-            };
-        }
-
-        if (timeManager != null)
-        {
-            // Dacă evenimentul tău se numește 'OnDayChanged' sau 'OnShopOpen'
-            // Folosește evenimentul care marchează ÎNCEPUTUL unei noi zile de muncă
-            timeManager.OnDayChanged += OnNewDayStarted; // <--- LINIE NOUĂ IMPORTANTA
+            eventBus.Subscribe<CloseAllUIEvent>(OnCloseAllUIReceived);
         }
     }
 
-    void OnDestroy()
+    private void SubscribeEvents()
     {
-        if (gameManager != null)
-            gameManager.OnMoneyChanged -= UpdateCurrentDayStats;
+        if (_gameManager != null) _gameManager.OnMoneyChanged += UpdateCurrentDayStats;
+        if (_timeManager != null) _timeManager.OnDayChanged += OnNewDayStarted;
 
-        if (timeManager != null)
+        if (PlayerXPManager.Instance != null)
         {
-            timeManager.OnDayChanged -= OnNewDayStarted; // <--- LINIE NOUĂ
+            PlayerXPManager.Instance.OnXpChanged += HandleXpChanged;
+            PlayerXPManager.Instance.OnLevelChanged += HandleLevelChanged;
         }
+    }
+
+    private void UnsubscribeEvents()
+    {
+        if (_gameManager != null) _gameManager.OnMoneyChanged -= UpdateCurrentDayStats;
+        if (_timeManager != null) _timeManager.OnDayChanged -= OnNewDayStarted;
 
         if (PlayerXPManager.Instance != null)
         {
             PlayerXPManager.Instance.OnXpChanged -= HandleXpChanged;
             PlayerXPManager.Instance.OnLevelChanged -= HandleLevelChanged;
         }
+
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Unsubscribe<CloseAllUIEvent>(OnCloseAllUIReceived);
+        }
     }
+
+    private void InitializeData()
+    {
+        // 1. Inițializăm banii
+        if (_gameManager != null)
+        {
+            _lastKnownMoney = _gameManager.CurrentMoney;
+        }
+
+        // 2. Simulăm ziua curentă (pentru a nu avea graficul complet gol la Play)
+        _history.Clear();
+        if (_clockManager != null)
+        {
+            _history.Add(new DayData(_clockManager.currentDate.ToString("dd MMM"), 0, 0));
+        }
+
+        UpdateChartDisplay();
+
+        // 3. Forțăm o actualizare a barei de XP la deschiderea jocului
+        if (PlayerXPManager.Instance != null)
+        {
+            UpdateXPBar(PlayerXPManager.Instance.Level, PlayerXPManager.Instance.XpInLevel, PlayerXPManager.Instance.XpToNext);
+        }
+    }
+
+    #endregion
+
+    #region Interacțiune UI
+
+    private void ToggleStatsPanel()
+    {
+        if (_statsPanel == null) return;
+
+        // Dacă panoul e închis, dar se va deschide acum, strigăm și noi să se închidă restul!
+        if (!_isStatsPanelOpen)
+        {
+            if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+            {
+                eventBus.Publish(new CloseAllUIEvent());
+            }
+        }
+
+        _isStatsPanelOpen = !_isStatsPanelOpen;
+        _statsPanel.style.display = _isStatsPanelOpen ? DisplayStyle.Flex : DisplayStyle.None;
+    }
+
+    private void OnCloseAllUIReceived(CloseAllUIEvent e)
+    {
+        // Aici FORȚĂM închiderea, nu mai folosim Toggle!
+        if (_statsPanel == null) return;
+
+        _isStatsPanelOpen = false;
+        _statsPanel.style.display = DisplayStyle.None;
+    }
+
+    #endregion
+
+    #region Logica XP
 
     private void HandleXpChanged(int oldXp, int newXp, int xpToNext)
     {
@@ -128,85 +191,88 @@ public class StatsUIController : MonoBehaviour
         UpdateXPBar(newLevel, currentXp, targetXp);
     }
 
-    // Funcția finală care doar desenează UI-ul
     private void UpdateXPBar(int levelToShow, int currentXp, int targetXp)
     {
-        if (playerLevelBar == null) return;
+        if (_playerLevelBar == null) return;
 
-        // Calculăm la sută (folosim float ca să nu dea erori de rotunjire)
         float progressPercentage = ((float)currentXp / targetXp) * 100f;
-
-        // Desenăm cercul
-        playerLevelBar.Progress = progressPercentage;
-
-        // AICI scriem textul! Acum va fi mereu 'levelToShow'
-        playerLevelBar.CenterText = levelToShow.ToString();
+        _playerLevelBar.Progress = progressPercentage;
+        _playerLevelBar.CenterText = levelToShow.ToString();
     }
 
-    // Se apelează la fiecare tranzacție
+    #endregion
+
+    #region Logica Financiară / Grafic
+
+    // Se apelează la fiecare tranzacție (OnMoneyChanged)
     private void UpdateCurrentDayStats()
     {
-        float currentMoney = gameManager.CurrentMoney;
-        float diff = currentMoney - lastKnownMoney;
+        float currentMoney = _gameManager.CurrentMoney;
+        float diff = currentMoney - _lastKnownMoney;
 
-        // Identificăm dacă e venit sau cheltuială
         if (diff > 0)
         {
-            currentDayIncome += diff;
+            _currentDayIncome += diff;
         }
         else if (diff < 0)
         {
-            currentDayExpense += Mathf.Abs(diff);
+            _currentDayExpense += Mathf.Abs(diff);
         }
 
-        lastKnownMoney = currentMoney;
+        _lastKnownMoney = currentMoney;
 
-        // Actualizăm ULTIMA intrare din listă (Ziua Curentă)
-        int lastIndex = history.Count - 1;
-        string currentDateLabel = history[lastIndex].DateLabel;
-        history[lastIndex] = new DayData(currentDateLabel, currentDayIncome, currentDayExpense);
+        // Suprascriem datele pentru ultima zi din listă
+        int lastIndex = _history.Count - 1;
+        if (lastIndex >= 0)
+        {
+            string currentDateLabel = _history[lastIndex].DateLabel;
+            _history[lastIndex] = new DayData(currentDateLabel, _currentDayIncome, _currentDayExpense);
+        }
 
         UpdateChartDisplay();
     }
 
-    // Funcție opțională: Când se termină ziua în joc (TimeManager.OnDayChanged)
-    // Poți apela asta ca să începi o bară nouă curată
+    // Se apelează când se schimbă ziua în joc (OnDayChanged)
     public void OnNewDayStarted()
     {
-        // Resetăm tracker-ul zilnic
-        currentDayIncome = 0;
-        currentDayExpense = 0;
+        _currentDayIncome = 0;
+        _currentDayExpense = 0;
 
-        // --- FIX AICI ---
-        // Nu citim clockManager.currentDate (care e posibil să fie veche).
-        // Calculăm data direct pe baza numărului zilei curente.
+        // Calculăm data reală a noii zile
+        int daysPassed = _timeManager.CurrentDay - 1;
+        System.DateTime newDate = _clockManager.startDate.AddDays(daysPassed);
 
-        int daysPassed = timeManager.CurrentDay - 1;
-        System.DateTime newDate = clockManager.startDate.AddDays(daysPassed);
+        // Adăugăm o bară nouă, proaspătă, la începutul zilei
+        _history.Add(new DayData(newDate.ToString("dd MMM"), 0, 0));
 
-        // Folosim data calculată proaspăt
-        history.Add(new DayData(newDate.ToString("dd MMM"), 0, 0));
-
-        // Dacă lista e prea lungă, ștergem ziua cea mai veche
-        if (history.Count > 5) history.RemoveAt(0);
+        // Păstrăm doar ultimile zile configurate
+        if (_history.Count > MAX_HISTORY_DAYS)
+        {
+            _history.RemoveAt(0);
+        }
 
         UpdateChartDisplay();
     }
 
     private void UpdateChartDisplay()
     {
-        if (barChart == null) return;
+        if (_barChart == null) return;
 
-        // Trimitem datele la grafic
-        barChart.SetData(history);
+        _barChart.SetData(_history);
 
-        // Actualizăm Label-ul de sus cu cea mai mare valoare (pentru scară)
+        // Aflăm cea mai mare valoare pentru a scrie limita sus pe grafic
         float maxVal = 0;
-        foreach (var d in history)
+        foreach (var d in _history)
         {
             if (d.Income > maxVal) maxVal = d.Income;
             if (d.Expense > maxVal) maxVal = d.Expense;
         }
-        if (maxValLabel != null) maxValLabel.text = maxVal.ToString("0") + " RON";
+
+        if (_maxValLabel != null)
+        {
+            _maxValLabel.text = maxVal.ToString("0") + " RON";
+        }
     }
+
+    #endregion
 }
