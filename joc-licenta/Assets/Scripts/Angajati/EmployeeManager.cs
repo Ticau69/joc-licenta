@@ -9,7 +9,8 @@ public class EmployeeManager : MonoBehaviour
 
     #region Configuration
     [Header("Settings")]
-    [SerializeField] private GameObject employeePrefab;
+    [SerializeField] private List<GameObject> malePrefabs = new List<GameObject>();
+    [SerializeField] private List<GameObject> femalePrefabs = new List<GameObject>();
     [SerializeField] private Transform spawnPoint;
     [SerializeField] private int maxEmployees = 10;
     #endregion
@@ -93,7 +94,7 @@ public class EmployeeManager : MonoBehaviour
     #endregion
 
     #region Public Methods - Employee Management
-    public Employee HireEmployee(string name)
+    public Employee HireEmployee(string name, EmployeeGender gender)
     {
         if (!CanHireMoreEmployees())
         {
@@ -101,7 +102,7 @@ public class EmployeeManager : MonoBehaviour
             return null;
         }
 
-        Employee newEmployee = CreateEmployee(name);
+        Employee newEmployee = CreateEmployee(name, gender);
 
         if (newEmployee != null)
         {
@@ -151,9 +152,23 @@ public class EmployeeManager : MonoBehaviour
         return allEmployees.Count < maxEmployees;
     }
 
-    private Employee CreateEmployee(string name)
+    private Employee CreateEmployee(string name, EmployeeGender gender)
     {
-        GameObject newObj = Instantiate(employeePrefab, spawnPoint.position, Quaternion.identity);
+        // 1. Alegem lista corectă de prefabs
+        List<GameObject> targetList = (gender == EmployeeGender.Male) ? malePrefabs : femalePrefabs;
+
+        // Siguranță: Verificăm dacă ai pus modele în Inspector
+        if (targetList == null || targetList.Count == 0)
+        {
+            Debug.LogError($"[EmployeeManager] Nu ai setat niciun prefab pentru genul {gender} în Inspector!");
+            return null;
+        }
+
+        // 2. Alegem un model la întâmplare din acea listă (dacă ai mai multe variante de tricouri, fețe etc.)
+        GameObject selectedPrefab = targetList[Random.Range(0, targetList.Count)];
+
+        // 3. Instanțiem
+        GameObject newObj = Instantiate(selectedPrefab, spawnPoint.position, Quaternion.identity);
         newObj.name = $"Employee_{name}";
 
         Employee script = newObj.GetComponent<Employee>();
@@ -161,6 +176,8 @@ public class EmployeeManager : MonoBehaviour
         {
             script.employeeName = name;
             script.role = EmployeeRole.None;
+            // Opțional, poți salva și genul în scriptul Employee dacă vrei să-l folosești mai târziu
+            // script.gender = gender; 
         }
         else
         {
@@ -299,4 +316,10 @@ public class EmployeeManager : MonoBehaviour
     public int MaxEmployeeCount => maxEmployees;
     public List<Employee> AllEmployees => new List<Employee>(allEmployees); // Return copy for safety
     #endregion
+}
+
+public enum EmployeeGender
+{
+    Male,
+    Female
 }

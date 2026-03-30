@@ -38,12 +38,17 @@ public class CustomerAI : MonoBehaviour
     [SerializeField] private float cashierDetectRadius = 1.5f;
     [SerializeField] private float checkoutCooldown = 0.25f; // Pauza între clienți
 
+    [Header("Emotes / Feedback Vizual")]
+    [SerializeField] private SpriteRenderer emoteRenderer;
+    [SerializeField] private Sprite angryPriceSprite;
+
     // --- ADAUGĂ ASTA ---
     [SerializeField] private float checkoutDuration = 2.0f; // Cât durează plata efectivă
     private bool _isProcessing = false;
 
     private NavMeshAgent _agent;
     private Transform _exitPoint;
+    private Animator _animator;
     private WorkStationRegistry _registry;
     private IEventBus _eventBus;
 
@@ -75,6 +80,7 @@ public class CustomerAI : MonoBehaviour
     private void Awake()
     {
         _agent = GetComponent<NavMeshAgent>();
+        _animator = GetComponent<Animator>();
     }
 
     public void Initialize(WorkStationRegistry registry, Transform exitPoint, int startingBudget)
@@ -126,6 +132,88 @@ public class CustomerAI : MonoBehaviour
                     Destroy(gameObject);
                 break;
         }
+        UpdateAnimations();
+    }
+
+    private void UpdateAnimations()
+    {
+        if (_animator == null) return;
+
+        // 1. ANIMAȚIA DE MERS (Se bazează automat pe viteza agentului)
+        bool isMoving = _agent.velocity.magnitude > 0.1f;
+        _animator.SetBool("isWalking", isMoving);
+
+        // 2. ANIMAȚII DE STARE
+        // REPARAȚIA: Folosim "State.NumeStare", nu variabila!
+        switch (currentState)
+        {
+            case State.TakingProduct:
+                // Când este la raft și ia produsul
+                _animator.SetBool("isGrabbing", true);
+                _animator.SetBool("isRethinking", false);
+                break;
+
+            case State.Idle:
+                // Când stă degeaba sau se gândește
+                _animator.SetBool("isGrabbing", false);
+                _animator.SetBool("isRethinking", true);
+                break;
+
+            case State.GoingToShelf:
+            case State.GoingToRegister:
+            case State.InQueue:
+            case State.Leaving:
+                // Pentru toate celelalte stări (deplasare sau așteptare), oprim acțiunile mâinilor
+                _animator.SetBool("isGrabbing", false);
+                _animator.SetBool("isRethinking", false);
+                break;
+        }
+    }
+
+    private void ShowAngryEmote()
+    {
+        if (emoteRenderer == null)
+        {
+            Debug.LogWarning($"[CustomerAI] {name} nu are emoteRenderer asignat!");
+            return;
+        }
+
+        // Opțional: setăm sprite-ul specific (în caz că pe viitor vei avea și emote-uri de fericire)
+        if (angryPriceSprite != null)
+        {
+            emoteRenderer.sprite = angryPriceSprite;
+        }
+
+        // Oprim orice altă animație veche și o pornim pe cea nouă
+        StopAllCoroutines();
+        StartCoroutine(AnimateEmoteRoutine());
+    }
+
+    private IEnumerator AnimateEmoteRoutine()
+    {
+        // 1. Aprindem iconița
+        emoteRenderer.enabled = true;
+        Transform emoteTransform = emoteRenderer.transform;
+
+        // 2. Animație de "Pop-up" (Mărire de la 0 la 1 pentru un efect de "Juice")
+        float popDuration = 0.2f;
+        float elapsed = 0f;
+        Vector3 finalScale = new Vector3(1f, 1f, 1f); // Ajustează dacă iconița ta trebuie să fie mai mică (ex: 0.5f)
+
+        while (elapsed < popDuration)
+        {
+            elapsed += Time.deltaTime;
+            // Lerp face tranziția fluidă între mărimea 0 și mărimea normală
+            emoteTransform.localScale = Vector3.Lerp(Vector3.zero, finalScale, elapsed / popDuration);
+            yield return null;
+        }
+        emoteTransform.localScale = finalScale; // Ne asigurăm că ajunge exact la mărimea finală
+
+        // 3. Lăsăm iconița pe ecran 2.5 secunde ca jucătorul să o observe
+        yield return new WaitForSeconds(2.5f);
+
+        // 4. Stingem iconița (Clientul și-a vărsat nervii și pleacă)
+        emoteRenderer.enabled = false;
     }
 
     // =========================================================================
@@ -287,6 +375,18 @@ public class CustomerAI : MonoBehaviour
         GoNextItemOrCheckout();
     }
 
+    private float GetFairPrice(ProductType productType)
+    {
+        bool hasInflation = ServiceLocator.Instance.TryGet(out InflationManager inflationManager);
+        float currentInflation = hasInflation ? inflationManager.CurrentInflation : 1.0f;
+
+        if (ProductDataBase.Instance != null && ProductDataBase.Instance.TryGetSellPrice(productType, out float basePrice))
+        {
+            return basePrice * currentInflation;
+        }
+        return 10f; // Fallback
+    }
+
     private void TryTakeFromShelf()
     {
         if (_targetShelf == null)
@@ -307,29 +407,57 @@ public class CustomerAI : MonoBehaviour
             return;
         }
 
-        // --- NOU: LOGICA DE BUGET ---
         int unitPrice = GetProductUnitPrice(item.product);
 
-        // Câte bucăți își permite din acest produs? (Dacă ai 15 lei și costă 10, își permite 1.5 -> adică 1 bucată)
-        int affordableAmount = Mathf.FloorToInt((float)_budget / unitPrice);
+        float fairPrice = GetFairPrice(item.product);
+        float markupRatio = (float)unitPrice / fairPrice;
 
-        // Vrea să ia cantitatea de pe listă, dar nu mai mult decât își permite
+        float buyChance = 1.0f;
+
+        // Dacă jucătorul a scumpit produsul cu peste 20% (markup > 1.2f)
+        if (markupRatio > 1.0f)
+        {
+            // Formula: Pentru fiecare 1% adăugat la preț, scade 1% din șansă.
+            // Ex: markup 1.5 (150% din preț) -> buyChance devine 1.0 - 0.5 = 0.5 (50%)
+            buyChance = 1.0f - (markupRatio - 1.0f);
+
+            // Limităm șansa conform cerinței tale: Minim 5% (0.05f), Maxim 100% (1.0f)
+            buyChance = Mathf.Clamp(buyChance, 0.05f, 1.0f);
+        }
+
+        if (UnityEngine.Random.value > buyChance)
+        {
+            Debug.Log($"[CustomerAI] {name} refuză {item.product} pentru că e prea scump! (Șansa calculată de a cumpăra era: {buyChance * 100:F0}%)");
+
+            // Trimitem semnalul către inventar pentru alertă
+            if (_eventBus != null) _eventBus.Publish(new ProductPricedTooHighEvent(item.product));
+
+            // Arătăm iconița supărată
+            ShowAngryEmote();
+
+            _currentIndex++;
+            GoNextItemOrCheckout();
+            return; // Pleacă direct
+        }
+
+        // --- 2. VERIFICAREA DE BUGET (Sistemul tău existent) ---
+        int affordableAmount = Mathf.FloorToInt((float)_budget / unitPrice);
         int desiredAmount = Mathf.Min(item.amount, affordableAmount);
 
         if (desiredAmount <= 0)
         {
+            // Dacă a ajuns aici, prețul era ok (sau l-a tolerat), dar pur și simplu nu are bani.
             Debug.Log($"[CustomerAI] {name} - Nu am bani de {item.product}! Costă {unitPrice} dar mai am doar {_budget}. Sar peste.");
             _currentIndex++;
             GoNextItemOrCheckout();
-            return; // iese din funcție și trece la produsul următor
+            return;
         }
 
-        // Ia produsul efectiv de pe raft
+        // --- 3. CUMPĂRAREA EFECTIVĂ ---
         int taken = _targetShelf.TakeProduct(desiredAmount);
 
         if (taken > 0)
         {
-            // Scade banii din buget
             int cost = taken * unitPrice;
             _budget -= cost;
 
@@ -344,15 +472,14 @@ public class CustomerAI : MonoBehaviour
             Debug.Log($"[CustomerAI] {name} - Am luat {taken}x {item.product} (Cost: {cost} RON). Buget rămas: {_budget} RON");
         }
 
-        // --- NOU: Verificare finală de bani ---
         if (_budget <= 0)
         {
             Debug.Log($"[CustomerAI] {name} - Am rămas falit! Abandonez restul listei și merg direct la casă.");
-            _currentIndex = _list.Count; // Setând indexul la capăt, `GoNextItemOrCheckout` îl va trimite la checkout
+            _currentIndex = _list.Count;
         }
         else
         {
-            _currentIndex++; // Altfel, trece la următorul item normal
+            _currentIndex++;
         }
 
         GoNextItemOrCheckout();

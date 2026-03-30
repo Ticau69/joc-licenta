@@ -141,7 +141,7 @@ public class PreviewSystem : MonoBehaviour
         }
     }
 
-    private void PreparePreviewObject(GameObject previewObject)
+    public void PreparePreviewObject(GameObject previewObject)
     {
         Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>();
         foreach (Renderer renderer in renderers)
@@ -182,6 +182,25 @@ public class PreviewSystem : MonoBehaviour
 
         c.a = 0.5f;
         cellIndicatorRenderer.material.color = c;
+    }
+
+    public void ApplyFeedbackToObject(GameObject obj, bool validity)
+    {
+        Color c = validity ? Color.white : Color.red;
+        c.a = 0.5f;
+
+        // Modificăm culoarea pe instanța materialului de pe obiect
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+        foreach (var r in renderers)
+        {
+            // Materialele au fost deja înlocuite cu previewMaterialInstance în PrepareAsPreview
+            // Deci putem folosi MaterialPropertyBlock fără să creăm materiale noi
+            MaterialPropertyBlock block = new MaterialPropertyBlock();
+            r.GetPropertyBlock(block);
+            block.SetColor("_BaseColor", c);
+            block.SetColor("_Color", c);
+            r.SetPropertyBlock(block);
+        }
     }
 
     private void MoveCursor(Vector3 position)

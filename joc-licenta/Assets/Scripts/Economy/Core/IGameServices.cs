@@ -45,12 +45,16 @@ public interface IShopService
 /// </summary>
 public interface IInventoryService
 {
-    WorkStation MainStorage { get; }
+    int GetTotalCapacity();
+    int GetUsedCapacity();
+    int GetAvailableCapacity();
     int GetStock(ProductType type);
     bool HasStock(ProductType type, int minimumAmount = 1);
     void AddStock(ProductType type, int amount);           // ← NOU
     bool TryRemoveStock(ProductType type, int amount);     // ← NOU
     void ForceRefreshCache();                              // ← NOU
+    StorageRacks FindRackWithProduct(ProductType type);
+    StorageRacks FindRackWithSpace(ProductType type);
     event Action<ProductType, int> OnStockChanged;
 }
 

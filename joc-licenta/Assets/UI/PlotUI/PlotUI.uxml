@@ -1,0 +1,10 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Image source="project://database/Assets/UI/Photos/Sprite-0001.png?fileID=21300000&amp;guid=b29a1f0003ad3004abe427cd3afc52d8&amp;type=3#Sprite-0001" name="Background" style="width: 100%; height: 100%; position: absolute;">
+        <ui:Label text="Plot name" name="PlotText" style="width: auto; height: auto; top: 34px; right: auto; align-self: center; color: rgb(255, 255, 255);"/>
+        <ui:VisualElement style="flex-grow: 1; align-self: center; height: 31%; width: 72%; top: 32px; justify-content: flex-start; position: relative; border-top-width: 2px; border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); max-height: 43%; align-items: center;">
+            <ui:Label text="PlotCost" name="PlotSize" style="color: rgb(255, 255, 255);"/>
+            <ui:Label text="PlotCost" name="PlotCost" style="color: rgb(255, 255, 255);"/>
+        </ui:VisualElement>
+        <ui:Button text="BUY" name="BuyButton" style="position: relative; align-self: center; bottom: auto; top: 34px; background-color: rgb(55, 199, 83); -unity-font-style: bold; -unity-text-outline-width: 0; -unity-text-outline-color: rgb(0, 0, 0); color: rgb(255, 255, 255); -unity-text-generator: standard; border-top-left-radius: 9px; border-top-right-radius: 9px; border-bottom-right-radius: 9px; border-bottom-left-radius: 9px;"/>
+    </ui:Image>
+</ui:UXML>

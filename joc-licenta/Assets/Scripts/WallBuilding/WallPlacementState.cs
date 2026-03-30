@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using UnityEngine.InputSystem;
 
 public class WallPlacementState : IBuldingState
 {
@@ -12,8 +13,10 @@ public class WallPlacementState : IBuldingState
     private GameManager gameManager;
     private PlayerInput playerInput;
     private WallGridData wallData;
-    private WallSegmentData segmentData; // NOU: Sistemul cu segmente
-    private Shader previewShader;
+    private WallSegmentData segmentData;
+    private ToolTipController toolTip;
+    private Material previewMaterialInstance;
+    private bool lastValidState = false;
 
     // Sistema multi-segment
     private List<Vector3> wallPoints = new List<Vector3>();
@@ -22,6 +25,7 @@ public class WallPlacementState : IBuldingState
 
     private GameObject currentSegmentPreview;
     private bool isPlacingWall = false;
+    private bool isFinalizingFromDoubleClick = false;
 
     // Prefabs și referințe
     private GameObject wallPrefab;
@@ -37,7 +41,9 @@ public class WallPlacementState : IBuldingState
         PlayerInput input,
         WallGridData wallData,
         WallSegmentData segmentData,
-        Shader shader) // NOU
+        Material previewMaterial,
+        ToolTipController toolTip
+        ) // NOU
     {
         this.ID = iD;
         this.grid = grid;
@@ -48,8 +54,9 @@ public class WallPlacementState : IBuldingState
         this.playerInput = input;
         this.wallData = wallData;
         this.segmentData = segmentData;
-        this.previewShader = shader; // NOU
+        this.toolTip = toolTip;
 
+        previewMaterialInstance = new Material(previewMaterial);
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
 
         if (selectedObjectIndex > -1)
@@ -68,6 +75,12 @@ public class WallPlacementState : IBuldingState
 
     public void EndState()
     {
+        if (toolTip != null)
+            toolTip.HidePlacementInfo();
+
+        if (previewMaterialInstance != null)
+            GameObject.Destroy(previewMaterialInstance);
+
         CleanupAll();
         previewSystem.ToggleCursorVisibility(false);
     }
@@ -76,7 +89,7 @@ public class WallPlacementState : IBuldingState
     {
         Vector3 mousePos = playerInput.GetSelectedMapPostion();
         Vector3 snapPoint = SnapToGridCorner(mousePos);
-
+        if (isFinalizingFromDoubleClick) return;
         if (!isPlacingWall)
         {
             StartNewWallChain(snapPoint);
@@ -115,6 +128,7 @@ public class WallPlacementState : IBuldingState
             UpdateCurrentSegmentPreview(snappedMousePos);
         }
     }
+
 
     private void StartNewWallChain(Vector3 startPoint)
     {
@@ -167,7 +181,15 @@ public class WallPlacementState : IBuldingState
             return;
         }
 
-        int totalCost = (wallPoints.Count - 1) * dataBase.objectsData[selectedObjectIndex].Cost;
+        float cellSize = grid.cellSize.x;
+        int totalCost = 0;
+
+        for (int i = 0; i < wallPoints.Count - 1; i++)
+        {
+            float length = Vector3.Distance(wallPoints[i], wallPoints[i + 1]);
+            int cellCount = Mathf.CeilToInt(length / cellSize);
+            totalCost += cellCount * dataBase.objectsData[selectedObjectIndex].Cost;
+        }
 
         if (gameManager.CurrentMoney < totalCost)
         {
@@ -200,7 +222,12 @@ public class WallPlacementState : IBuldingState
         if (!wallData.CanPlaceWall(start, end))
             return false;
 
-        if (!gameManager.TrySpendMoney(dataBase.objectsData[selectedObjectIndex].Cost))
+        float length = Vector3.Distance(start, end);
+        float cellSize = grid.cellSize.x;
+        int cellCount = Mathf.CeilToInt(length / cellSize);
+        int totalCost = cellCount * dataBase.objectsData[selectedObjectIndex].Cost;
+
+        if (!gameManager.TrySpendMoney(totalCost))
             return false;
 
         // NOU: Folosim sistemul cu segmente în loc să creăm un singur perete
@@ -303,6 +330,13 @@ public class WallPlacementState : IBuldingState
         }
     }
 
+    public void ForceFinalize()
+    {
+        isFinalizingFromDoubleClick = true;
+        FinalizePlacement();
+        isFinalizingFromDoubleClick = false;
+    }
+
     private void CleanupAll()
     {
         CleanupPreviews();
@@ -328,6 +362,13 @@ public class WallPlacementState : IBuldingState
             bool hasEnoughMoney = gameManager.CurrentMoney >= dataBase.objectsData[selectedObjectIndex].Cost;
             ApplyPreviewMaterial(currentSegmentPreview, hasEnoughMoney, 0.3f);
         }
+
+        if (toolTip != null)
+        {
+            Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
+            int cost = dataBase.objectsData[selectedObjectIndex].Cost;
+            toolTip.ShowPlacementInfo($"Click pentru a începe\nCost/celulă: {cost}$", mouseScreenPos);
+        }
     }
 
     private void UpdateCurrentSegmentPreview(Vector3 currentMousePos)
@@ -346,9 +387,9 @@ public class WallPlacementState : IBuldingState
         if (distance < 0.01f)
         {
             if (currentSegmentPreview != null)
-            {
                 currentSegmentPreview.SetActive(false);
-            }
+
+            toolTip?.HidePlacementInfo();
             return;
         }
 
@@ -378,6 +419,49 @@ public class WallPlacementState : IBuldingState
         {
             UpdateCornerIndicatorColor(cornerIndicators[0], Color.green);
         }
+        UpdateCostTooltip(lastPoint, currentMousePos);
+    }
+
+    private void UpdateCostTooltip(Vector3 from, Vector3 to)
+    {
+        if (toolTip == null) return;
+
+        Vector2 mouseScreenPos = Mouse.current.position.ReadValue();
+
+        float cellSize = grid.cellSize.x;
+        int costPerCell = dataBase.objectsData[selectedObjectIndex].Cost;
+
+        // Costul segmentelor deja confirmate (wallPoints)
+        int totalCells = 0;
+        for (int i = 0; i < wallPoints.Count - 1; i++)
+        {
+            float segLength = Vector3.Distance(wallPoints[i], wallPoints[i + 1]);
+            totalCells += Mathf.CeilToInt(segLength / cellSize);
+        }
+
+        // Adăugăm segmentul curent (cel care se întinde până la cursor)
+        float currentLength = Vector3.Distance(from, to);
+        int currentCells = Mathf.CeilToInt(currentLength / cellSize);
+        totalCells += currentCells;
+
+        int totalCost = totalCells * costPerCell;
+        bool canAfford = gameManager.CurrentMoney >= totalCost;
+
+        // Separăm costul existent de cel curent pentru claritate
+        int confirmedCost = (totalCells - currentCells) * costPerCell;
+        int currentCost = currentCells * costPerCell;
+
+        string info = wallPoints.Count > 1
+            ? $"Segment curent: {currentCost}RON\n" +
+              $"Segmente anterioare: {confirmedCost}RON\n" +
+              $"Total: {totalCost}RON"
+            : $"Lungime: {currentCells} celule\n" +
+              $"Cost: {totalCost}RON";
+
+        if (!canAfford)
+            info += "\n<color=red>Fonduri insuficiente!</color>";
+
+        toolTip.ShowPlacementInfo(info, mouseScreenPos);
     }
 
     private void CreateSegmentPreview(Vector3 start, Vector3 end, bool isConfirmed)
@@ -441,17 +525,9 @@ public class WallPlacementState : IBuldingState
         cornerIndicatorPrefab = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         cornerIndicatorPrefab.transform.localScale = Vector3.one * 0.2f;
 
+        // Folosim direct materialul valid ca bază
         Renderer renderer = cornerIndicatorPrefab.GetComponent<Renderer>();
-        Material mat = new Material(previewShader);
-        mat.SetFloat("_Mode", 3);
-        mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-        mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-        mat.SetInt("_ZWrite", 0);
-        mat.DisableKeyword("_ALPHATEST_ON");
-        mat.EnableKeyword("_ALPHABLEND_ON");
-        mat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-        mat.renderQueue = 3000;
-        renderer.material = mat;
+        renderer.sharedMaterial = previewMaterialInstance;
 
         GameObject.Destroy(cornerIndicatorPrefab.GetComponent<Collider>());
         cornerIndicatorPrefab.SetActive(false);
@@ -460,8 +536,11 @@ public class WallPlacementState : IBuldingState
     private Vector3 SnapToGridCorner(Vector3 worldPos)
     {
         float cellSize = grid.cellSize.x;
-        float snappedX = Mathf.Round(worldPos.x / cellSize) * cellSize;
-        float snappedZ = Mathf.Round(worldPos.z / cellSize) * cellSize;
+        Vector3 gridOrigin = grid.transform.position;
+
+        float snappedX = Mathf.Round((worldPos.x - gridOrigin.x) / cellSize) * cellSize + gridOrigin.x;
+        float snappedZ = Mathf.Round((worldPos.z - gridOrigin.z) / cellSize) * cellSize + gridOrigin.z;
+
         return new Vector3(snappedX, 0, snappedZ);
     }
 
@@ -485,38 +564,30 @@ public class WallPlacementState : IBuldingState
         float distance = Vector3.Distance(start, end);
         if (distance < 0.1f) return false;
         if (!wallData.CanPlaceWall(start, end)) return false;
-        if (gameManager.CurrentMoney < dataBase.objectsData[selectedObjectIndex].Cost) return false;
+
+        float cellSize = grid.cellSize.x;
+        int cellCount = Mathf.CeilToInt(distance / cellSize);
+        int cost = cellCount * dataBase.objectsData[selectedObjectIndex].Cost;
+        if (gameManager.CurrentMoney < cost) return false;
+
         return true;
     }
 
-    private void ApplyPreviewMaterial(GameObject wallObj, bool isValid, float alpha = 0.5f)
+    private void ApplyPreviewMaterial(GameObject obj, bool isValid, float alpha = 0.5f)
     {
-        ProceduralWall pWall = wallObj.GetComponent<ProceduralWall>();
-        if (pWall != null)
+        Color color = isValid ? Color.white : Color.red;
+        color.a = alpha;
+
+        // Actualizăm culoarea doar dacă s-a schimbat starea
+        if (isValid != lastValidState)
         {
-            Material currentMat = pWall.GetMaterial();
-            if (currentMat != null)
-            {
-                Material previewMat = new Material(currentMat);
-                Color color = isValid ? Color.white : Color.red;
-                color.a = alpha;
-
-                if (previewMat.HasProperty("_Color"))
-                {
-                    previewMat.color = color;
-                }
-
-                previewMat.SetFloat("_Mode", 3);
-                previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                previewMat.SetInt("_ZWrite", 0);
-                previewMat.DisableKeyword("_ALPHATEST_ON");
-                previewMat.EnableKeyword("_ALPHABLEND_ON");
-                previewMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                previewMat.renderQueue = 3000;
-
-                pWall.SetMaterial(previewMat);
-            }
+            lastValidState = isValid;
+            previewMaterialInstance.color = color;
         }
+
+        // Aplicăm ÎNTOTDEAUNA materialul pe obiect (poate fi un obiect nou)
+        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
+        foreach (var r in renderers)
+            r.sharedMaterial = previewMaterialInstance;
     }
 }

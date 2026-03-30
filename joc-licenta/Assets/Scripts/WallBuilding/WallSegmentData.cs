@@ -2,111 +2,437 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-/// <summary>
-/// Sistem nou care stochează pereții ca segmente independente
-/// Permite ștergerea selectivă pentru uși/ferestre
-/// </summary>
 public class WallSegmentData
 {
-    // Dicționar: Cheie = Segment ID, Valoare = Date segment
+    // Segmente logice (pentru detectie usa/fereastra)
     private Dictionary<string, WallSegment> segments = new();
 
-    // Referință către toate GameObject-urile create
+    // Combined wall GameObjects (un singur GO per perete plasat)
     private Dictionary<string, GameObject> segmentObjects = new();
 
-    // Setări
-    private float segmentLength = 1f; // Lungimea unui segment (0.5m)
+    // Mapping bidirecțional: seg_key → wall_key și wall_key → lista seg_keys
+    private Dictionary<string, string> segmentToWallKey = new();
+    private Dictionary<string, List<string>> wallToSegmentKeys = new();
+
+    // Copie a datelor segmentelor pentru rebuild după ștergere
+    private Dictionary<string, WallSegment> allSegmentsData = new();
+
+    // Materialul per wall (necesar pentru rebuild)
+    private Dictionary<string, Material> wallMaterials = new();
+
+    private float segmentLength = 1f;
 
     public WallSegmentData(float segmentSize = 1f)
     {
         this.segmentLength = segmentSize;
     }
 
-    /// <summary>
-    /// Adaugă un perete și îl împarte automat în segmente
-    /// </summary>
     public void AddWall(Vector3 startPos, Vector3 endPos, int wallID, GameObject wallPrefab, Material wallMaterial)
     {
         float totalLength = Vector3.Distance(startPos, endPos);
         Vector3 direction = (endPos - startPos).normalized;
 
-        // Calculăm numărul de segmente necesare
-        int segmentCount = Mathf.CeilToInt(totalLength / segmentLength);
-        float actualSegmentLength = totalLength / segmentCount; // Ajustăm pentru distribuție uniformă
+        int segmentCount = Mathf.CeilToInt(totalLength / 1f);
+        float actualSegmentLength = totalLength / segmentCount;
 
-        // Creăm fiecare segment
+        string wallKey = $"wall_{wallID}_{startPos.x:F2}_{startPos.z:F2}";
+
+        List<string> segmentKeysForThisWall = new List<string>();
+        List<MeshFilter> tempMeshFilters = new List<MeshFilter>();
+        List<GameObject> tempObjects = new List<GameObject>();
+
         for (int i = 0; i < segmentCount; i++)
         {
             Vector3 segStart = startPos + direction * (i * actualSegmentLength);
             Vector3 segEnd = startPos + direction * ((i + 1) * actualSegmentLength);
 
             string segmentKey = GenerateSegmentKey(segStart, segEnd);
+            if (segments.ContainsKey(segmentKey)) continue;
 
-            // Verificăm dacă există deja
-            if (segments.ContainsKey(segmentKey))
-            {
-                Debug.LogWarning($"Segment deja existent: {segmentKey}");
-                continue;
-            }
-
-            // Creăm segmentul
             WallSegment segment = new WallSegment(segStart, segEnd, wallID, i, segmentCount);
             segments[segmentKey] = segment;
+            allSegmentsData[segmentKey] = segment;
 
-            // Creăm GameObject-ul vizual
-            GameObject segmentObj = CreateSegmentObject(segStart, segEnd, wallPrefab, wallMaterial);
-            segmentObj.name = $"WallSegment_{segments.Count}_{i}";
-            segmentObjects[segmentKey] = segmentObj;
+            segmentToWallKey[segmentKey] = wallKey;
+            segmentKeysForThisWall.Add(segmentKey);
 
-            Debug.Log($"Segment creat: {segmentKey} ({i + 1}/{segmentCount})");
+            GameObject tempObj = CreateTempSegmentObject(segStart, segEnd, wallMaterial);
+            tempObjects.Add(tempObj);
+            tempMeshFilters.Add(tempObj.GetComponent<MeshFilter>());
         }
+
+        wallToSegmentKeys[wallKey] = segmentKeysForThisWall;
+        wallMaterials[wallKey] = wallMaterial;
+
+        if (tempMeshFilters.Count == 0) return;
+
+        GameObject combinedWall = CombineSegments(tempMeshFilters, wallMaterial);
+        combinedWall.name = wallKey;
+
+        MeshCollider col = combinedWall.AddComponent<MeshCollider>();
+        col.sharedMesh = combinedWall.GetComponent<MeshFilter>().sharedMesh;
+
+        var obstacle = combinedWall.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+        obstacle.carving = true;
+
+        segmentObjects[wallKey] = combinedWall;
+
+        foreach (var temp in tempObjects)
+            GameObject.Destroy(temp);
     }
 
-    /// <summary>
-    /// Șterge toate segmentele care se suprapun cu o zonă (pentru uși/ferestre)
-    /// </summary>
+    public bool HasAnyPartFor(string wallKey)
+    {
+        // Verificăm dacă mai există _partX pentru acest wallKey
+        foreach (var key in segmentObjects.Keys)
+        {
+            if (key.StartsWith(wallKey))
+                return true;
+        }
+        return false;
+    }
+
+    private GameObject CreateTempSegmentObject(Vector3 start, Vector3 end, Material material)
+    {
+        GameObject obj = new GameObject("TempSegment");
+        obj.AddComponent<MeshFilter>();
+        obj.AddComponent<MeshRenderer>();
+
+        ProceduralWall pWall = obj.AddComponent<ProceduralWall>();
+        pWall.GenerateWall(start, end);
+
+        if (material != null)
+            pWall.SetMaterial(material);
+
+        return obj;
+    }
+
+    private GameObject CombineSegments(List<MeshFilter> meshFilters, Material material)
+    {
+        CombineInstance[] combine = new CombineInstance[meshFilters.Count];
+
+        for (int i = 0; i < meshFilters.Count; i++)
+        {
+            combine[i].mesh = meshFilters[i].sharedMesh;
+            combine[i].transform = meshFilters[i].transform.localToWorldMatrix;
+        }
+
+        GameObject combined = new GameObject("CombinedWall");
+
+        MeshFilter mf = combined.AddComponent<MeshFilter>();
+        mf.mesh = new Mesh();
+        mf.mesh.CombineMeshes(combine, true, true);
+
+        MeshRenderer mr = combined.AddComponent<MeshRenderer>();
+        if (material != null)
+            mr.material = material;
+
+        return combined;
+    }
+
+
+
     public List<WallSegment> RemoveSegmentsInRange(Vector3 centerPos, float range, out int removedCount)
     {
         List<WallSegment> removedSegments = new List<WallSegment>();
-        List<string> keysToRemove = new List<string>();
+        List<string> segmentKeysToRemove = new List<string>();
+        HashSet<string> affectedWallKeys = new HashSet<string>();
 
+        // 1. Găsim segmentele afectate
         foreach (var kvp in segments)
         {
-            WallSegment segment = kvp.Value;
-            Vector3 segmentCenter = (segment.StartPosition + segment.EndPosition) / 2f;
-
-            // Verificăm dacă segmentul se află în rază
+            Vector3 segmentCenter = kvp.Value.GetCenter();
             float distance = Vector3.Distance(segmentCenter, centerPos);
 
             if (distance < range)
             {
-                keysToRemove.Add(kvp.Key);
-                removedSegments.Add(segment);
+                segmentKeysToRemove.Add(kvp.Key);
+                removedSegments.Add(kvp.Value);
 
-                // Distrugem GameObject-ul
-                if (segmentObjects.ContainsKey(kvp.Key))
-                {
-                    GameObject.Destroy(segmentObjects[kvp.Key]);
-                    segmentObjects.Remove(kvp.Key);
-                }
+                if (segmentToWallKey.ContainsKey(kvp.Key))
+                    affectedWallKeys.Add(segmentToWallKey[kvp.Key]);
             }
         }
 
-        // Ștergem din dicționar
-        foreach (string key in keysToRemove)
+        // 2. Ștergem segmentele din date
+        foreach (string key in segmentKeysToRemove)
         {
             segments.Remove(key);
+            segmentToWallKey.Remove(key);
         }
 
-        removedCount = keysToRemove.Count;
-        Debug.Log($"Segmente șterse: {removedCount} în raza de {range}m de la {centerPos}");
+        // 3. Reconstruim fiecare combined wall afectat
+        foreach (string wallKey in affectedWallKeys)
+        {
+            RebuildCombinedWall(wallKey, segmentKeysToRemove);
+        }
 
+        removedCount = segmentKeysToRemove.Count;
         return removedSegments;
     }
 
+    public bool RemoveWallByKey(string wallKey, WallGridData wallGridData)
+    {
+        if (!wallToSegmentKeys.ContainsKey(wallKey)) return false;
+
+        foreach (string segKey in wallToSegmentKeys[wallKey])
+        {
+            segments.Remove(segKey);
+            segmentToWallKey.Remove(segKey);
+            allSegmentsData.Remove(segKey); // lipsea asta
+        }
+
+        DestroyWallObjects(wallKey);
+
+        wallToSegmentKeys.Remove(wallKey);
+        wallMaterials.Remove(wallKey);
+
+        return true;
+    }
+
+    public bool RemoveWallPartByKey(string fullHitName, WallGridData wallGridData)
+    {
+        if (fullHitName.Contains("_part"))
+        {
+            if (!segmentObjects.ContainsKey(fullHitName)) return false;
+
+            // Distrugem GameObject-ul
+            GameObject.Destroy(segmentObjects[fullHitName]);
+            segmentObjects.Remove(fullHitName);
+
+            // Găsim wallKey original
+            int partIndex = fullHitName.LastIndexOf("_part");
+            string wallKey = fullHitName.Substring(0, partIndex);
+
+            // Curățăm și datele logice ale segmentelor din acest part
+            if (wallToSegmentKeys.ContainsKey(wallKey))
+            {
+                // Identificăm ce segmente aparțin acestui part specific
+                // Reconstruim grupurile ca să știm care segmente sunt în acest part
+                List<List<string>> groups = FindContiguousGroups(wallToSegmentKeys[wallKey]);
+
+                int partNumber = int.Parse(fullHitName.Substring(partIndex + 5));
+                if (partNumber < groups.Count)
+                {
+                    foreach (string segKey in groups[partNumber])
+                    {
+                        segments.Remove(segKey);
+                        segmentToWallKey.Remove(segKey);
+                        allSegmentsData.Remove(segKey);
+                        wallToSegmentKeys[wallKey].Remove(segKey);
+                    }
+                }
+
+                // Dacă nu mai sunt segmente, curățăm wallKey complet
+                if (wallToSegmentKeys[wallKey].Count == 0)
+                {
+                    wallToSegmentKeys.Remove(wallKey);
+                    wallMaterials.Remove(wallKey);
+                }
+            }
+
+            return true;
+        }
+
+        return RemoveWallByKey(fullHitName, wallGridData);
+    }
+
+    public void RemoveAllPartsFor(string wallKey)
+    {
+        List<string> keysToRemove = new List<string>();
+
+        foreach (var key in segmentObjects.Keys)
+        {
+            if (key == wallKey || key.StartsWith(wallKey + "_part"))
+                keysToRemove.Add(key);
+        }
+
+        foreach (string key in keysToRemove)
+        {
+            if (segmentObjects.ContainsKey(key))
+            {
+                GameObject.Destroy(segmentObjects[key]);
+                segmentObjects.Remove(key);
+            }
+        }
+
+        // Curățăm și segmentele logice
+        if (wallToSegmentKeys.ContainsKey(wallKey))
+        {
+            foreach (string segKey in wallToSegmentKeys[wallKey])
+            {
+                segments.Remove(segKey);
+                segmentToWallKey.Remove(segKey);
+                allSegmentsData.Remove(segKey);
+            }
+            wallToSegmentKeys.Remove(wallKey);
+            wallMaterials.Remove(wallKey);
+        }
+    }
+
+    private void RebuildCombinedWall(string wallKey, List<string> removedKeys)
+    {
+        if (!wallToSegmentKeys.ContainsKey(wallKey)) return;
+
+        wallToSegmentKeys[wallKey].RemoveAll(k => removedKeys.Contains(k));
+
+        // Distrugem toate obiectele vechi asociate acestui wallKey
+        // (pot fi mai multe dacă a mai fost rebuildat)
+        DestroyWallObjects(wallKey);
+
+        List<string> remainingKeys = wallToSegmentKeys[wallKey];
+
+        if (remainingKeys.Count == 0)
+        {
+            wallToSegmentKeys.Remove(wallKey);
+            wallMaterials.Remove(wallKey);
+            return;
+        }
+
+        Material mat = wallMaterials.ContainsKey(wallKey) ? wallMaterials[wallKey] : null;
+
+        // Grupăm segmentele continue
+        List<List<string>> contiguousGroups = FindContiguousGroups(remainingKeys);
+
+        // Creăm un combined wall per grup continuu
+        for (int g = 0; g < contiguousGroups.Count; g++)
+        {
+            List<string> group = contiguousGroups[g];
+            string groupKey = $"{wallKey}_part{g}";
+
+            List<MeshFilter> tempMeshFilters = new List<MeshFilter>();
+            List<GameObject> tempObjects = new List<GameObject>();
+
+            foreach (string segKey in group)
+            {
+                if (!allSegmentsData.ContainsKey(segKey)) continue;
+
+                WallSegment seg = allSegmentsData[segKey];
+                GameObject tempObj = CreateTempSegmentObject(seg.StartPosition, seg.EndPosition, mat);
+                tempObjects.Add(tempObj);
+                tempMeshFilters.Add(tempObj.GetComponent<MeshFilter>());
+            }
+
+            if (tempMeshFilters.Count == 0)
+            {
+                foreach (var temp in tempObjects) GameObject.Destroy(temp);
+                continue;
+            }
+
+            GameObject newCombined = CombineSegments(tempMeshFilters, mat);
+            newCombined.name = groupKey;
+
+            // Collider
+            MeshCollider col = newCombined.AddComponent<MeshCollider>();
+            col.sharedMesh = newCombined.GetComponent<MeshFilter>().sharedMesh;
+
+            // Obstacle bazat pe bounds-ul REAL al acestui grup
+            AddNavMeshObstacleFromMesh(newCombined);
+
+            segmentObjects[groupKey] = newCombined;
+
+            foreach (var temp in tempObjects) GameObject.Destroy(temp);
+        }
+    }
+
     /// <summary>
-    /// Găsește toate segmentele unui perete care conțin un punct
+    /// Grupează cheile de segmente în grupuri continue (fără goluri între ele)
     /// </summary>
+    private List<List<string>> FindContiguousGroups(List<string> segmentKeys)
+    {
+        List<List<string>> groups = new List<List<string>>();
+        if (segmentKeys.Count == 0) return groups;
+
+        // Sortăm segmentele după poziție de-a lungul peretelui
+        List<WallSegment> segs = new List<WallSegment>();
+        List<string> validKeys = new List<string>();
+
+        foreach (string key in segmentKeys)
+        {
+            if (allSegmentsData.ContainsKey(key))
+            {
+                segs.Add(allSegmentsData[key]);
+                validKeys.Add(key);
+            }
+        }
+
+        if (segs.Count == 0) return groups;
+
+        // Sortăm după SegmentIndex
+        List<(string key, WallSegment seg)> sorted = new List<(string, WallSegment)>();
+        for (int i = 0; i < segs.Count; i++)
+            sorted.Add((validKeys[i], segs[i]));
+        sorted.Sort((a, b) => a.seg.SegmentIndex.CompareTo(b.seg.SegmentIndex));
+
+        // Grupăm segmentele cu indecși consecutivi
+        List<string> currentGroup = new List<string> { sorted[0].key };
+
+        for (int i = 1; i < sorted.Count; i++)
+        {
+            int prevIndex = sorted[i - 1].seg.SegmentIndex;
+            int currIndex = sorted[i].seg.SegmentIndex;
+
+            if (currIndex == prevIndex + 1)
+            {
+                // Segment consecutiv — același grup
+                currentGroup.Add(sorted[i].key);
+            }
+            else
+            {
+                // Gap detectat (ușă/fereastră) — grup nou
+                groups.Add(currentGroup);
+                currentGroup = new List<string> { sorted[i].key };
+            }
+        }
+
+        groups.Add(currentGroup);
+        return groups;
+    }
+
+    /// <summary>
+    /// Distruge toate obiectele asociate unui wallKey (inclusiv _part0, _part1 etc.)
+    /// </summary>
+    private void DestroyWallObjects(string wallKey)
+    {
+        // Distrugem obiectul principal
+        if (segmentObjects.ContainsKey(wallKey))
+        {
+            GameObject.Destroy(segmentObjects[wallKey]);
+            segmentObjects.Remove(wallKey);
+        }
+
+        // Distrugem și part-urile din rebuild-uri anterioare
+        List<string> keysToRemove = new List<string>();
+        foreach (var key in segmentObjects.Keys)
+        {
+            if (key.StartsWith(wallKey + "_part"))
+                keysToRemove.Add(key);
+        }
+
+        foreach (string key in keysToRemove)
+        {
+            if (segmentObjects[key] != null)
+                GameObject.Destroy(segmentObjects[key]);
+            segmentObjects.Remove(key);
+        }
+    }
+
+    private void AddNavMeshObstacleFromMesh(GameObject wallObject)
+    {
+        MeshFilter mf = wallObject.GetComponent<MeshFilter>();
+        if (mf == null || mf.mesh == null) return;
+
+        var obstacle = wallObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();
+        obstacle.carving = true;
+        obstacle.carvingTimeToStationary = 0f;
+        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
+
+        Bounds meshBounds = mf.mesh.bounds;
+        obstacle.center = meshBounds.center;
+        obstacle.size = meshBounds.size;
+    }
+
     public List<WallSegment> FindSegmentsNearPoint(Vector3 point, float tolerance = 0.2f)
     {
         List<WallSegment> nearSegments = new List<WallSegment>();
@@ -116,82 +442,27 @@ public class WallSegmentData
             float distToStart = Vector3.Distance(point, segment.StartPosition);
             float distToEnd = Vector3.Distance(point, segment.EndPosition);
 
-            // Verificăm dacă punctul este aproape de segment
             if (distToStart < tolerance || distToEnd < tolerance)
             {
                 nearSegments.Add(segment);
             }
             else
             {
-                // Verificăm dacă punctul este pe linia segmentului
                 Vector3 projected = ProjectPointOnLineSegment(point, segment.StartPosition, segment.EndPosition);
-                float distToLine = Vector3.Distance(point, projected);
-
-                if (distToLine < tolerance)
-                {
+                if (Vector3.Distance(point, projected) < tolerance)
                     nearSegments.Add(segment);
-                }
             }
         }
 
         return nearSegments;
     }
 
-    /// <summary>
-    /// Creează un GameObject vizual pentru un segment de perete
-    /// </summary>
-    private GameObject CreateSegmentObject(Vector3 start, Vector3 end, GameObject prefab, Material material)
-    {
-        GameObject segmentObj = new GameObject("WallSegment");
+    public List<WallSegment> GetAllSegments() => new List<WallSegment>(segments.Values);
 
-        // Adăugăm componentele necesare
-        ProceduralWall pWall = segmentObj.AddComponent<ProceduralWall>();
-        segmentObj.AddComponent<MeshFilter>();
-        segmentObj.AddComponent<MeshRenderer>();
+    public WallSegment GetSegment(string key) => segments.ContainsKey(key) ? segments[key] : null;
 
-        // CONFIGURARE EXPLICITĂ A COLLIDER-ULUI
-        MeshCollider meshCollider = segmentObj.AddComponent<MeshCollider>();
-        meshCollider.convex = false; // Pentru pereți statici
-        meshCollider.enabled = true; // Forțează activarea
-
-        var obstacle = segmentObj.AddComponent<UnityEngine.AI.NavMeshObstacle>();
-        obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
-        obstacle.carving = true; // Permite carving pentru a actualiza NavMesh-ul
-
-        // Generăm mesh-ul
-        pWall.GenerateWall(start, end);
-
-        // Aplicăm materialul
-        if (material != null)
-        {
-            pWall.SetMaterial(material);
-        }
-
-        return segmentObj;
-    }
-
-    /// <summary>
-    /// Găsește toate segmentele
-    /// </summary>
-    public List<WallSegment> GetAllSegments()
-    {
-        return new List<WallSegment>(segments.Values);
-    }
-
-    /// <summary>
-    /// Găsește un segment specific
-    /// </summary>
-    public WallSegment GetSegment(string key)
-    {
-        return segments.ContainsKey(key) ? segments[key] : null;
-    }
-
-    /// <summary>
-    /// Șterge toate segmentele
-    /// </summary>
     public void ClearAll()
     {
-        // Distrugem toate GameObject-urile
         foreach (var obj in segmentObjects.Values)
         {
             if (obj != null)
@@ -200,6 +471,10 @@ public class WallSegmentData
 
         segments.Clear();
         segmentObjects.Clear();
+        segmentToWallKey.Clear();
+        wallToSegmentKeys.Clear();
+        allSegmentsData.Clear();
+        wallMaterials.Clear();
     }
 
     // ========== HELPER METHODS ==========
@@ -209,7 +484,6 @@ public class WallSegmentData
         Vector3 s = RoundVector(start);
         Vector3 e = RoundVector(end);
 
-        // Normalizăm ordinea
         if (s.x > e.x || (s.x == e.x && s.z > e.z))
         {
             var temp = s;
@@ -236,25 +510,19 @@ public class WallSegmentData
         float lineLength = lineDirection.magnitude;
         lineDirection.Normalize();
 
-        Vector3 pointVector = point - lineStart;
-        float dot = Vector3.Dot(pointVector, lineDirection);
-        dot = Mathf.Clamp(dot, 0, lineLength);
-
+        float dot = Mathf.Clamp(Vector3.Dot(point - lineStart, lineDirection), 0, lineLength);
         return lineStart + lineDirection * dot;
     }
 }
 
-/// <summary>
-/// Date despre un segment individual de perete
-/// </summary>
 [System.Serializable]
 public class WallSegment
 {
     public Vector3 StartPosition { get; private set; }
     public Vector3 EndPosition { get; private set; }
     public int WallID { get; private set; }
-    public int SegmentIndex { get; private set; } // Index în cadrul peretelui complet
-    public int TotalSegments { get; private set; } // Câte segmente are peretele complet
+    public int SegmentIndex { get; private set; }
+    public int TotalSegments { get; private set; }
     public float Length { get; private set; }
 
     public WallSegment(Vector3 start, Vector3 end, int wallID, int index, int total)
@@ -267,25 +535,10 @@ public class WallSegment
         Length = Vector3.Distance(start, end);
     }
 
-    public Vector3 GetCenter()
-    {
-        return (StartPosition + EndPosition) / 2f;
-    }
-
-    public Vector3 GetDirection()
-    {
-        return (EndPosition - StartPosition).normalized;
-    }
-
-    public bool IsVertical()
-    {
-        return Mathf.Abs(EndPosition.x - StartPosition.x) < 0.01f;
-    }
-
-    public bool IsHorizontal()
-    {
-        return Mathf.Abs(EndPosition.z - StartPosition.z) < 0.01f;
-    }
+    public Vector3 GetCenter() => (StartPosition + EndPosition) / 2f;
+    public Vector3 GetDirection() => (EndPosition - StartPosition).normalized;
+    public bool IsVertical() => Mathf.Abs(EndPosition.x - StartPosition.x) < 0.01f;
+    public bool IsHorizontal() => Mathf.Abs(EndPosition.z - StartPosition.z) < 0.01f;
 
     public override string ToString()
     {

@@ -13,7 +13,7 @@ public class Employee : MonoBehaviour
     private const float WANDER_RADIUS = 8f;
     private const float DESTINATION_THRESHOLD = 0.5f;
     private const float STORAGE_THRESHOLD_OFFSET = 0.5f;
-    private const float HOME_THRESHOLD = 1.0f;
+    private const float HOME_THRESHOLD = 2f;
     private const int TASK_CHECK_FRAME_INTERVAL = 30;
     private const float ROTATION_SPEED = 5f;
     #endregion
@@ -88,6 +88,7 @@ public class Employee : MonoBehaviour
     private Vector3 homePosition;
     private float workTimer = 0f;
     private float baseSpeed = 3.5f;
+    private Animator animator;
 
     // Restocker specific
     private RestockerStateMachine restockerStateMachine;
@@ -97,6 +98,8 @@ public class Employee : MonoBehaviour
     #region Unity Lifecycle
     private void Awake()
     {
+        animator = GetComponentInChildren<Animator>();
+        if (animator == null) animator = GetComponent<Animator>();
         // Setup Notification System
         agent = GetComponent<NavMeshAgent>();
         doorManager = new DoorManager();
@@ -122,10 +125,14 @@ public class Employee : MonoBehaviour
         if (!isWorking)
         {
             HandleEndShiftMovement();
+            UpdateAnimations(); // <-- NOU: Animațiile merg și când pleacă acasă!
             return;
         }
 
         ExecuteRoleSpecificWork();
+
+        // --- NOU: Actualizăm vizualul în fiecare cadru ---
+        UpdateAnimations();
     }
     #endregion
 
@@ -350,6 +357,26 @@ public class Employee : MonoBehaviour
             ref workTimer
         );
     }
+    #endregion
+
+    #region Animations
+
+    private void UpdateAnimations()
+    {
+        if (animator == null) return;
+
+        // 1. Verificăm dacă agentul se deplasează efectiv (dacă viteza e mai mare decât o marjă foarte mică)
+        bool isMoving = agent.velocity.magnitude > 0.1f;
+        animator.SetBool("isWalking", isMoving);
+
+        // 2. Verificăm dacă angajatul cară o cutie 
+        // Știm sigur asta dacă boxVisual a fost activat de RestockerStateMachine
+        bool isCarrying = boxVisual != null && boxVisual.activeSelf;
+
+        // Trimitem asta către Animator (Va trebui să creezi acest parametru)
+        animator.SetBool("isCarrying", isCarrying);
+    }
+
     #endregion
 
     #region Private Methods - Movement
@@ -579,8 +606,10 @@ public class RestockerStateMachine
     {
         agent.SetDestination(workStation.position);
 
-        float threshold = agent.stoppingDistance + owner.StorageThresholdOffset;
-        if (!agent.pathPending && agent.remainingDistance < threshold)
+        // NOU: Am mărit toleranța la distanță pentru a compensa coliziunea raftului fizic!
+        float threshold = agent.stoppingDistance + owner.StorageThresholdOffset + 0.8f;
+
+        if (!agent.pathPending && agent.remainingDistance <= threshold)
         {
             currentState = State.WorkingAtLocation;
             workTimer = 0;
@@ -632,11 +661,32 @@ public class RestockerStateMachine
     {
         if (shelvesToStock.Count == 0) return false;
 
-        WorkStation target = shelvesToStock[Random.Range(0, shelvesToStock.Count)];
-        AssignTarget(target);
-        currentTask = TaskType.Restocking;
-        currentState = State.MovingToStorage;
-        return true;
+        if (ServiceLocator.Instance.TryGet(out IInventoryService inventory))
+        {
+            // Luăm rafturile la rând și verificăm dacă există marfă pentru ele în depozit
+            foreach (WorkStation targetShelf in shelvesToStock)
+            {
+                ProductType needed = targetShelf.slot1Product;
+                StorageRacks rackWithMarfa = inventory.FindRackWithProduct(needed);
+
+                // Am găsit și raft gol, ȘI marfă în depozit pentru el!
+                if (rackWithMarfa != null)
+                {
+                    AssignTarget(targetShelf);
+                    owner.myWorkStation = rackWithMarfa.transform;
+                    currentTask = TaskType.Restocking;
+                    currentState = State.MovingToStorage;
+                    ClearProblem(); // Ștergem orice eroare veche
+                    return true;
+                }
+            }
+
+            // Dacă a verificat TOATE rafturile goale și pentru niciunul nu avem marfă
+            ReportProblem("Nu avem marfa necesară în depozit!");
+            return false;
+        }
+
+        return false;
     }
 
     private void AssignTarget(WorkStation station)
@@ -650,68 +700,65 @@ public class RestockerStateMachine
 
     private void ExecuteWorkAction(Transform workStation, Transform secondaryTarget, GameObject boxVisual)
     {
+        // Raftul de magazin e WorkStation
         WorkStation shelfScript = secondaryTarget?.GetComponentInParent<WorkStation>();
-        WorkStation storageScript = workStation?.GetComponentInParent<WorkStation>();
 
+        // NOU: Nu mai forțăm depozitul să fie WorkStation, îl transmitem ca Transform
         if (currentTask == TaskType.Restocking)
         {
-            HandleRestockingAction(shelfScript, storageScript, boxVisual);
+            HandleRestockingAction(shelfScript, workStation, boxVisual);
         }
         else if (currentTask == TaskType.Clearing)
         {
-            HandleClearingAction(shelfScript, storageScript, boxVisual);
+            HandleClearingAction(shelfScript, workStation, boxVisual);
         }
     }
 
-    private void HandleRestockingAction(WorkStation shelf, WorkStation storage, GameObject boxVisual)
+    private void HandleRestockingAction(WorkStation shelf, Transform storageTransform, GameObject boxVisual)
     {
         if (productsInHand == 0)
         {
-            // At storage, picking up products
-            if (shelf != null && storage != null)
+            // Căutăm componenta StorageRack pe obiectul de depozit!
+            StorageRacks rack = storageTransform?.GetComponentInParent<StorageRacks>();
+
+            if (shelf != null && rack != null)
             {
                 ProductType needed = shelf.slot1Product;
+                int amountTaken = rack.TakeProduct(needed, maxCarryCapacity);
 
-                if (storage.TakeFromStorage(needed, maxCarryCapacity))
+                if (amountTaken > 0)
                 {
-                    productsInHand = maxCarryCapacity;
+                    productsInHand = amountTaken;
                     productInHandType = needed;
                     SetBoxVisibility(boxVisual, true);
-                    Debug.Log($"[Restocker] Picked up {needed} from storage. Going to shelf.");
 
                     ClearProblem();
-
                     doorManager.CloseLastDoor();
                     currentState = State.MovingToShelf;
                 }
                 else
                 {
-                    ReportProblem($"Depozitul nu are {needed}!");
-
-                    Debug.Log($"[Restocker] Storage doesn't have {needed}");
+                    ReportProblem("Cutia s-a golit fix când am ajuns!");
                     doorManager.CloseLastDoor();
                     currentState = State.Idle;
                 }
             }
             else
             {
-                if (shelf == null) ReportProblem("Raftul a dispărut!");
-                if (storage == null) ReportProblem("Depozitul a dispărut!");
-
+                if (shelf == null) ReportProblem("Raftul din magazin a dispărut!");
+                if (rack == null) ReportProblem("Raftul de depozit e invalid!");
                 currentState = State.Idle;
             }
         }
         else
         {
-            // At shelf, putting products down
+            // Punem pe raftul din magazin
             if (shelf != null)
             {
                 shelf.AddProduct(productsInHand);
-                Debug.Log("[Restocker] Placed products on shelf.");
                 productsInHand = 0;
                 owner.AddXP(20);
                 SetBoxVisibility(boxVisual, false);
-
                 ClearProblem();
             }
 
@@ -720,24 +767,36 @@ public class RestockerStateMachine
         }
     }
 
-    private void HandleClearingAction(WorkStation shelf, WorkStation storage, GameObject boxVisual)
+    // Am schimbat și aici al doilea parametru în Transform
+    private void HandleClearingAction(WorkStation shelf, Transform storageTransform, GameObject boxVisual)
     {
         if (productsInHand == 0)
         {
-            // At shelf, picking up products
             if (shelf != null)
             {
                 int taken = shelf.TakeProduct(maxCarryCapacity);
-
                 if (taken > 0)
                 {
                     productsInHand = taken;
                     productInHandType = shelf.slot1Product;
                     SetBoxVisibility(boxVisual, true);
-                    Debug.Log("[Restocker] Removed old products. Taking to storage.");
 
-                    doorManager.CloseLastDoor();
-                    currentState = State.MovingToStorage;
+                    if (ServiceLocator.Instance.TryGet(out IInventoryService inventory))
+                    {
+                        StorageRacks emptyRack = inventory.FindRackWithSpace(productInHandType);
+                        if (emptyRack != null)
+                        {
+                            owner.myWorkStation = emptyRack.transform;
+                            doorManager.CloseLastDoor();
+                            currentState = State.MovingToStorage;
+                            return;
+                        }
+                    }
+
+                    ReportProblem("Depozitul e plin! Am aruncat marfa.");
+                    productsInHand = 0;
+                    SetBoxVisibility(boxVisual, false);
+                    currentState = State.Idle;
                 }
                 else
                 {
@@ -748,11 +807,11 @@ public class RestockerStateMachine
         }
         else
         {
-            // At storage, putting products down
-            if (storage != null)
+            // Suntem în depozit, punem marfa pe noul raft
+            StorageRacks rack = storageTransform?.GetComponentInParent<StorageRacks>();
+            if (rack != null)
             {
-                storage.AddToStorage(productInHandType, productsInHand);
-                Debug.Log("[Restocker] Returned products to storage.");
+                rack.AddProduct(productInHandType, productsInHand);
             }
 
             productsInHand = 0;

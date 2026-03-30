@@ -291,6 +291,122 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""isPartOfComposite"": false
                 }
             ]
+        },
+        {
+            ""name"": ""Building"",
+            ""id"": ""ac79ec94-689b-407a-8440-1de9bf6fc82a"",
+            ""actions"": [
+                {
+                    ""name"": ""OnClick"",
+                    ""type"": ""Button"",
+                    ""id"": ""3959ef67-8e4c-4520-96a4-e66cedecdfa3"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""RightClick"",
+                    ""type"": ""Button"",
+                    ""id"": ""4b673ceb-0f68-4912-98fe-fa678a4aa8f7"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Confirm"",
+                    ""type"": ""Button"",
+                    ""id"": ""7d1b9159-62c7-441a-aff1-b333a4b974aa"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": ""MultiTap"",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""OnExit"",
+                    ""type"": ""Button"",
+                    ""id"": ""61dbf63e-3a7a-4642-a177-5d1d67f0e697"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""3bed8aac-c5ed-440f-8961-f576372f7ca4"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""OnClick"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""3875fddb-4afd-4a09-afed-8b9c2c6d5f5f"",
+                    ""path"": ""<Mouse>/rightButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""RightClick"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""55f485c7-d3a2-4323-b372-2a29913fcd5a"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""Confirm"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""05c7260c-e05a-4cc4-9da6-6143b43b5628"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""OnExit"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""MenuControlls"",
+            ""id"": ""c2f2301e-c1d4-43da-8106-72d59ee6d85d"",
+            ""actions"": [
+                {
+                    ""name"": ""OpenMenu"",
+                    ""type"": ""Button"",
+                    ""id"": ""bada9369-1cd0-4cd0-9803-49db46a65e97"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""2377b612-d0a2-4ebc-b9c1-bfccee61236d"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""OpenMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
         }
     ],
     ""controlSchemes"": [
@@ -365,12 +481,23 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         // TimeManager
         m_TimeManager = asset.FindActionMap("TimeManager", throwIfNotFound: true);
         m_TimeManager_Pause = m_TimeManager.FindAction("Pause", throwIfNotFound: true);
+        // Building
+        m_Building = asset.FindActionMap("Building", throwIfNotFound: true);
+        m_Building_OnClick = m_Building.FindAction("OnClick", throwIfNotFound: true);
+        m_Building_RightClick = m_Building.FindAction("RightClick", throwIfNotFound: true);
+        m_Building_Confirm = m_Building.FindAction("Confirm", throwIfNotFound: true);
+        m_Building_OnExit = m_Building.FindAction("OnExit", throwIfNotFound: true);
+        // MenuControlls
+        m_MenuControlls = asset.FindActionMap("MenuControlls", throwIfNotFound: true);
+        m_MenuControlls_OpenMenu = m_MenuControlls.FindAction("OpenMenu", throwIfNotFound: true);
     }
 
     ~@InputSystem()
     {
         UnityEngine.Debug.Assert(!m_CameraControl.enabled, "This will cause a leak and performance issues, InputSystem.CameraControl.Disable() has not been called.");
         UnityEngine.Debug.Assert(!m_TimeManager.enabled, "This will cause a leak and performance issues, InputSystem.TimeManager.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_Building.enabled, "This will cause a leak and performance issues, InputSystem.Building.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_MenuControlls.enabled, "This will cause a leak and performance issues, InputSystem.MenuControlls.Disable() has not been called.");
     }
 
     /// <summary>
@@ -667,6 +794,231 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="TimeManagerActions" /> instance referencing this action map.
     /// </summary>
     public TimeManagerActions @TimeManager => new TimeManagerActions(this);
+
+    // Building
+    private readonly InputActionMap m_Building;
+    private List<IBuildingActions> m_BuildingActionsCallbackInterfaces = new List<IBuildingActions>();
+    private readonly InputAction m_Building_OnClick;
+    private readonly InputAction m_Building_RightClick;
+    private readonly InputAction m_Building_Confirm;
+    private readonly InputAction m_Building_OnExit;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "Building".
+    /// </summary>
+    public struct BuildingActions
+    {
+        private @InputSystem m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public BuildingActions(@InputSystem wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "Building/OnClick".
+        /// </summary>
+        public InputAction @OnClick => m_Wrapper.m_Building_OnClick;
+        /// <summary>
+        /// Provides access to the underlying input action "Building/RightClick".
+        /// </summary>
+        public InputAction @RightClick => m_Wrapper.m_Building_RightClick;
+        /// <summary>
+        /// Provides access to the underlying input action "Building/Confirm".
+        /// </summary>
+        public InputAction @Confirm => m_Wrapper.m_Building_Confirm;
+        /// <summary>
+        /// Provides access to the underlying input action "Building/OnExit".
+        /// </summary>
+        public InputAction @OnExit => m_Wrapper.m_Building_OnExit;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_Building; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="BuildingActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(BuildingActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="BuildingActions" />
+        public void AddCallbacks(IBuildingActions instance)
+        {
+            if (instance == null || m_Wrapper.m_BuildingActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_BuildingActionsCallbackInterfaces.Add(instance);
+            @OnClick.started += instance.OnOnClick;
+            @OnClick.performed += instance.OnOnClick;
+            @OnClick.canceled += instance.OnOnClick;
+            @RightClick.started += instance.OnRightClick;
+            @RightClick.performed += instance.OnRightClick;
+            @RightClick.canceled += instance.OnRightClick;
+            @Confirm.started += instance.OnConfirm;
+            @Confirm.performed += instance.OnConfirm;
+            @Confirm.canceled += instance.OnConfirm;
+            @OnExit.started += instance.OnOnExit;
+            @OnExit.performed += instance.OnOnExit;
+            @OnExit.canceled += instance.OnOnExit;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="BuildingActions" />
+        private void UnregisterCallbacks(IBuildingActions instance)
+        {
+            @OnClick.started -= instance.OnOnClick;
+            @OnClick.performed -= instance.OnOnClick;
+            @OnClick.canceled -= instance.OnOnClick;
+            @RightClick.started -= instance.OnRightClick;
+            @RightClick.performed -= instance.OnRightClick;
+            @RightClick.canceled -= instance.OnRightClick;
+            @Confirm.started -= instance.OnConfirm;
+            @Confirm.performed -= instance.OnConfirm;
+            @Confirm.canceled -= instance.OnConfirm;
+            @OnExit.started -= instance.OnOnExit;
+            @OnExit.performed -= instance.OnOnExit;
+            @OnExit.canceled -= instance.OnOnExit;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="BuildingActions.UnregisterCallbacks(IBuildingActions)" />.
+        /// </summary>
+        /// <seealso cref="BuildingActions.UnregisterCallbacks(IBuildingActions)" />
+        public void RemoveCallbacks(IBuildingActions instance)
+        {
+            if (m_Wrapper.m_BuildingActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="BuildingActions.AddCallbacks(IBuildingActions)" />
+        /// <seealso cref="BuildingActions.RemoveCallbacks(IBuildingActions)" />
+        /// <seealso cref="BuildingActions.UnregisterCallbacks(IBuildingActions)" />
+        public void SetCallbacks(IBuildingActions instance)
+        {
+            foreach (var item in m_Wrapper.m_BuildingActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_BuildingActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="BuildingActions" /> instance referencing this action map.
+    /// </summary>
+    public BuildingActions @Building => new BuildingActions(this);
+
+    // MenuControlls
+    private readonly InputActionMap m_MenuControlls;
+    private List<IMenuControllsActions> m_MenuControllsActionsCallbackInterfaces = new List<IMenuControllsActions>();
+    private readonly InputAction m_MenuControlls_OpenMenu;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "MenuControlls".
+    /// </summary>
+    public struct MenuControllsActions
+    {
+        private @InputSystem m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public MenuControllsActions(@InputSystem wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "MenuControlls/OpenMenu".
+        /// </summary>
+        public InputAction @OpenMenu => m_Wrapper.m_MenuControlls_OpenMenu;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_MenuControlls; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="MenuControllsActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(MenuControllsActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="MenuControllsActions" />
+        public void AddCallbacks(IMenuControllsActions instance)
+        {
+            if (instance == null || m_Wrapper.m_MenuControllsActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_MenuControllsActionsCallbackInterfaces.Add(instance);
+            @OpenMenu.started += instance.OnOpenMenu;
+            @OpenMenu.performed += instance.OnOpenMenu;
+            @OpenMenu.canceled += instance.OnOpenMenu;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="MenuControllsActions" />
+        private void UnregisterCallbacks(IMenuControllsActions instance)
+        {
+            @OpenMenu.started -= instance.OnOpenMenu;
+            @OpenMenu.performed -= instance.OnOpenMenu;
+            @OpenMenu.canceled -= instance.OnOpenMenu;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="MenuControllsActions.UnregisterCallbacks(IMenuControllsActions)" />.
+        /// </summary>
+        /// <seealso cref="MenuControllsActions.UnregisterCallbacks(IMenuControllsActions)" />
+        public void RemoveCallbacks(IMenuControllsActions instance)
+        {
+            if (m_Wrapper.m_MenuControllsActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="MenuControllsActions.AddCallbacks(IMenuControllsActions)" />
+        /// <seealso cref="MenuControllsActions.RemoveCallbacks(IMenuControllsActions)" />
+        /// <seealso cref="MenuControllsActions.UnregisterCallbacks(IMenuControllsActions)" />
+        public void SetCallbacks(IMenuControllsActions instance)
+        {
+            foreach (var item in m_Wrapper.m_MenuControllsActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_MenuControllsActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="MenuControllsActions" /> instance referencing this action map.
+    /// </summary>
+    public MenuControllsActions @MenuControlls => new MenuControllsActions(this);
     private int m_KeyboardMouseSchemeIndex = -1;
     /// <summary>
     /// Provides access to the input control scheme.
@@ -782,5 +1134,56 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "Building" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="BuildingActions.AddCallbacks(IBuildingActions)" />
+    /// <seealso cref="BuildingActions.RemoveCallbacks(IBuildingActions)" />
+    public interface IBuildingActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "OnClick" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOnClick(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "RightClick" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnRightClick(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Confirm" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnConfirm(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "OnExit" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOnExit(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "MenuControlls" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="MenuControllsActions.AddCallbacks(IMenuControllsActions)" />
+    /// <seealso cref="MenuControllsActions.RemoveCallbacks(IMenuControllsActions)" />
+    public interface IMenuControllsActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "OpenMenu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOpenMenu(InputAction.CallbackContext context);
     }
 }

@@ -10,6 +10,8 @@ public class ToolTipController : MonoBehaviour
     VisualElement toolTip;
     Label toolTipText;
 
+    private bool isPlacementMode = false;
+
     void Awake()
     {
         root = uIDocument.rootVisualElement;
@@ -31,28 +33,60 @@ public class ToolTipController : MonoBehaviour
         root.UnregisterCallback<PointerDownEvent>(OnPointerDown);
     }
 
+    void ShowTooltip(string text, Vector2 screenPosition)
+    {
+        toolTipText.text = text;
+
+        // Screen space: (0,0) = bottom-left
+        // UI Toolkit panel space: (0,0) = top-left → inversăm Y
+        Vector2 panelPos = RuntimePanelUtils.ScreenToPanel(
+            root.panel,
+            new Vector2(screenPosition.x, Screen.height - screenPosition.y)
+        );
+
+        // Offset ca să nu fie sub cursor
+        panelPos += Offset;
+
+        // Clamp ca să nu iasă din ecran
+        float tooltipWidth = toolTip.resolvedStyle.width;
+        float tooltipHeight = toolTip.resolvedStyle.height;
+        float panelWidth = root.resolvedStyle.width;
+        float panelHeight = root.resolvedStyle.height;
+
+        panelPos.x = Mathf.Clamp(panelPos.x, 0, panelWidth - tooltipWidth);
+        panelPos.y = Mathf.Clamp(panelPos.y, 0, panelHeight - tooltipHeight);
+
+        toolTip.style.left = panelPos.x;
+        toolTip.style.top = panelPos.y;
+        toolTip.style.display = DisplayStyle.Flex;
+    }
+
+    public void ShowPlacementInfo(string text, Vector2 screenPosition)
+    {
+        isPlacementMode = true;
+        ShowTooltip(text, screenPosition); // fără Offset adăugat aici, e adăugat în ShowTooltip
+    }
+
+    public void HidePlacementInfo()
+    {
+        isPlacementMode = false;
+        HideTooltip();
+    }
+
+
     void OnPointerMove(PointerMoveEvent evt)
     {
-        if (evt.target is not VisualElement hovered)
-        {
-            HideTooltip();
-            return;
-        }
+        if (isPlacementMode) return;
+
+        if (evt.target is not VisualElement hovered) { HideTooltip(); return; }
 
         VisualElement current = hovered;
-
         while (current != null && string.IsNullOrEmpty(current.tooltip))
-        {
             current = current.parent;
-        }
 
-        if (current == null)
-        {
-            HideTooltip();
-            return;
-        }
+        if (current == null) { HideTooltip(); return; }
 
-        ShowTooltip(current.tooltip, (Vector2)evt.position + Offset);
+        ShowTooltipAtPanelPos(current.tooltip, evt.position); // panel space direct
     }
 
     void OnPointerLeave(PointerLeaveEvent evt)
@@ -65,12 +99,11 @@ public class ToolTipController : MonoBehaviour
         HideTooltip();
     }
 
-    void ShowTooltip(string text, Vector2 position)
+    private void ShowTooltipAtPanelPos(string text, Vector2 panelPosition)
     {
         toolTipText.text = text;
-
-        toolTip.style.left = position.x;
-        toolTip.style.top = position.y;
+        toolTip.style.left = panelPosition.x + Offset.x;
+        toolTip.style.top = panelPosition.y + Offset.y;
         toolTip.style.display = DisplayStyle.Flex;
     }
 

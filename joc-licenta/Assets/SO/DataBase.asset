@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: DataBase
   m_EditorClassIdentifier: Assembly-CSharp::ObjectDataBase
   objectsData:
-  - <Name>k__BackingField: Floor
-    <ObjDescription>k__BackingField: 
+  - <Name>k__BackingField: Podea
+    <ObjDescription>k__BackingField: Podea normala pentru plasat in magazin
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 0
     <Category>k__BackingField: 1
@@ -73,3 +73,28 @@ MonoBehaviour:
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 1
+  - <Name>k__BackingField: Podea
+    <ObjDescription>k__BackingField: Podea speciala pentru depozit pe care se pot
+      plasa rafturile pentru depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 5
+    <Category>k__BackingField: 1
+    <Prefab>k__BackingField: {fileID: 604535264888599239, guid: 800a035d78785ec439d0fc31e2dfab3f, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <Cost>k__BackingField: 100
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 1
+  - <Name>k__BackingField: Raft Depozit
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 6
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 8034557012100483074, guid: 18e9bd652d1db5d45b4b682bd67d1c31, type: 3}
+    <Size>k__BackingField: {x: 2, y: 1}
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 1
+    <ShelfVariant>k__BackingField: 0

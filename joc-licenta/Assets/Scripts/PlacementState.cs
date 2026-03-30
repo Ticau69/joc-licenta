@@ -105,17 +105,24 @@ public class PlacementState : IBuldingState
 
     private bool CheckPlacementValidity(Vector3Int gridPosition, Vector2Int size)
     {
-        // 1. --- IDENTIFICARE TIP (Podea vs Mobilă) ---
-        bool isFloor = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
+        // 1. --- Extragem datele obiectului pe care vrem să-l plasăm ---
+        ObjectData currentObjectData = dataBase.objectsData[selectedObjectIndex];
+
+        bool isFloor = currentObjectData.Category == ObjectCategory.Structure;
+
+        // Identificăm dacă este un raft de depozit folosind StationType!
+        bool isStorageRack = currentObjectData.Category == ObjectCategory.Equipment &&
+                             currentObjectData.StationType == StationType.Storage;
+
         GridData selectedData = isFloor ? floorData : furnitureData;
 
-        // 2. --- Verificarea Standard (Același layer e ocupat?) ---
+        // 2. --- Verificarea Standard (Sunt celulele libere pe layer-ul respectiv?) ---
         if (selectedData.canPlaceObjectAt(gridPosition, size) == false)
         {
             return false;
         }
 
-        // 3. --- VERIFICARE: Mobila are nevoie de Podea ---
+        // 3. --- VERIFICARE: Mobila are nevoie de Podea (Și respectă regulile Depozitului) ---
         if (!isFloor)
         {
             for (int x = 0; x < size.x; x++)
@@ -124,10 +131,30 @@ public class PlacementState : IBuldingState
                 {
                     Vector3Int positionToCheck = gridPosition + new Vector3Int(x, 0, y);
 
-                    // Dacă e liber în floorData, înseamnă că lipsește podeaua!
+                    // A) Verificăm dacă lipsește podeaua complet
                     if (floorData.canPlaceObjectAt(positionToCheck, Vector2Int.one) == true)
                     {
-                        return false;
+                        return false; // Nu există podea deloc aici! Nu putem pune mobilă pe pământ.
+                    }
+
+                    // B) REGULA DEPOZITULUI
+                    int floorID = floorData.GetObjectIDAt(positionToCheck);
+
+                    if (isStorageRack)
+                    {
+                        // Raftul de depozit acceptă DOAR podeaua cu ID 5
+                        if (floorID != 5)
+                        {
+                            return false;
+                        }
+                    }
+                    else
+                    {
+                        // Orice altă mobilă (raft magazin, casă marcat) NU are voie pe podeaua 5
+                        if (floorID == 5)
+                        {
+                            return false;
+                        }
                     }
                 }
             }

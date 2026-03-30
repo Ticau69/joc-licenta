@@ -1,9 +1,11 @@
 using UnityEngine;
+using System.Collections.Generic;
 
 public class CustomerSpawner : MonoBehaviour
 {
-    [Header("Customer Prefab")]
-    [SerializeField] private CustomerAI customerPrefab;
+    [Header("Customer Prefabs")]
+    [Tooltip("Adaugă aici toate modelele 3D de clienți (băieți, fete, diferiți etc.)")]
+    [SerializeField] private List<CustomerAI> customerPrefabs = new List<CustomerAI>();
 
     [Header("Spawn/Exit Points")]
     [SerializeField] private Transform[] spawnPoints;
@@ -29,8 +31,13 @@ public class CustomerSpawner : MonoBehaviour
     private WorkStationRegistry _registry;
     private float _spawnTimer;
     private float _refreshTimer;
-
     private float _lastNoSpawnLogTime;
+
+    // OPTIMIZARE: Ținem minte clienții activi ca să nu mai folosim FindObjectsByType
+    private List<CustomerAI> _activeCustomers = new List<CustomerAI>();
+
+    // OPTIMIZARE: Ținem minte dacă avem case de marcat pentru a nu căuta constant prin scenă
+    private bool _hasCashRegistersCached = false;
 
     private void Start()
     {
@@ -49,7 +56,7 @@ public class CustomerSpawner : MonoBehaviour
             return;
         }
 
-        _registry.RefreshAllStations();
+        RefreshRegistryAndCache();
         _refreshTimer = registryRefreshInterval;
 
         _spawnTimer = spawnOnStart ? 0f : spawnInterval;
@@ -57,16 +64,16 @@ public class CustomerSpawner : MonoBehaviour
 
     private void Update()
     {
-        if (customerPrefab == null) return;
+        if (customerPrefabs == null || customerPrefabs.Count == 0) return;
         if (spawnPoints == null || spawnPoints.Length == 0) return;
         if (exitPoint == null) return;
         if (_registry == null) return;
 
-        // refresh la registry periodic (pentru tycoon: când playerul plasează rafturi/case)
+        // Refresh periodic pentru stații și case de marcat
         _refreshTimer -= Time.deltaTime;
         if (_refreshTimer <= 0f)
         {
-            _registry.RefreshAllStations();
+            RefreshRegistryAndCache();
             _refreshTimer = registryRefreshInterval;
         }
 
@@ -80,8 +87,10 @@ public class CustomerSpawner : MonoBehaviour
             return;
         }
 
-        int alive = FindObjectsByType<CustomerAI>(FindObjectsSortMode.None).Length;
-        if (alive < maxAliveCustomers)
+        // OPTIMIZARE: Curățăm lista de clienți care au fost distruși (au plecat acasă)
+        _activeCustomers.RemoveAll(c => c == null || !c.gameObject.activeInHierarchy);
+
+        if (_activeCustomers.Count < maxAliveCustomers)
         {
             SpawnOne();
         }
@@ -89,21 +98,25 @@ public class CustomerSpawner : MonoBehaviour
         _spawnTimer = spawnInterval;
     }
 
+    private void RefreshRegistryAndCache()
+    {
+        _registry.RefreshAllStations();
+
+        // Căutăm casele de marcat o singură dată la refresh, nu la fiecare spawn încercat
+        _hasCashRegistersCached = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None).Length > 0;
+    }
+
     private bool CanSpawnCustomers()
     {
-        // --- NOU: Verificăm programul magazinului din TimeManager ---
         if (TimeManager.Instance != null)
         {
             int currentHour = TimeManager.Instance.CurrentHour;
-
-            // Dacă ora este în afara programului, oprim spawnarea
             if (currentHour < TimeManager.Instance.openHour || currentHour >= TimeManager.Instance.closeHour)
             {
                 return false;
             }
         }
 
-        // --- Verificările tale existente ---
         if (requireAtLeastOneShelf)
         {
             var shelves = _registry.GetAllShelves();
@@ -111,11 +124,9 @@ public class CustomerSpawner : MonoBehaviour
                 return false;
         }
 
-        if (requireAtLeastOneCashRegister)
+        if (requireAtLeastOneCashRegister && !_hasCashRegistersCached)
         {
-            var queues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
-            if (queues == null || queues.Length == 0)
-                return false;
+            return false;
         }
 
         return true;
@@ -123,13 +134,11 @@ public class CustomerSpawner : MonoBehaviour
 
     private void LogNoSpawnReasonOccasionally()
     {
-        // log max o dată la 3 sec ca să nu spammeze
         if (Time.time - _lastNoSpawnLogTime < 3f) return;
         _lastNoSpawnLogTime = Time.time;
 
         string reason = "";
 
-        // --- NOU: Logăm dacă e închis magazinul ---
         if (TimeManager.Instance != null)
         {
             int currentHour = TimeManager.Instance.CurrentHour;
@@ -146,30 +155,34 @@ public class CustomerSpawner : MonoBehaviour
                 reason += "no shelves; ";
         }
 
-        if (requireAtLeastOneCashRegister)
+        if (requireAtLeastOneCashRegister && !_hasCashRegistersCached)
         {
-            var queues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
-            if (queues == null || queues.Length == 0)
-                reason += "no cash registers (CashRegisterQueue); ";
+            reason += "no cash registers; ";
         }
 
-        Debug.Log($"[CustomerSpawner] Not spawning customers: {reason}");
+        if (!string.IsNullOrEmpty(reason))
+        {
+            Debug.Log($"[CustomerSpawner] Not spawning customers: {reason}");
+        }
     }
 
     private void SpawnOne()
     {
-        Transform sp = spawnPoints[UnityEngine.Random.Range(0, spawnPoints.Length)];
-        GameObject go = Instantiate(customerPrefab.gameObject, sp.position, sp.rotation);
+        // Alegem un model random din lista de prefabs
+        CustomerAI selectedPrefab = customerPrefabs[Random.Range(0, customerPrefabs.Count)];
+
+        Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        GameObject go = Instantiate(selectedPrefab.gameObject, sp.position, sp.rotation);
 
         var customer = go.GetComponent<CustomerAI>();
 
         if (customer != null)
         {
-            // 1. Generăm un buget random pentru acest client
-            int randomBudget = UnityEngine.Random.Range(minCustomerBudget, maxCustomerBudget + 1);
-
-            // 2. Transmitem bugetul prin Initialize
+            int randomBudget = Random.Range(minCustomerBudget, maxCustomerBudget + 1);
             customer.Initialize(_registry, exitPoint, randomBudget);
+
+            // Îl adăugăm în lista locală ca să îl contorizăm eficient
+            _activeCustomers.Add(customer);
         }
     }
 }

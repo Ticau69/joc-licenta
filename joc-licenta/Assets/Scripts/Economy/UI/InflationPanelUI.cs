@@ -53,7 +53,7 @@ public class InflationPanelUI : MonoBehaviour
             targetLabel.text = $"{targetInflationPercent:0.#}%";
 
         if (period != null)
-            period.text = $"Ultimele {daysToShow} zile({(showAsPercent ? "(%)" : "(multiplicator)")})";
+            period.text = $"Ultimele {daysToShow} zile({(showAsPercent ? "%" : "(multiplicator)")})";
         if (maxText != null)
             maxText.text = $"MAX({daysToShow} zile)";
     }

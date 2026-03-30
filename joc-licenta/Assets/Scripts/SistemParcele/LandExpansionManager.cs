@@ -24,5 +24,14 @@ public class LandExpansionManager : MonoBehaviour
         if (_lockedZones.Contains(zone)) _lockedZones.Remove(zone);
     }
 
+    private void OnDrawGizmosSelected()
+    {
+        Vector3 center = transform.position;
+        Vector3 size = new Vector3(12f, 4f, 12f); // Dublul lui halfExtents (6, 2, 6)
+
+        Gizmos.color = new Color(1f, 0f, 0f, 0.5f); // Un roșu transparent
+        Gizmos.DrawCube(center, size);
+    }
+
 
 }

@@ -56,15 +56,37 @@ public class RemovingState : IBuldingState
 
     public void OnAction(Vector3Int gridPosition)
     {
-        ClearHighlight(); // Curățăm filtrul roșu înainte de ștergere!
+        ClearHighlight();
 
         if (mainCamera == null) mainCamera = Camera.main;
 
         Ray ray = mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
         int layerMask = ~LayerMask.GetMask("Placement", "Ignore Raycast");
         RaycastHit[] hits = Physics.RaycastAll(ray, 100f, layerMask);
-
         System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
+
+        // PASUL 1: Verificăm TOATE hit-urile pentru uși mai întâi
+        if (doorData != null)
+        {
+            foreach (RaycastHit hit in hits)
+            {
+                GameObject hitObject = hit.collider.gameObject;
+                if (hitObject.name.Contains("gridVisualization") || hit.collider.isTrigger) continue;
+
+                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.5f)
+                             ?? doorData.FindDoorNearPoint(hitObject.transform.root.position, 0.5f)
+                             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
+
+                if (door != null)
+                {
+                    RestoreResources(door.DoorID);
+                    doorData.RemoveDoor(door.Position);
+                    return;
+                }
+            }
+        }
+
+        // PASUL 2: Dacă nu e ușă, verificăm pereți și restul
         int interactionLayer = LayerMask.NameToLayer("ObjectInteraction");
 
         foreach (RaycastHit hit in hits)
@@ -75,29 +97,36 @@ public class RemovingState : IBuldingState
                 hitObject.transform.root.name.Contains("gridVisualization") ||
                 hit.collider.isTrigger) continue;
 
-            if (doorData != null)
-            {
-                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f)
-                             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
-                if (door != null)
-                {
-                    RestoreResources(door.DoorID);
-                    doorData.RemoveDoor(door.Position);
-                    return;
-                }
-            }
-
             if (segmentData != null)
             {
-                ProceduralWall wallScript = hitObject.GetComponentInParent<ProceduralWall>();
-                if (wallScript != null)
+                string hitName = hitObject.name;
+                string wallKey = hitName;
+                int partIndex = hitName.LastIndexOf("_part");
+                if (partIndex != -1)
+                    wallKey = hitName.Substring(0, partIndex);
+
+                if (wallKey.StartsWith("wall_"))
                 {
-                    segmentData.RemoveSegmentsInRange(wallScript.transform.position, 0.5f, out int removedCount);
-                    if (removedCount > 0) return;
+                    if (segmentData.RemoveWallPartByKey(hitName, wallData))
+                    {
+                        // Ștergem din wallData ÎNTOTDEAUNA, nu doar la ultimul part
+                        // Altfel CanPlaceWall va bloca plasarea de pereți noi
+                        var allWalls = wallData.GetAllWalls();
+                        foreach (var wall in allWalls)
+                        {
+                            string expectedKey = $"wall_{wall.ID}_{wall.StartPosition.x:F2}_{wall.StartPosition.z:F2}";
+                            if (expectedKey == wallKey)
+                            {
+                                wallData.RemoveWall(wall.StartPosition, wall.EndPosition);
+                                break;
+                            }
+                        }
+
+                        return;
+                    }
                 }
             }
 
-            // DOAR dacă e obiect interactiv căutăm baza lui (previne erorile când dai click pe podea)
             if (hitObject.layer == interactionLayer)
             {
                 Vector3Int posFromRoot = grid.WorldToCell(hitObject.transform.root.position);
@@ -167,15 +196,22 @@ public class RemovingState : IBuldingState
 
             if (doorData != null)
             {
-                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.2f)
-                             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
-                if (door != null) return hitObject;
+                DoorInfo door = doorData.FindDoorNearPoint(hitObject.transform.position, 0.5f)
+             ?? doorData.FindDoorNearPoint(hitObject.transform.root.position, 0.5f)
+             ?? doorData.FindDoorNearPoint(hit.point, 1.0f);
+                if (door != null) return hitObject.transform.root.gameObject;
             }
 
             if (segmentData != null)
             {
-                ProceduralWall wallScript = hitObject.GetComponentInParent<ProceduralWall>();
-                if (wallScript != null) return wallScript.gameObject;
+                string hitName = hitObject.name;
+                string wallKey = hitName;
+                int partIndex = hitName.LastIndexOf("_part");
+                if (partIndex != -1)
+                    wallKey = hitName.Substring(0, partIndex);
+
+                if (wallKey.StartsWith("wall_"))
+                    return hitObject;
             }
 
             if (hitObject.layer == interactionLayer)

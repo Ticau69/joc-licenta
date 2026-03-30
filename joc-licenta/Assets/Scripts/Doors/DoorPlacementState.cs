@@ -13,6 +13,7 @@ public class DoorPlacementState : IBuldingState
     private WallGridData wallData;
     private WallSegmentData segmentData; // NOU: Pentru ștergerea segmentelor
     private DoorData doorData; // NOU: Pentru ștergerea ușilor
+    private PlayerInput playerInput;
 
     private GameObject doorPreview;
     private GameObject doorPrefab;
@@ -24,8 +25,14 @@ public class DoorPlacementState : IBuldingState
     private bool hasValidPlacement = false;
 
     // Setări pentru uși
-    private float doorWidth = 2f; // Lățimea usei
+    private float doorWidth = 1.8f; // Lățimea usei
     private float snapDistance = 1.5f; // Distanța maximă pentru snap la perete
+
+    private Material previewMaterialInstance;
+    private bool lastValidState = false;
+    private WallData cachedNearestWall;
+    private Vector3 lastMousePos;
+    private const float MOUSE_MOVE_THRESHOLD = 0.1f;
 
     public DoorPlacementState(
         int iD,
@@ -36,7 +43,9 @@ public class DoorPlacementState : IBuldingState
         GameManager gameManager,
         WallGridData wallData,
         WallSegmentData segmentData,
-        DoorData doorData) // NOU
+        DoorData doorData,
+        Material previewMaterial,
+        PlayerInput playerInput) // NOU
     {
         this.ID = iD;
         this.grid = grid;
@@ -46,8 +55,10 @@ public class DoorPlacementState : IBuldingState
         this.gameManager = gameManager;
         this.wallData = wallData;
         this.segmentData = segmentData;
-        this.doorData = doorData; // NOU
+        this.doorData = doorData;
+        this.playerInput = playerInput;
 
+        previewMaterialInstance = new Material(previewMaterial);
         selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
 
         if (selectedObjectIndex > -1)
@@ -68,6 +79,9 @@ public class DoorPlacementState : IBuldingState
 
     public void EndState()
     {
+        // Distrugem doar instanța runtime, nu materialul original din Inspector
+        if (previewMaterialInstance != null)
+            GameObject.Destroy(previewMaterialInstance);
         CleanupPreview();
         previewSystem.ToggleCursorVisibility(false);
     }
@@ -137,15 +151,19 @@ public class DoorPlacementState : IBuldingState
     /// </summary>
     private WallData FindNearestWallToMouse(Vector3 mousePos)
     {
+        // Skip dacă mouse-ul nu s-a mișcat suficient
+        if (Vector3.Distance(mousePos, lastMousePos) < MOUSE_MOVE_THRESHOLD)
+            return cachedNearestWall;
+
+        lastMousePos = mousePos;
+
         var allWalls = wallData.GetAllWalls();
         WallData nearestWall = null;
         float minDistance = float.MaxValue;
 
         foreach (var wall in allWalls)
         {
-            // Calculăm distanța de la mouse la linia peretelui
             float distance = DistanceToLineSegment(mousePos, wall.StartPosition, wall.EndPosition);
-
             if (distance < minDistance && distance < snapDistance)
             {
                 minDistance = distance;
@@ -153,6 +171,7 @@ public class DoorPlacementState : IBuldingState
             }
         }
 
+        cachedNearestWall = nearestWall;
         return nearestWall;
     }
 
@@ -186,6 +205,14 @@ public class DoorPlacementState : IBuldingState
             Vector3 wallDir = wall.GetDirection();
             projectedPoint = wall.EndPosition - wallDir * halfDoorWidth;
         }
+
+        if (doorData.HasDoorAt(currentDoorPosition, doorWidth))
+        {
+            hasValidPlacement = false;
+            return;
+        }
+
+        hasValidPlacement = true;
 
         // 4. Setăm poziția finală (pe sol, y=0)
         currentDoorPosition = new Vector3(projectedPoint.x, 0, projectedPoint.z);
@@ -286,40 +313,21 @@ public class DoorPlacementState : IBuldingState
         }
     }
 
-    /// <summary>
-    /// Aplică material de preview (roșu/alb cu transparență)
-    /// </summary>
     private void ApplyPreviewMaterial(GameObject obj, bool isValid, float alpha = 0.5f)
     {
+        // Nu facem nimic dacă starea nu s-a schimbat
+        if (isValid == lastValidState) return;
+        lastValidState = isValid;
+
+        // Schimbăm doar culoarea pe instanța existentă
+        Color color = isValid ? Color.white : Color.red;
+        color.a = alpha;
+        previewMaterialInstance.color = color;
+
+        // Aplicăm instanța pe toți rendererii
         Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
-
-        foreach (var renderer in renderers)
-        {
-            Material[] materials = renderer.materials;
-
-            for (int i = 0; i < materials.Length; i++)
-            {
-                Material previewMat = new Material(materials[i]);
-
-                Color color = isValid ? Color.white : Color.red;
-                color.a = alpha;
-                previewMat.color = color;
-
-                // Setăm render mode la transparent
-                previewMat.SetFloat("_Mode", 3);
-                previewMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                previewMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                previewMat.SetInt("_ZWrite", 0);
-                previewMat.DisableKeyword("_ALPHATEST_ON");
-                previewMat.EnableKeyword("_ALPHABLEND_ON");
-                previewMat.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-                previewMat.renderQueue = 3000;
-
-                materials[i] = previewMat;
-            }
-
-            renderer.materials = materials;
-        }
+        foreach (var r in renderers)
+            r.sharedMaterial = previewMaterialInstance;
     }
 
     // ============ FUNCȚII MATEMATICE HELPER ============

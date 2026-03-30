@@ -10,6 +10,29 @@ public class DoorData
 {
     // Dicționar: Cheie = Poziție rotunjită, Valoare = Date ușă
     private Dictionary<string, DoorInfo> placedDoors = new();
+    private float gridSize = 1f;
+
+    private List<string> GetNearbyKeys(Vector3 position, float tolerance)
+    {
+        List<string> keys = new List<string>();
+
+        // Folosim același format ca GenerateKey — pași de 0.5 în loc de 1
+        float step = 0.5f;
+        int range = Mathf.CeilToInt(tolerance / step);
+
+        float baseX = Mathf.Round(position.x / step) * step;
+        float baseZ = Mathf.Round(position.z / step) * step;
+
+        for (int x = -range; x <= range; x++)
+            for (int z = -range; z <= range; z++)
+            {
+                float kx = baseX + x * step;
+                float kz = baseZ + z * step;
+                keys.Add($"door_{kx:F2}_{kz:F2}");
+            }
+
+        return keys;
+    }
 
     /// <summary>
     /// Adaugă o ușă în tracking
@@ -37,15 +60,11 @@ public class DoorData
     {
         foreach (var door in placedDoors.Values)
         {
-            float distance = Vector3.Distance(point, door.Position);
-            if (distance < tolerance)
-            {
+            if (Vector3.Distance(point, door.Position) < tolerance)
                 return door;
-            }
         }
         return null;
     }
-
     /// <summary>
     /// Șterge o ușă
     /// </summary>

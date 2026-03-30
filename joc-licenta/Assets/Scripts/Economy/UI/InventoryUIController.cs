@@ -19,6 +19,7 @@ public class InventoryUIController : MonoBehaviour
     private Slider _priceSlider;
     private Label _priceDisplayLabel;
     private Label _profitDisplayLabel;
+    private Label _storageCapacityLabel;
 
     private IEconomyService _economy;
     private IInventoryService _inventory;
@@ -28,6 +29,9 @@ public class InventoryUIController : MonoBehaviour
 
     private ProductType _currentViewingProduct = ProductType.None;
     private float _updateTimer = 0f;
+
+    private readonly HashSet<ProductType> _overpricedProducts = new HashSet<ProductType>();
+    private Label _priceWarningLabel;
 
     // Caching pentru performanță
     private readonly Dictionary<ProductType, (int stock, string status, Color color)> _cachedStockData
@@ -63,18 +67,24 @@ public class InventoryUIController : MonoBehaviour
         _priceSlider = root.Q<Slider>("PriceSlider");
         _priceDisplayLabel = root.Q<Label>("PriceDisplay");
         _profitDisplayLabel = root.Q<Label>("ProfitDisplay");
+        _priceWarningLabel = root.Q<Label>("PriceWarningLabel");
+        _storageCapacityLabel = root.Q<Label>("StorageCapacityLabel");
 
         if (_inventoryList == null) Debug.LogError("[InventoryUI] InventoryList not found in UI!");
         if (_detailsPanel == null) Debug.LogError("[InventoryUI] DetailsPanel not found in UI!");
+        if (_priceDisplayLabel != null && _priceDisplayLabel.parent != null)
+        {
+            _priceDisplayLabel.parent.Add(_priceWarningLabel);
+        }
     }
 
     private void SetupEventListeners()
     {
-        if (_priceSlider != null)
-        {
-            _priceSlider.RegisterValueChangedCallback(OnPriceChanged);
-        }
+        if (_priceSlider != null) _priceSlider.RegisterValueChangedCallback(OnPriceChanged);
+
         _eventBus.Subscribe<StockChangedEvent>(OnStockChanged);
+        // --- NOU: Ascultăm când clienții se plâng de preț ---
+        _eventBus.Subscribe<ProductPricedTooHighEvent>(OnProductPricedTooHigh);
     }
 
     private void OnStockChanged(StockChangedEvent evt)
@@ -83,6 +93,41 @@ public class InventoryUIController : MonoBehaviour
         if (evt.Product == _currentViewingProduct)
         {
             UpdateCurrentProductDetails();
+        }
+    }
+
+    private void OnPriceChanged(ChangeEvent<float> evt)
+    {
+        if (_currentViewingProduct == ProductType.None) return;
+
+        _economy.UpdateSellingPrice(_currentViewingProduct, evt.newValue);
+
+        if (_economy.TryGetProductData(_currentViewingProduct, out ProductEconomics data))
+        {
+            UpdatePriceLabels(data);
+        }
+
+        // --- NOU: Dacă modifică prețul, scoatem produsul din "lista neagră" a clienților! ---
+        if (_overpricedProducts.Contains(_currentViewingProduct))
+        {
+            _overpricedProducts.Remove(_currentViewingProduct);
+            _needsRefresh = true;
+            if (_priceWarningLabel != null) _priceWarningLabel.style.display = DisplayStyle.None;
+        }
+    }
+
+    private void OnProductPricedTooHigh(ProductPricedTooHighEvent evt)
+    {
+        // Adăugăm produsul în lista neagră. Dacă nu era deja acolo, dăm refresh la UI.
+        if (_overpricedProducts.Add(evt.Product))
+        {
+            _needsRefresh = true;
+
+            // Dacă jucătorul se uită CHIAR ACUM la acest produs, îi dăm update panoului din dreapta
+            if (_currentViewingProduct == evt.Product)
+            {
+                UpdateCurrentProductDetails();
+            }
         }
     }
 
@@ -101,15 +146,10 @@ public class InventoryUIController : MonoBehaviour
         }
     }
 
-    // --- MODIFICARE PRINCIPALĂ AICI ---
     private void RefreshInventoryList()
     {
         if (_inventoryList == null) return;
 
-        // Folosim direct referința _inventory (salvată în Initialize)
-        if (_inventory?.MainStorage == null) return;
-
-        // Verificăm dacă avem baza de date conectată
         if (_productDB == null)
         {
             Debug.LogError("[InventoryUI] Nu pot genera lista - ProductDB lipsește!");
@@ -119,8 +159,9 @@ public class InventoryUIController : MonoBehaviour
         _inventoryList.Clear();
         _cachedStockData.Clear();
 
-        // Iterăm prin produsele din Baza de Date (Lista Master)
-        // Asta asigură că vedem TOATE produsele definite, chiar dacă stocul e 0.
+        // Variabilă nouă pentru a ști când suntem la primul produs
+        bool isFirstProduct = true;
+
         foreach (var productData in _productDB.allProducts)
         {
             ProductType type = productData.type;
@@ -131,7 +172,6 @@ public class InventoryUIController : MonoBehaviour
 
             _cachedStockData[type] = (amount, status, color);
 
-            // Creăm rândul în UI
             var row = UIRowFactory.CreateInventoryRow(
                 type,
                 amount,
@@ -139,10 +179,59 @@ public class InventoryUIController : MonoBehaviour
                 color,
                 () => ShowProductDetails(type));
 
+            // Lipim iconița de avertisment pe rândul din listă, dacă e cazul
+            if (_overpricedProducts != null && _overpricedProducts.Contains(type))
+            {
+                Label listWarningIcon = new Label("📉 Preț prea mare!");
+                listWarningIcon.style.color = new Color(1f, 0.2f, 0.2f);
+                listWarningIcon.style.unityFontStyleAndWeight = FontStyle.Bold;
+
+                // --- REPARAȚIA: Poziționare Absolută ---
+                listWarningIcon.style.position = Position.Absolute;
+                listWarningIcon.style.right = 80; // Îl punem cu 80px spre stânga (chiar înainte de butonul VIEW)
+                listWarningIcon.style.alignSelf = Align.Center;
+
+                row.Add(listWarningIcon);
+            }
+
             _inventoryList.Add(row);
+
+            // --- NOU: Autoselectarea primului produs la deschiderea panoului ---
+            // Dacă este primul produs generat ȘI jucătorul nu se uită deja la altceva
+            if (isFirstProduct && _currentViewingProduct == ProductType.None)
+            {
+                ShowProductDetails(type);
+            }
+            isFirstProduct = false; // După prima trecere, nu mai este primul produs
+        }
+
+        if (_storageCapacityLabel != null && _inventory != null)
+        {
+            int used = _inventory.GetUsedCapacity();
+            int total = _inventory.GetTotalCapacity();
+
+            _storageCapacityLabel.text = $"{used} / {total}";
+
+            // Feedback vizual (Colorăm textul dacă depozitul se umple)
+            if (total == 0)
+            {
+                _storageCapacityLabel.text = "Fără Rafturi!";
+                _storageCapacityLabel.style.color = new Color(1f, 0.2f, 0.2f); // Roșu
+            }
+            else if (used >= total)
+            {
+                _storageCapacityLabel.style.color = new Color(1f, 0.2f, 0.2f); // Roșu (Plin)
+            }
+            else if (used >= total * 0.8f)
+            {
+                _storageCapacityLabel.style.color = new Color(1f, 0.8f, 0.2f); // Portocaliu (Aproape plin - 80%)
+            }
+            else
+            {
+                _storageCapacityLabel.style.color = new Color(1f, 1f, 1f); // Alb normal
+            }
         }
     }
-    // ----------------------------------
 
     private void ShowProductDetails(ProductType type)
     {
@@ -159,6 +248,12 @@ public class InventoryUIController : MonoBehaviour
         UpdateProductInfo(type);
         UpdateStockInfo(stockData);
         UpdatePricingControls(type);
+
+        if (_priceWarningLabel != null)
+        {
+            bool isOverpriced = _overpricedProducts.Contains(type);
+            _priceWarningLabel.style.display = isOverpriced ? DisplayStyle.Flex : DisplayStyle.None;
+        }
     }
 
     private void UpdateProductInfo(ProductType type)
@@ -210,18 +305,6 @@ public class InventoryUIController : MonoBehaviour
         UpdatePriceLabels(data);
     }
 
-    private void OnPriceChanged(ChangeEvent<float> evt)
-    {
-        if (_currentViewingProduct == ProductType.None) return;
-
-        _economy.UpdateSellingPrice(_currentViewingProduct, evt.newValue);
-
-        if (_economy.TryGetProductData(_currentViewingProduct, out ProductEconomics data))
-        {
-            UpdatePriceLabels(data);
-        }
-    }
-
     private void UpdatePriceLabels(ProductEconomics data)
     {
         if (_priceDisplayLabel != null)
@@ -246,10 +329,9 @@ public class InventoryUIController : MonoBehaviour
     void OnDestroy()
     {
         _eventBus?.Unsubscribe<StockChangedEvent>(OnStockChanged);
+        // --- NOU: Dezabonare ---
+        _eventBus?.Unsubscribe<ProductPricedTooHighEvent>(OnProductPricedTooHigh);
 
-        if (_priceSlider != null)
-        {
-            _priceSlider.UnregisterValueChangedCallback(OnPriceChanged);
-        }
+        if (_priceSlider != null) _priceSlider.UnregisterValueChangedCallback(OnPriceChanged);
     }
 }

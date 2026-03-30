@@ -1,139 +1,245 @@
 using UnityEngine;
-using UnityEngine.InputSystem; // NOU: Folosim noul sistem
-using UnityEngine.EventSystems;
+using UnityEngine.UIElements;
+using System.Collections;
+using UnityEngine.ProBuilder.Shapes;
 
 [RequireComponent(typeof(Collider))]
 public class ExpansionZone : MonoBehaviour
 {
     [Header("Setări Parcelă")]
     public int unlockCost = 15000;
-
-    [Header("Podeaua care se deblochează")]
-    [Tooltip("Trage aici obiectul Plane care trebuie să primească layer-ul Placement")]
     public GameObject floorPlane;
-
-    [Header("Vizualizare Grid Parcelă")]
-    [Tooltip("Trage aici obiectul gridVisualization (pătrățelele albe) de pe ACEASTĂ parcelă")]
     public GameObject myGridVisual;
 
-    private Camera _mainCamera;
+    [Header("Vizualizare & UI")]
+    public MeshRenderer cubeVisual;
+    public UIDocument costUIDocument;
+
+    [Header("Culori Stare")]
+    public Color availableColor = new Color(0.2f, 0.8f, 0.2f, 0.4f); // Verde transparent
+    public Color lockedColor = new Color(0.5f, 0.5f, 0.5f, 0.2f);
+
+    private Collider _collider;
+    private bool _isExpandModeActive = false;
+    private bool _isAvailableToBuy = false;
+    private Button _buyButton;
 
     private void Start()
     {
-        _mainCamera = Camera.main;
+        _collider = GetComponent<Collider>();
+
+        // 1. Oprim vizualurile la start
+        if (cubeVisual != null) cubeVisual.enabled = false;
+        if (_collider != null) _collider.enabled = false;
+
+        // 2. Setup UI Toolkit (Găsim textul și butonul verde!)
+        if (costUIDocument != null && costUIDocument.rootVisualElement != null)
+        {
+            Label priceLabel = costUIDocument.rootVisualElement.Q<Label>("PlotCost");
+            if (priceLabel != null) priceLabel.text = $"{unlockCost:N0} RON";
+
+            _buyButton = costUIDocument.rootVisualElement.Q<Button>("BuyButton");
+            if (_buyButton != null)
+            {
+                // AICI LEGĂM BUTONUL! Când e apăsat, apelează TryBuyZone
+                _buyButton.clicked += TryBuyZone;
+            }
+
+            costUIDocument.rootVisualElement.style.display = DisplayStyle.None;
+        }
+
+        // 3. Ne abonăm la radio
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Subscribe<ToggleExpansionModeEvent>(OnToggleExpansionMode);
+            eventBus.Subscribe<CloseAllUIEvent>(OnCloseAllUI);
+            eventBus.Subscribe<PlotUnlockedEvent>(OnNeighborUnlocked); // Ascultăm dacă un vecin a fost cumpărat
+        }
     }
 
-    private void Update()
+    private void OnDestroy()
     {
-        // 1. Verificăm dacă jucătorul a apăsat click stânga fix în acest frame
-        if (Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
         {
-            // 2. Ignorăm dacă a dat click pe un buton din UI
-            if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject())
-                return;
+            eventBus.Unsubscribe<ToggleExpansionModeEvent>(OnToggleExpansionMode);
+            eventBus.Unsubscribe<CloseAllUIEvent>(OnCloseAllUI);
+            eventBus.Unsubscribe<PlotUnlockedEvent>(OnNeighborUnlocked); // Linia lipsă
+        }
 
-            // 3. Tragem o "rază laser" din cameră spre poziția mouse-ului
-            Ray ray = _mainCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
-            RaycastHit hit;
+        if (_buyButton != null)
+            _buyButton.clicked -= TryBuyZone;
+    }
 
-            // 4. Verificăm dacă raza a lovit ceva
-            if (Physics.Raycast(ray, out hit, 100f))
+    private void OnToggleExpansionMode(ToggleExpansionModeEvent e)
+    {
+        _isExpandModeActive = e.IsActive;
+
+        if (_isExpandModeActive)
+        {
+            // Începem procesul de evaluare în fundal (fără să arătăm cubul încă!)
+            StartCoroutine(EvaluateAndShowRoutine());
+        }
+        else
+        {
+            // Oprim orice calcul în așteptare
+            StopAllCoroutines();
+
+            // Stingem totul instantaneu la ieșirea din mod
+            if (cubeVisual != null) cubeVisual.enabled = false;
+            if (costUIDocument != null && costUIDocument.rootVisualElement != null)
             {
-                // Dacă obiectul lovit de rază este CHIAR ACEST obiect, înseamnă că am dat click pe el!
-                if (hit.collider.gameObject == this.gameObject)
-                {
-                    TryBuyZone();
-                }
+                costUIDocument.rootVisualElement.style.display = DisplayStyle.None;
             }
         }
     }
 
+    private IEnumerator EvaluateAndShowRoutine()
+    {
+        // Așteptăm 2 cadre de fizică (FixedUpdate) pentru a fi 100% siguri 
+        // că PlacementSystem a aprins gridul și Unity l-a înregistrat
+        yield return new WaitForFixedUpdate();
+        yield return new WaitForFixedUpdate();
+
+        // 1. Facem calculele de proximitate (Asta va seta _isAvailableToBuy și va alege culoarea corectă)
+        EvaluateAvailability();
+
+        // 2. ABIA ACUM aprindem cubul! (Va apărea direct verde sau gri, fără acel "flash" ciudat)
+        if (cubeVisual != null) cubeVisual.enabled = true;
+
+        // 3. Aprindem și UI-ul DOAR dacă parcela e verde (disponibilă)
+        if (costUIDocument != null && costUIDocument.rootVisualElement != null)
+        {
+            costUIDocument.rootVisualElement.style.display = _isAvailableToBuy ? DisplayStyle.Flex : DisplayStyle.None;
+        }
+    }
+
+    private void EvaluateAvailability()
+    {
+        Vector3 center = transform.position;
+        // Ajustăm distanța de scanare: jumătate din mărimea parcelei tale + o mică marjă
+        // Dacă parcela are 10x10, scanăm la 5.5 unități distanță.
+        float scanDistance = 5.5f;
+        int placementLayerMask = 1 << LayerMask.NameToLayer("Placement");
+
+        // Verificăm în cele 4 direcții cardinale (NU pe diagonală)
+        bool hitRight = Physics.CheckSphere(center + Vector3.right * scanDistance, 0.5f, placementLayerMask);
+        bool hitLeft = Physics.CheckSphere(center + Vector3.left * scanDistance, 0.5f, placementLayerMask);
+        bool hitForward = Physics.CheckSphere(center + Vector3.forward * scanDistance, 0.5f, placementLayerMask);
+        bool hitBack = Physics.CheckSphere(center + Vector3.back * scanDistance, 0.5f, placementLayerMask);
+
+        // Parcela este disponibilă DOAR dacă se atinge de o latură, nu de un colț
+        _isAvailableToBuy = hitRight || hitLeft || hitForward || hitBack;
+
+        if (cubeVisual != null)
+        {
+            cubeVisual.material.color = _isAvailableToBuy ? availableColor : lockedColor;
+        }
+    }
+
+    private void OnNeighborUnlocked(PlotUnlockedEvent e)
+    {
+        if (_isExpandModeActive)
+        {
+            EvaluateAvailability();
+
+            // Re-evaluăm și UI-ul dacă un vecin s-a deblocat!
+            if (costUIDocument != null && costUIDocument.rootVisualElement != null)
+            {
+                costUIDocument.rootVisualElement.style.display = _isAvailableToBuy ? DisplayStyle.Flex : DisplayStyle.None;
+            }
+        }
+    }
+
+    private void OnCloseAllUI(CloseAllUIEvent e)
+    {
+        // Forțăm ascunderea dacă s-a deschis alt panou (ex: Angajați)
+        OnToggleExpansionMode(new ToggleExpansionModeEvent(false));
+    }
+
     public void TryBuyZone()
     {
+        if (!_isAvailableToBuy) return; // Plasa de siguranță: nu poți cumpăra dacă e gri!
+
         if (ServiceLocator.Instance.TryGet(out IMoneyService money))
         {
             if (money.CanAfford(unlockCost))
             {
                 money.TrySpend(unlockCost);
-
-                if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
-                {
-                    eventBus.Publish(new ShowNotificationEvent(
-                        "Extindere Finalizată",
-                        "Ai deblocat o nouă parcelă pentru magazinul tău!",
-                        NotificationType.Success));
-                }
-
                 UnlockLand();
-            }
-            else
-            {
-                if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
-                {
-                    eventBus.Publish(new ShowNotificationEvent(
-                        "Fonduri Insuficiente",
-                        $"Ai nevoie de {unlockCost} RON pentru a cumpăra această parcelă.",
-                        NotificationType.Error));
-                }
             }
         }
     }
 
     private void UnlockLand()
     {
-        // 1. Schimbăm layer-ul podelei în "Placement"
         int placementLayer = LayerMask.NameToLayer("Placement");
 
-        if (floorPlane != null)
+        if (cubeVisual != null) cubeVisual.enabled = false;
+
+        Transform gridVis = transform.Find("gridVisualization");
+        if (gridVis != null)
         {
-            floorPlane.layer = placementLayer;
-            foreach (Transform child in floorPlane.transform)
+            gridVis.gameObject.layer = placementLayer;
+
+            MeshRenderer meshRenderer = gridVis.GetComponent<MeshRenderer>();
+            if (meshRenderer != null)
             {
-                child.gameObject.layer = placementLayer;
+                meshRenderer.enabled = true;
+                meshRenderer.material.SetColor("_Color", Color.white);
             }
         }
 
-        // --- NOU: Adăugăm grid-ul nou în Placement System ---
-        PlacementSystem placementSystem = UnityEngine.Object.FindFirstObjectByType<PlacementSystem>();
-        if (placementSystem != null && myGridVisual != null)
+        // FIX: Dezabonare înainte de Publish
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
         {
-            placementSystem.AddGridVisual(myGridVisual);
-        }
-        else
-        {
-            Debug.LogWarning("[ExpansionZone] Nu s-a găsit PlacementSystem sau myGridVisual e gol!");
-        }
-        // ----------------------------------------------------
-
-        // 2. OPRIM Collider-ul în loc să îl distrugem
-        if (GetComponent<Collider>() != null)
-        {
-            GetComponent<Collider>().enabled = false;
+            eventBus.Unsubscribe<ToggleExpansionModeEvent>(OnToggleExpansionMode);
+            eventBus.Unsubscribe<CloseAllUIEvent>(OnCloseAllUI);
+            eventBus.Unsubscribe<PlotUnlockedEvent>(OnNeighborUnlocked);
         }
 
-        CameraController camController = UnityEngine.Object.FindFirstObjectByType<CameraController>();
-        if (camController != null && myGridVisual != null)
+        // Extindem limitele camerei cu podeaua acestei parcele
+        CameraController cam = UnityEngine.Object.FindFirstObjectByType<CameraController>();
+        if (cam != null)
         {
-            // Luăm componenta vizuală DIRECT de pe variabila ta!
-            Renderer gridRenderer = myGridVisual.GetComponent<Renderer>();
-
-            // Plasa de siguranță: dacă e pusă pe un copil al lui myGridVisual
-            if (gridRenderer == null)
+            // Folosim floorPlane dacă e setat, altfel căutăm un Renderer direct pe obiect
+            if (floorPlane != null)
             {
-                gridRenderer = myGridVisual.GetComponentInChildren<Renderer>();
-            }
-
-            if (gridRenderer != null)
-            {
-                camController.AddMapRenderer(gridRenderer);
+                Renderer floorRenderer = floorPlane.GetComponentInChildren<Renderer>();
+                if (floorRenderer != null)
+                    cam.AddMapRenderer(floorRenderer);
+                else
+                    Debug.LogWarning("[UNLOCK] floorPlane nu are Renderer nici pe copii!");
             }
             else
             {
-                Debug.LogWarning("[ExpansionZone] Nu s-a găsit niciun Renderer pe myGridVisual!");
+                // Fallback: folosim gridVisualization ca referință de bounds
+                Transform gv = transform.Find("gridVisualization");
+                if (gv != null)
+                {
+                    Renderer gvRenderer = gv.GetComponent<Renderer>();
+                    if (gvRenderer != null)
+                        cam.AddMapRenderer(gvRenderer);
+                }
+                Debug.LogWarning("[UNLOCK] floorPlane nu e setat în Inspector! Folosesc gridVisualization ca fallback.");
             }
         }
+        else
+        {
+            Debug.LogError("[UNLOCK] CameraController nu a fost găsit în scenă!");
+        }
 
-        // 3. Ne distrugem pe noi
+        PlacementSystem placementSystem = UnityEngine.Object.FindFirstObjectByType<PlacementSystem>();
+        if (placementSystem != null)
+            placementSystem.AddGridVisual(this.gameObject);
+
+        if (ServiceLocator.Instance.TryGet(out IEventBus eventBus2))
+            eventBus2.Publish(new PlotUnlockedEvent());
+
+        if (costUIDocument != null)
+            costUIDocument.rootVisualElement.style.display = DisplayStyle.None;
+
+        if (_buyButton != null) _buyButton.clicked -= TryBuyZone;
+
         Destroy(this);
     }
 }

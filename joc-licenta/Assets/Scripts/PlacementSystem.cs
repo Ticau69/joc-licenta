@@ -8,11 +8,16 @@ public class PlacementSystem : MonoBehaviour
     [SerializeField] private ObjectDataBase database;
     [Header("Grid Visuals")]
     [Tooltip("Trage aici toate obiectele gridVisualization din scenă")]
-    [SerializeField] private List<GameObject> gridVisualizations = new List<GameObject>();
+    [SerializeField] private List<MeshRenderer> gridVisualizations = new List<MeshRenderer>();
     [SerializeField] private PreviewSystem previewSystem;
     [SerializeField] private ObjectPlacer objectPlacer;
     [SerializeField] private GameManager gameManager;
-    [SerializeField] private Shader wallPreviewShader;
+
+    [Header("Preview Materials")]
+    [SerializeField] private Material wallPreviewMaterial;
+    [SerializeField] private Material doorPreviewMaterial;
+
+    [SerializeField] private ToolTipController toolTipController;
 
     private GridData floorData, furnitureData;
     private WallGridData wallData;
@@ -22,6 +27,7 @@ public class PlacementSystem : MonoBehaviour
     private IBuldingState buildingState;
 
     private bool isWallMode = false;
+    private bool _isGridVisible = false;
 
     private void Start()
     {
@@ -30,7 +36,24 @@ public class PlacementSystem : MonoBehaviour
         furnitureData = new();
         wallData = new WallGridData();
         segmentData = new WallSegmentData(0.5f);
-        doorData = new DoorData(); // NOU: Inițializăm tracking-ul pentru uși
+        doorData = new DoorData();
+
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Subscribe<ToggleExpansionModeEvent>(OnExpansionModeToggled);
+            Debug.Log("[GRID] Subscribed la ToggleExpansionModeEvent cu succes!");
+        }
+        else
+        {
+            Debug.LogError("[GRID] ServiceLocator/EventBus NULL în Start!");
+        }
+    }
+
+
+    private void OnDisable()
+    {
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+            eventBus.Unsubscribe<ToggleExpansionModeEvent>(OnExpansionModeToggled);
     }
 
     private void Update()
@@ -52,34 +75,65 @@ public class PlacementSystem : MonoBehaviour
         }
     }
 
-    private void ToggleGridVisuals(bool isActive)
+    private void OnExpansionModeToggled(ToggleExpansionModeEvent e)
     {
-        foreach (GameObject visual in gridVisualizations)
+        Debug.Log($"[GRID] OnExpansionModeToggled primit! IsActive={e.IsActive}");
+        if (e.IsActive)
         {
-            if (visual != null)
-            {
-                visual.SetActive(isActive);
-            }
+            StopPlacement();
+            playerInput.canInteract = true;
+            ToggleGridVisuals(true);
+        }
+        else
+        {
+            ToggleGridVisuals(false);
         }
     }
 
-    public void AddGridVisual(GameObject newVisual)
+    private void ToggleGridVisuals(bool isActive)
     {
-        if (newVisual != null && !gridVisualizations.Contains(newVisual))
-        {
-            gridVisualizations.Add(newVisual);
+        _isGridVisible = isActive;
+        Debug.Log($"[GRID] ToggleGridVisuals({isActive}) — {gridVisualizations.Count} renderere în listă");
 
-            // Verificăm dacă primul grid din listă (cel al magazinului) este aprins.
-            // Dacă da, înseamnă că suntem în modul Build, deci aprindem și noul grid instant!
-            if (gridVisualizations.Count > 0 && gridVisualizations[0].activeSelf)
+        foreach (MeshRenderer meshRenderer in gridVisualizations)
+        {
+            if (meshRenderer == null)
             {
-                newVisual.SetActive(true);
+                Debug.LogError("[GRID] MeshRenderer NULL în listă!");
+                continue;
             }
-            else
-            {
-                newVisual.SetActive(false); // Altfel îl ținem ascuns până deschide meniul
-            }
+            Debug.Log($"[GRID] Setez {meshRenderer.gameObject.name}.enabled = {isActive}");
+            meshRenderer.enabled = isActive;
         }
+    }
+
+    public void AddGridVisual(GameObject newVisualParent)
+    {
+        if (newVisualParent == null) return;
+
+        Transform visualChild = newVisualParent.transform.Find("gridVisualization");
+        if (visualChild == null)
+        {
+            Debug.LogError($"[GRID] Nu am găsit 'gridVisualization' în {newVisualParent.name}!");
+            return;
+        }
+
+        MeshRenderer meshRenderer = visualChild.GetComponent<MeshRenderer>();
+        if (meshRenderer == null)
+        {
+            Debug.LogError($"[GRID] Nu am găsit MeshRenderer pe gridVisualization din {newVisualParent.name}!");
+            return;
+        }
+
+        if (gridVisualizations.Contains(meshRenderer))
+        {
+            Debug.LogWarning($"[GRID] {newVisualParent.name} era deja în listă!");
+            return;
+        }
+
+        gridVisualizations.Add(meshRenderer);
+        meshRenderer.enabled = _isGridVisible;
+        Debug.Log($"[GRID] AddGridVisual: {newVisualParent.name} adăugat | _isGridVisible={_isGridVisible} | enabled={meshRenderer.enabled}");
     }
 
     public void StartPlacement(int ID)
@@ -89,12 +143,12 @@ public class PlacementSystem : MonoBehaviour
 
         playerInput.canInteract = false;
 
-        if (ID == 0) // Podea
+        if (ID == 0 || ID == 5) // Podea
         {
             isWallMode = false;
             buildingState = new BoxPlacementState(
                 ID, grid, previewSystem, database,
-                floorData, objectPlacer, gameManager);
+                floorData, objectPlacer, gameManager, toolTipController);
 
             playerInput.OnClick += PlaceStructure;
         }
@@ -103,17 +157,22 @@ public class PlacementSystem : MonoBehaviour
             isWallMode = true;
             buildingState = new WallPlacementState(
                 ID, grid, previewSystem, database,
-                objectPlacer, gameManager, playerInput, wallData, segmentData, wallPreviewShader);
+                objectPlacer, gameManager, playerInput,
+                wallData, segmentData,
+                wallPreviewMaterial, toolTipController); // în loc de wallPreviewShader
 
-            playerInput.OnClick += PlaceStructure; // Adaugă puncte
-            playerInput.OnRightClick += CancelWallSegment; // Anulare
+            playerInput.OnClick += PlaceStructure;
+            playerInput.OnRightClick += CancelWallSegment;
+            playerInput.OnConfirm += FinalizeWall;
         }
         else if (ID == 2) // Ușă - WALL SNAP MODE
         {
             isWallMode = false;
             buildingState = new DoorPlacementState(
                 ID, grid, previewSystem, database,
-                objectPlacer, gameManager, wallData, segmentData, doorData); // +doorData
+                objectPlacer, gameManager,
+                wallData, segmentData, doorData,
+                doorPreviewMaterial, playerInput); // material nou
 
             playerInput.OnClick += PlaceStructure;
         }
@@ -154,6 +213,12 @@ public class PlacementSystem : MonoBehaviour
 
         playerInput.OnClick += PlaceStructure;
         playerInput.OnExit += StopPlacement;
+    }
+
+    private void FinalizeWall()
+    {
+        if (buildingState is WallPlacementState wallState)
+            wallState.ForceFinalize();
     }
 
     // Pentru obiecte normale și pereți multi-segment (click)
@@ -206,6 +271,7 @@ public class PlacementSystem : MonoBehaviour
         playerInput.OnRightClick -= CancelWallSegment;
         playerInput.OnExit -= StopPlacement;
         playerInput.OnRotate -= RotateStructure;
+        playerInput.OnConfirm -= FinalizeWall;
 
         lastDetectedPosition = Vector3Int.zero;
         buildingState = null;

@@ -6,45 +6,76 @@ using UnityEngine.InputSystem;
 public class PlayerInput : MonoBehaviour
 {
     [SerializeField] private Camera sceneCamera;
-    private Vector3 lastPosition;
     [SerializeField] private LayerMask placementLayerMask;
     [SerializeField] private LayerMask selectionLayerMask;
 
     // Evenimente separate pentru drag-and-place
-    public event Action OnClick;           // Click standard (pentru compatibilitate)
-    public event Action OnMouseDown;       // Mouse pressed
-    public event Action OnMouseUp;         // Mouse released
-    public event Action OnRightClick;      // Right click pentru anulare
+    [SerializeField] private InputActionAsset inputActions;
+    private InputAction confirmAction;
+    private Vector3 lastPosition;
+    public event Action OnClick;
+    public event Action OnMouseDown;
+    public event Action OnMouseUp;
+    public event Action OnRightClick;
     public event Action OnExit;
     public event Action OnRotate;
+    public event Action OnConfirm;
 
     public event Action<GameObject> OnObjectClicked;
 
     private bool isMouseDown = false;
     public bool canInteract = true;
 
+    private void Awake()
+    {
+        // Găsim acțiunea Confirm din action map-ul Building
+        var buildingMap = inputActions.FindActionMap("Building");
+        confirmAction = buildingMap?.FindAction("Confirm");
+    }
+
+    private void OnDisable()
+    {
+        DisableConfirm();
+    }
+
+    private void OnConfirmPerformed(InputAction.CallbackContext ctx)
+    {
+        if (!IsPointerOverUI())
+            OnConfirm?.Invoke();
+    }
+
+    public void EnableConfirm()
+    {
+        if (confirmAction != null)
+        {
+            confirmAction.Enable();
+            confirmAction.performed += OnConfirmPerformed;
+        }
+    }
+
+    public void DisableConfirm()
+    {
+        if (confirmAction != null)
+        {
+            confirmAction.performed -= OnConfirmPerformed;
+            confirmAction.Disable();
+        }
+    }
+
     void Update()
     {
         if (Mouse.current != null)
         {
-            // Detectăm CLICK STÂNGA
             if (Mouse.current.leftButton.wasPressedThisFrame)
             {
-
-                // 1. Verificăm dacă nu dăm click prin UI
                 if (!IsPointerOverUI())
-                {
-                    // 2. Încercăm să selectăm un obiect 3D
                     HandleObjectSelection();
-                }
 
-                // 3. Logica veche pentru Building System
                 isMouseDown = true;
                 OnMouseDown?.Invoke();
                 OnClick?.Invoke();
             }
 
-            // Detectăm mouse up (sfârșitul drag-ului)
             if (Mouse.current.leftButton.wasReleasedThisFrame)
             {
                 if (isMouseDown)
@@ -54,24 +85,17 @@ public class PlayerInput : MonoBehaviour
                 }
             }
 
-            // Detectăm right-click pentru anulare
             if (Mouse.current.rightButton.wasPressedThisFrame)
-            {
                 OnRightClick?.Invoke();
-            }
         }
 
         if (Keyboard.current != null)
         {
             if (Keyboard.current.escapeKey.wasPressedThisFrame)
-            {
                 OnExit?.Invoke();
-            }
 
             if (Keyboard.current.rKey.wasPressedThisFrame)
-            {
                 OnRotate?.Invoke();
-            }
         }
     }
 

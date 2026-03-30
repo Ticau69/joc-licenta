@@ -193,10 +193,18 @@ public class EmployeeUIManager : MonoBehaviour
         }
 
         // 3. Dacă am ajuns aici, totul e OK (are loc liber și a plătit). Facem angajarea!
-        string[] randomNames = { "Andrei", "Elena", "Mihai", "Ana", "George", "Ioana", "Vasile" };
-        string generatedName = randomNames[UnityEngine.Random.Range(0, randomNames.Length)];
+        string[] maleNames = { "Andrei", "Ion", "Mihai", "Cristi", "Vlad" };
+        string[] femaleNames = { "Maria", "Elena", "Ioana", "Andreea", "Diana" };
 
-        Employee newEmp = EmployeeManager.Instance.HireEmployee(generatedName);
+        EmployeeGender randomGender = (UnityEngine.Random.value > 0.5f) ? EmployeeGender.Male : EmployeeGender.Female;
+
+        string randomName = "";
+        if (randomGender == EmployeeGender.Male)
+            randomName = maleNames[UnityEngine.Random.Range(0, maleNames.Length)];
+        else
+            randomName = femaleNames[UnityEngine.Random.Range(0, femaleNames.Length)];
+
+        Employee newEmp = EmployeeManager.Instance.HireEmployee(randomName, randomGender);
 
         if (newEmp != null)
         {

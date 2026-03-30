@@ -1,14 +1,14 @@
 using UnityEngine;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 /// <summary>
-/// Inventory Service - gestionează accesul la storage și stock
-/// Cached pentru performanță maximă
+/// Inventory Service - Acum gestionează multiple rafturi fizice de depozit (StorageRacks).
+/// Cached pentru performanță maximă.
 /// </summary>
 public class InventoryService : IInventoryService
 {
-    private WorkStation _mainStorage;
     private readonly IObjectRegistry _registry;
     private readonly IEventBus _eventBus;
     private readonly GameConfigSO _config;
@@ -16,17 +16,8 @@ public class InventoryService : IInventoryService
     private float _lastCacheUpdate;
     private readonly float _cacheDuration;
 
-    public WorkStation MainStorage
-    {
-        get
-        {
-            if (_mainStorage == null || Time.time - _lastCacheUpdate > _cacheDuration)
-            {
-                RefreshStorageCache();
-            }
-            return _mainStorage;
-        }
-    }
+    // --- NOU: O listă cu toate rafturile fizice din depozit ---
+    private List<StorageRacks> _cachedRacks = new List<StorageRacks>();
 
     public event Action<ProductType, int> OnStockChanged;
 
@@ -36,37 +27,72 @@ public class InventoryService : IInventoryService
         _eventBus = eventBus ?? throw new ArgumentNullException(nameof(eventBus));
         _config = config ?? throw new ArgumentNullException(nameof(config));
         _cacheDuration = config.cacheDuration;
+    }
 
-        //RefreshStorageCache();
+    // Returnează rafturile (și face update la listă doar dacă a trecut timpul de cache)
+    private List<StorageRacks> GetRacks()
+    {
+        if (_cachedRacks == null || _cachedRacks.Count == 0 || Time.time - _lastCacheUpdate > _cacheDuration)
+        {
+            RefreshStorageCache();
+        }
+        return _cachedRacks;
     }
 
     private void RefreshStorageCache()
     {
-        var allStations = _registry.GetAll<WorkStation>();
-        _mainStorage = allStations.FirstOrDefault(x => x.stationType == StationType.Storage);
+        // Găsim toate rafturile de depozit construite în scenă
+        _cachedRacks = new List<StorageRacks>(UnityEngine.Object.FindObjectsByType<StorageRacks>(FindObjectsSortMode.None));
         _lastCacheUpdate = Time.time;
 
-        if (_mainStorage == null && _config.showPerformanceWarnings)
+        if (_cachedRacks.Count == 0 && _config.showPerformanceWarnings)
         {
-            Debug.LogWarning("[InventoryService] Main storage not found in registry!");
+            Debug.LogWarning("[InventoryService] Nu am găsit niciun StorageRack în scenă! Depozitul este gol/inexistent.");
         }
+    }
+
+    // --- NOU: CALCULUL CAPACITĂȚII ---
+    public int GetTotalCapacity()
+    {
+        int total = 0;
+        foreach (var rack in GetRacks())
+        {
+            // Capacitatea totală a unui raft = Numărul maxim de cutii * Câte produse încap într-o cutie
+            total += rack.maxBoxes * rack.maxAmountPerBox;
+        }
+        return total;
+    }
+
+    public int GetUsedCapacity()
+    {
+        int used = 0;
+        foreach (var rack in GetRacks())
+        {
+            foreach (var box in rack.storedBoxes)
+            {
+                used += box.Amount; // Adunăm fiecare produs fizic din cutiile de pe raft
+            }
+        }
+        return used;
+    }
+
+    public int GetAvailableCapacity()
+    {
+        return GetTotalCapacity() - GetUsedCapacity();
     }
 
     public int GetStock(ProductType type)
     {
-        if (type == ProductType.None)
+        if (type == ProductType.None) return 0;
+
+        int totalStock = 0;
+        // Facem inventarul adunând stocul de pe fiecare raft fizic
+        foreach (var rack in GetRacks())
         {
-            Debug.LogWarning("[InventoryService] Cannot get stock for ProductType.None");
-            return 0;
+            totalStock += rack.GetStockAmount(type);
         }
 
-        if (MainStorage == null)
-        {
-            Debug.LogWarning("[InventoryService] Main storage not available");
-            return 0;
-        }
-
-        return MainStorage.storageInventory.TryGetValue(type, out int amount) ? amount : 0;
+        return totalStock;
     }
 
     public bool HasStock(ProductType type, int minimumAmount = 1)
@@ -79,31 +105,26 @@ public class InventoryService : IInventoryService
 
     public void AddStock(ProductType type, int amount)
     {
-        if (type == ProductType.None)
-        {
-            Debug.LogWarning("[InventoryService] Cannot add stock for ProductType.None");
-            return;
-        }
-
-        if (amount <= 0)
-        {
-            Debug.LogWarning($"[InventoryService] Invalid amount to add: {amount}");
-            return;
-        }
-
-        if (MainStorage == null)
-        {
-            Debug.LogError("[InventoryService] Cannot add stock - main storage not available!");
-            return;
-        }
+        if (type == ProductType.None || amount <= 0) return;
 
         int oldStock = GetStock(type);
-        MainStorage.AddToStorage(type, amount);
-        int newStock = GetStock(type);
+        int remainingAmount = amount;
 
+        // Punem marfa pe rafturi, unul câte unul, până terminăm cutiile
+        foreach (var rack in GetRacks())
+        {
+            remainingAmount = rack.AddProduct(type, remainingAmount);
+            if (remainingAmount <= 0) break; // Am pus tot
+        }
+
+        int newStock = GetStock(type);
         NotifyStockChange(type, oldStock, newStock);
 
-        if (_config.verboseLogging)
+        if (remainingAmount > 0)
+        {
+            Debug.LogWarning($"[InventoryService] Depozitul este PLIN! S-au pierdut {remainingAmount} produse de tip {type}. Jucătorul trebuie să construiască mai multe rafturi de depozit!");
+        }
+        else if (_config.verboseLogging)
         {
             Debug.Log($"[InventoryService] Added {amount} x {type}. Stock: {oldStock} → {newStock}");
         }
@@ -111,31 +132,27 @@ public class InventoryService : IInventoryService
 
     public bool TryRemoveStock(ProductType type, int amount)
     {
-        if (type == ProductType.None)
-        {
-            Debug.LogWarning("[InventoryService] Cannot remove stock for ProductType.None");
-            return false;
-        }
+        if (type == ProductType.None || amount <= 0) return false;
 
-        if (amount <= 0)
-        {
-            Debug.LogWarning($"[InventoryService] Invalid amount to remove: {amount}");
-            return false;
-        }
-
+        // Dacă nu avem destul în tot depozitul, refuzăm tranzacția
         if (!HasStock(type, amount))
         {
-            if (_config.verboseLogging)
-            {
-                Debug.Log($"[InventoryService] Insufficient stock. Required: {amount}, Available: {GetStock(type)}");
-            }
             return false;
         }
 
         int oldStock = GetStock(type);
-        MainStorage.TakeFromStorage(type, amount);
-        int newStock = GetStock(type);
+        int remainingToTake = amount;
 
+        // Angajatul ia marfa de pe rafturi (începând cu primul găsit)
+        foreach (var rack in GetRacks())
+        {
+            int takenHere = rack.TakeProduct(type, remainingToTake);
+            remainingToTake -= takenHere;
+
+            if (remainingToTake <= 0) break; // A luat tot ce îi trebuia
+        }
+
+        int newStock = GetStock(type);
         NotifyStockChange(type, oldStock, newStock);
 
         if (_config.verboseLogging)
@@ -144,6 +161,33 @@ public class InventoryService : IInventoryService
         }
 
         return true;
+    }
+
+    public StorageRacks FindRackWithProduct(ProductType type)
+    {
+        foreach (var rack in GetRacks())
+        {
+            if (rack.GetStockAmount(type) > 0)
+            {
+                return rack;
+            }
+        }
+        return null; // Nu avem produsul pe niciun raft!
+    }
+
+    // Caută primul raft fizic care are loc să mai primească o cutie (folosit la Clearing)
+    public StorageRacks FindRackWithSpace(ProductType type)
+    {
+        foreach (var rack in GetRacks())
+        {
+            // Verificăm dacă are măcar 1 spațiu liber simulând o adăugare fictivă (sau făcând matematică)
+            // Simplificat: Dacă are loc conform formulelor tale din StorageRack
+            if (rack.storedBoxes.Count < rack.maxBoxes || rack.GetStockAmount(type) % rack.maxAmountPerBox != 0)
+            {
+                return rack;
+            }
+        }
+        return null;
     }
 
     private void NotifyStockChange(ProductType type, int oldStock, int newStock)
