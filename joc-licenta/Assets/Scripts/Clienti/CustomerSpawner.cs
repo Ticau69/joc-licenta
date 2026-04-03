@@ -28,6 +28,8 @@ public class CustomerSpawner : MonoBehaviour
     [SerializeField] private bool requireAtLeastOneShelf = true;
     [SerializeField] private float registryRefreshInterval = 2f;
 
+    public static event System.Action OnStoreCompletelyEmpty;
+
     private WorkStationRegistry _registry;
     private float _spawnTimer;
     private float _refreshTimer;
@@ -38,6 +40,8 @@ public class CustomerSpawner : MonoBehaviour
 
     // OPTIMIZARE: Ținem minte dacă avem case de marcat pentru a nu căuta constant prin scenă
     private bool _hasCashRegistersCached = false;
+    private bool _endOfDayTriggered = false;
+    private bool _hasOpenedToday = false;
 
     private void Start()
     {
@@ -69,7 +73,7 @@ public class CustomerSpawner : MonoBehaviour
         if (exitPoint == null) return;
         if (_registry == null) return;
 
-        // Refresh periodic pentru stații și case de marcat
+        // 1. Refresh periodic
         _refreshTimer -= Time.deltaTime;
         if (_refreshTimer <= 0f)
         {
@@ -77,25 +81,56 @@ public class CustomerSpawner : MonoBehaviour
             _refreshTimer = registryRefreshInterval;
         }
 
-        _spawnTimer -= Time.deltaTime;
-        if (_spawnTimer > 0f) return;
+        // 2. Curățăm lista de clienți MEREU (chiar dacă magazinul e închis)
+        _activeCustomers.RemoveAll(c => c == null || !c.gameObject.activeInHierarchy);
 
+        // 3. --- LOGICA DE ÎNCHIDERE (Mutată deasupra acelui 'return' fatal) ---
+        if (TimeManager.Instance != null)
+        {
+            int currentHour = TimeManager.Instance.CurrentHour;
+            int openH = TimeManager.Instance.openHour;
+            int closeH = TimeManager.Instance.closeHour;
+
+            // 3.1 Cât timp e ziuă (ex: 08:00 - 21:59), magazinul este oficial DESCHIS
+            if (currentHour >= openH && currentHour < closeH)
+            {
+                _hasOpenedToday = true;
+                _endOfDayTriggered = false; // Resetăm trigger-ul pentru raport
+            }
+
+            // 3.2 E timpul închiderii? (Trecut de 22:00 SAU între 00:00 și 08:00)
+            bool isClosedTime = (currentHour >= closeH || currentHour < openH);
+
+            // 3.3 Dacă e ora de închidere, magazinul A FOST deschis azi, și nu mai sunt clienți
+            if (isClosedTime && _hasOpenedToday)
+            {
+                if (_activeCustomers.Count == 0 && !_endOfDayTriggered)
+                {
+                    _endOfDayTriggered = true;
+                    _hasOpenedToday = false; // Așteptăm să se deschidă iar mâine dimineață
+
+                    OnStoreCompletelyEmpty?.Invoke(); // Trimite semnalul!
+                }
+            }
+        }
+
+        // 4. Verificăm dacă mai avem voie să spawnăm
         if (!CanSpawnCustomers())
         {
             LogNoSpawnReasonOccasionally();
-            _spawnTimer = spawnInterval;
-            return;
+            return; // Dacă e închis, se oprește aici (dar abia DUPĂ ce a verificat dacă au ieșit clienții)
         }
 
-        // OPTIMIZARE: Curățăm lista de clienți care au fost distruși (au plecat acasă)
-        _activeCustomers.RemoveAll(c => c == null || !c.gameObject.activeInHierarchy);
-
-        if (_activeCustomers.Count < maxAliveCustomers)
+        // 5. Spawnăm clienți
+        _spawnTimer -= Time.deltaTime;
+        if (_spawnTimer <= 0f)
         {
-            SpawnOne();
+            if (_activeCustomers.Count < maxAliveCustomers)
+            {
+                SpawnOne();
+            }
+            _spawnTimer = spawnInterval;
         }
-
-        _spawnTimer = spawnInterval;
     }
 
     private void RefreshRegistryAndCache()

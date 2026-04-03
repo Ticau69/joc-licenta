@@ -256,6 +256,11 @@ public class BoxPlacementState : IBuldingState
                             Quaternion.identity);
 
                         floorData.AddObjectAt(pos, Vector2Int.one, ID, index, Quaternion.identity);
+
+                        if (FinanceManager.Instance != null)
+                        {
+                            FinanceManager.Instance.RegisterTransaction(TransactionCategory.Constructii_Teren, costPerTile);
+                        }
                     }
                 }
             }

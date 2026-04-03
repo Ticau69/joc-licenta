@@ -64,6 +64,15 @@ public class PlacementState : IBuldingState
             return;
         }
 
+        if (FinanceManager.Instance != null)
+        {
+            // Verificăm dacă obiectul face parte din Structură (podea) sau Echipamente (mobilă/rafturi)
+            bool isStructure = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
+            TransactionCategory category = isStructure ? TransactionCategory.Constructii_Teren : TransactionCategory.Mobilier_Echipamente;
+
+            FinanceManager.Instance.RegisterTransaction(category, objectCost);
+        }
+
         Quaternion currentRotation = previewSystem.GetCurrentRotation();
         Vector3 worldPosition = grid.CellToWorld(gridPosition);
 
@@ -73,10 +82,16 @@ public class PlacementState : IBuldingState
             worldPosition.z + (currentSize.y / 2f)
         );
 
+        // --- MODIFICARE AICI: Am mutat "isFloor" mai sus! ---
+        bool isFloor = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
+        bool isFurniture = !isFloor; // Dacă NU e podea, înseamnă că e mobilă/echipament
+
+        // Acum folosim variabila "isFurniture" în loc de acel "true" fix!
         int index = objectPlacer.PlaceObject(
             dataBase.objectsData[selectedObjectIndex].Prefab,
             centeredPosition,
-            currentRotation);
+            currentRotation,
+            isFurniture);
 
         int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
         if (consumption > 0 && PowerManager.Instance != null)
@@ -84,8 +99,6 @@ public class PlacementState : IBuldingState
             PowerManager.Instance.RegisterConsumer(consumption);
         }
 
-        // --- REPARAT AICI: Folosim Categoria în loc de ID == 0 ---
-        bool isFloor = dataBase.objectsData[selectedObjectIndex].Category == ObjectCategory.Structure;
         GridData selectedData = isFloor ? floorData : furnitureData;
 
         selectedData.AddObjectAt(

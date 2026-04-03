@@ -13,7 +13,7 @@ public class TimeManager : MonoBehaviour
 
     [Tooltip("Dacă vrei ca timpul să pornească la o anumită oră (ex: 8 = 08:00).")]
     [Range(0, 23)]
-    public int startHour = 0;
+    public int startHour = 6;
 
     [Tooltip("Minute la start (ex: 30 = 08:30).")]
     [Range(0, 59)]
@@ -43,6 +43,7 @@ public class TimeManager : MonoBehaviour
 
     private float timer;
     private bool isShopOpen;
+    public bool isTimePaused = false;
 
     private void Awake()
     {
@@ -65,23 +66,39 @@ public class TimeManager : MonoBehaviour
 
     private void Update()
     {
-        if (dayDurationInSeconds <= 0.01f)
+        // 1. Oprim timpul dacă suntem în pauza de raport
+        if (dayDurationInSeconds <= 0.01f || isTimePaused)
             return;
 
-        // 1) Contorizarea Timpului
         timer += Time.deltaTime;
 
-        // 2) Progresul zilei (clamp)
-        CurrentTimeOfDay = Mathf.Clamp01(timer / dayDurationInSeconds);
-
-        // 3) Calcul ore/minute + evenimente
-        CalculateGameTime();
-
-        // 4) Final de zi (folosim >=, dar CurrentTimeOfDay e deja clamp)
+        // 2. NOU: Când ajungem la 24 de ore (dayDurationInSeconds), 
+        // trecem de miezul nopții natural și o luăm de la 00:00!
         if (timer >= dayDurationInSeconds)
         {
-            EndDay();
+            timer -= dayDurationInSeconds; // Păstrăm restul de milisecunde pentru o trecere fluidă
+            AdvanceToNextDayNatural();
         }
+
+        CurrentTimeOfDay = Mathf.Clamp01(timer / dayDurationInSeconds);
+        CalculateGameTime();
+    }
+
+    private void AdvanceToNextDayNatural()
+    {
+        CurrentDay++;
+
+        // update economie
+        var inflationManager = ServiceLocator.Instance.Get<InflationManager>();
+        if (inflationManager != null)
+        {
+            inflationManager.SimulateDay();
+        }
+
+        OnDayChanged?.Invoke();
+        OnDayChangedDetailed?.Invoke(CurrentDay);
+
+        Debug.Log($"Miezul Nopții! Ziua {CurrentDay} a început.");
     }
 
     private void CalculateGameTime()
@@ -159,9 +176,9 @@ public class TimeManager : MonoBehaviour
         }
     }
 
-    private void EndDay()
+    public void EndDay()
     {
-        // dacă ziua se termină cu magazinul deschis, închide-l corect (eveniment + sunete)
+        // dacă ziua se termină cu magazinul deschis, închide-l corect
         if (isShopOpen)
         {
             isShopOpen = false;
@@ -174,22 +191,20 @@ public class TimeManager : MonoBehaviour
             }
         }
 
-        CurrentDay++;
+        // Calculăm matematic ora de start (ex: 08:00 = 0.33 dintr-o zi întreagă)
+        float targetDayFraction = (startHour + (startMinute / 60f)) / 24f;
 
-        // reset pentru noua zi (păstrează aceleași startHour/minute)
-        SetTime(startHour, startMinute);
-
-        // update economie
-        var inflationManager = ServiceLocator.Instance.Get<InflationManager>();
-        if (inflationManager != null)
+        // Dacă e ora 22:00 și apăsăm Skip, timpul nostru actual (ex: 0.91) e mai mare 
+        // decât ținta (0.33). Asta înseamnă că vom sări peste 00:00, deci avansăm ziua.
+        // Dar dacă am stat treji până la 02:00 AM (0.08), ziua a avansat deja natural,
+        // așa că doar sărim direct la 08:00 fără să mai adăugăm o zi!
+        if (CurrentTimeOfDay > targetDayFraction)
         {
-            inflationManager.SimulateDay();
+            AdvanceToNextDayNatural();
         }
 
-        OnDayChanged?.Invoke();
-        OnDayChangedDetailed?.Invoke(CurrentDay);
-
-        Debug.Log($"Ziua {CurrentDay} a început!");
+        // Setăm timpul la ora de start (ex: 08:00)
+        SetTime(startHour, startMinute);
     }
 
     /// <summary>

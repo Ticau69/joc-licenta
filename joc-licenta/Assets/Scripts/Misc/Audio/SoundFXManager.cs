@@ -6,7 +6,8 @@ public enum SoundType
     ShopOpen,
     UiClick,
     ShopClose_Register, // Sunetul mecanic (mereu același)
-    ShopClose_Jingle
+    ShopClose_Jingle,
+    PlaceObject
 }
 
 [System.Serializable]

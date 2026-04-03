@@ -1,18 +1,16 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
-using System.Collections.Generic;
 
-/// <summary>
-/// Shelf UI Controller - Optimized with registry pattern
-/// </summary>
 public class ShelfUIController : MonoBehaviour
 {
     private VisualElement _objectSelectedInfo;
     private Label _objectNameLabel;
     private VisualElement _contentContainer;
-    private Button _addProductButton;
     private Button _closeButton;
+    private Label _statusText;
+    private Label _stockText;
+    private DropdownField _uiDropdown;
 
     private WorkStation _currentSelectedShelf;
     private IEconomyService _economy;
@@ -21,6 +19,7 @@ public class ShelfUIController : MonoBehaviour
     private IObjectRegistry _registry;
     private GameConfigSO _config;
 
+    // -----------------------------------------------------------------------
     public void Initialize(
         VisualElement root,
         IEconomyService economy,
@@ -37,75 +36,73 @@ public class ShelfUIController : MonoBehaviour
 
         CacheUIElements(root);
         SetupEventListeners();
-
-        if (_config.verboseLogging)
-        {
-            Debug.Log("[ShelfUI] Initialized successfully");
-        }
     }
 
+    // -----------------------------------------------------------------------
     private void CacheUIElements(VisualElement root)
     {
         _objectSelectedInfo = root.Q<VisualElement>("ObjectInfo");
-
-        if (_objectSelectedInfo != null)
+        if (_objectSelectedInfo == null)
         {
-            _objectNameLabel = _objectSelectedInfo.Q<Label>("ObjectName");
-            _contentContainer = _objectSelectedInfo.Q<VisualElement>("Content");
-            _addProductButton = _objectSelectedInfo.Q<Button>("AdaugareProdus");
-            _closeButton = _objectSelectedInfo.Q<Button>("CloseButton");
+            Debug.LogError("❌ Nu am găsit 'ObjectInfo' în UXML!");
+            return;
+        }
 
-            _objectSelectedInfo.style.display = DisplayStyle.None;
-        }
-        else
-        {
-            Debug.LogError("[ShelfUI] ObjectInfo panel not found in UI!");
-        }
+        _objectNameLabel = _objectSelectedInfo.Q<Label>("ObjectName");
+        _closeButton = _objectSelectedInfo.Q<Button>("CloseButton");
+        _contentContainer = _objectSelectedInfo.Q<VisualElement>("Content");
+        _statusText = _objectSelectedInfo.Q<Label>("StatusText");
+        _stockText = _objectSelectedInfo.Q<Label>("StockText");
+        _uiDropdown = _objectSelectedInfo.Q<DropdownField>("ProductDropdown");
+
+        if (_objectNameLabel == null) Debug.LogError("❌ Nu am găsit 'ObjectName'!");
+        if (_contentContainer == null) Debug.LogError("❌ Nu am găsit 'Content'!");
+        if (_statusText == null) Debug.LogError("❌ Nu am găsit 'StatusText'!");
+        if (_stockText == null) Debug.LogError("❌ Nu am găsit 'StockText'!");
+        if (_uiDropdown == null) Debug.LogError("❌ Nu am găsit 'ProductDropdown'!");
+
+        _objectSelectedInfo.style.display = DisplayStyle.None;
     }
 
+    // -----------------------------------------------------------------------
     private void SetupEventListeners()
     {
-        if (_addProductButton != null)
-            _addProductButton.clicked += OnActionButtonClicked;
-
         if (_closeButton != null)
             _closeButton.clicked += ClosePanel;
 
-        // Subscribe to events
+        if (_uiDropdown != null)
+            _uiDropdown.RegisterValueChangedCallback(OnProductDropdownChanged);
+
         _eventBus.Subscribe<StockChangedEvent>(OnStockChanged);
         _eventBus.Subscribe<SupplyPurchasedEvent>(OnSupplyPurchased);
     }
 
+    // -----------------------------------------------------------------------
     private void OnStockChanged(StockChangedEvent evt)
     {
-        // Refresh UI if current shelf is affected
         if (_currentSelectedShelf != null)
-        {
             RefreshUI();
-        }
     }
 
     private void OnSupplyPurchased(SupplyPurchasedEvent evt)
     {
         if (evt.Success)
-        {
             RefreshUI();
-        }
     }
 
+    // -----------------------------------------------------------------------
     public void SelectObject(GameObject obj)
     {
         if (obj == null) return;
 
-        WorkStation shelf = obj.GetComponentInParent<WorkStation>(true);
-        if (shelf == null) shelf = obj.transform.root.GetComponent<WorkStation>();
+        WorkStation shelf = obj.GetComponentInParent<WorkStation>(true)
+                         ?? obj.transform.root.GetComponent<WorkStation>();
 
         if (shelf != null && shelf.stationType == StationType.Shelf)
         {
             _currentSelectedShelf = shelf;
             RefreshUI();
             _objectSelectedInfo.style.display = DisplayStyle.Flex;
-
             _eventBus.Publish(new ShelfSelectedEvent { Shelf = shelf });
         }
         else
@@ -120,176 +117,89 @@ public class ShelfUIController : MonoBehaviour
         _currentSelectedShelf = null;
     }
 
+    // -----------------------------------------------------------------------
     private void RefreshUI()
     {
-        if (_currentSelectedShelf == null || _contentContainer == null) return;
+        if (_currentSelectedShelf == null || _objectNameLabel == null) return;
 
-        _addProductButton.style.display = DisplayStyle.Flex;
-        _addProductButton.SetEnabled(true);
+        _objectNameLabel.text = _currentSelectedShelf.shelfVariant.ToString();
 
-        _contentContainer.Clear();
-        _objectNameLabel.text = _currentSelectedShelf.stationType == StationType.Storage
-            ? "Depozit Central"
-            : _currentSelectedShelf.shelfVariant.ToString();
-
-        if (_currentSelectedShelf.stationType == StationType.Storage)
-        {
-            SetupStorageUI();
-        }
-        else
-        {
-            SetupShelfUI();
-        }
+        UpdateStatusLabels();
+        UpdateDropdown();
     }
 
-    private void SetupStorageUI()
-    {
-        Label inventoryTitle = new Label("--- INVENTAR ---");
-        inventoryTitle.style.unityFontStyleAndWeight = FontStyle.Bold;
-        inventoryTitle.style.color = _config.lowStockColor;
-        _contentContainer.Add(inventoryTitle);
-
-        if (_currentSelectedShelf.storageInventory.Count == 0)
-        {
-            _contentContainer.Add(UIRowFactory.CreateInfoLabel("Depozit Gol", Color.white));
-        }
-        else
-        {
-            foreach (var item in _currentSelectedShelf.storageInventory)
-            {
-                var (color, _) = _config.GetStockStatus(item.Value);
-                _contentContainer.Add(UIRowFactory.CreateInfoLabel($"{item.Key}: {item.Value} buc.", color));
-            }
-        }
-
-        int cost = _config.temporarySupplyCost;
-        _addProductButton.text = $"Comandă Marfă (-{cost} RON)";
-    }
-
-    private void SetupShelfUI()
+    private void UpdateStatusLabels()
     {
         if (_currentSelectedShelf.slot1Product == ProductType.None)
         {
-            _addProductButton.text = "Setează Produs";
-            _addProductButton.SetEnabled(true);
+            _statusText.text = "Raftul este gol.";
+            _statusText.style.color = Color.gray;
+
+            _stockText.style.display = DisplayStyle.None;
         }
         else
         {
-            _contentContainer.Add(UIRowFactory.CreateInfoLabel(
-                $"Produs: {_currentSelectedShelf.slot1Product}",
-                Color.white));
+            _statusText.text = $"Produs: {_currentSelectedShelf.slot1Product}";
+            _statusText.style.color = Color.white;
 
-            float fillPercent = (float)_currentSelectedShelf.slot1Stock / _currentSelectedShelf.maxProductsPerSlot;
+            float fill = (float)_currentSelectedShelf.slot1Stock
+                       / _currentSelectedShelf.maxProductsPerSlot;
+
             Color stockColor = _currentSelectedShelf.slot1Stock == 0
                 ? _config.criticalStockColor
-                : fillPercent <= 0.5f ? _config.lowStockColor : _config.goodStockColor;
+                : fill <= 0.5f ? _config.lowStockColor : _config.goodStockColor;
 
-            Label stockLabel = UIRowFactory.CreateInfoLabel(
-                $"Raft: {_currentSelectedShelf.slot1Stock}/{_currentSelectedShelf.maxProductsPerSlot}",
-                stockColor);
-            stockLabel.style.unityFontStyleAndWeight = FontStyle.Bold;
-            _contentContainer.Add(stockLabel);
-
-            _addProductButton.text = "Schimbă Produsul";
+            _stockText.text = $"Raft: {_currentSelectedShelf.slot1Stock}/{_currentSelectedShelf.maxProductsPerSlot}";
+            _stockText.style.color = stockColor;
+            _stockText.style.display = DisplayStyle.Flex;
         }
     }
 
-    private void OnActionButtonClicked()
+    private void UpdateDropdown()
     {
-        if (_currentSelectedShelf == null) return;
+        if (_uiDropdown == null) return;
 
-        if (_currentSelectedShelf.stationType == StationType.Storage)
-            CreateSupplyDropdown();
-        else
-            CreateProductSelectionDropdown();
-    }
+        // Dezactivăm callback-ul temporar ca să nu declanșăm schimbări la populare
+        _uiDropdown.UnregisterValueChangedCallback(OnProductDropdownChanged);
 
-    private void CreateSupplyDropdown()
-    {
-        _contentContainer.Clear();
-
-        Label title = UIRowFactory.CreateInfoLabel("Ce dorești să comanzi?", Color.white);
-        _contentContainer.Add(title);
-
-        DropdownField supplyDrop = new DropdownField("Produs:");
-        List<string> options = System.Enum.GetNames(typeof(ProductType))
-            .Where(x => x != "None")
-            .ToList();
-
-        supplyDrop.choices = options;
-        supplyDrop.value = "Selectează...";
-        _contentContainer.Add(supplyDrop);
-
-        supplyDrop.RegisterValueChangedCallback(evt =>
-        {
-            if (evt.newValue != "Selectează..." &&
-                System.Enum.TryParse(evt.newValue, out ProductType type))
-            {
-                _shop.BuyDefaultSupply(type, _currentSelectedShelf, success =>
-                {
-                    if (success)
-                    {
-                        RefreshUI();
-                        _addProductButton.style.display = DisplayStyle.Flex;
-                    }
-                });
-            }
-        });
-
-        Button cancelBtn = UIRowFactory.CreateStyledButton("Anulează", () =>
-        {
-            RefreshUI();
-            _addProductButton.style.display = DisplayStyle.Flex;
-        });
-        _contentContainer.Add(cancelBtn);
-    }
-
-    private void CreateProductSelectionDropdown()
-    {
-        _contentContainer.Clear();
-
-        DropdownField dropdown = new DropdownField("Alege Produsul:");
-        List<string> options = _currentSelectedShelf.GetAllowedProducts()
+        _uiDropdown.choices = _currentSelectedShelf.GetAllowedProducts()
             .Select(x => x.ToString())
             .ToList();
 
-        dropdown.choices = options;
-        dropdown.value = "Selectează...";
-        dropdown.style.marginBottom = 10;
-        dropdown.style.width = Length.Percent(100);
+        // Selectăm produsul curent în dropdown (sau primul dacă raftul e gol)
+        _uiDropdown.value = _currentSelectedShelf.slot1Product != ProductType.None
+            ? _currentSelectedShelf.slot1Product.ToString()
+            : _uiDropdown.choices.FirstOrDefault() ?? "";
 
-        dropdown.RegisterValueChangedCallback(evt =>
-        {
-            if (evt.newValue != "Selectează...")
-                OnProductSelected(evt.newValue);
-        });
-
-        _contentContainer.Add(dropdown);
-
-        Button cancelButton = UIRowFactory.CreateStyledButton("Anulează", () =>
-        {
-            _addProductButton.style.display = DisplayStyle.Flex;
-            RefreshUI();
-        });
-        _contentContainer.Add(cancelButton);
+        _uiDropdown.RegisterValueChangedCallback(OnProductDropdownChanged);
     }
 
-    private void OnProductSelected(string productName)
+    // -----------------------------------------------------------------------
+    private void OnProductDropdownChanged(ChangeEvent<string> evt)
     {
-        if (!System.Enum.TryParse(productName, out ProductType selectedType))
-            return;
+        if (string.IsNullOrEmpty(evt.newValue)) return;
+        if (!System.Enum.TryParse(evt.newValue, out ProductType selectedType)) return;
 
-        if (_currentSelectedShelf.slot1Stock == 0 ||
-            _currentSelectedShelf.slot1Product == selectedType)
+        ApplyProductChange(selectedType);
+    }
+
+    private void ApplyProductChange(ProductType selectedType)
+    {
+        if (_currentSelectedShelf == null) return;
+
+        bool shelfEmpty = _currentSelectedShelf.slot1Stock == 0;
+        bool sameProduct = _currentSelectedShelf.slot1Product == selectedType;
+
+        if (shelfEmpty || sameProduct)
         {
+            // Schimbare imediată
             _currentSelectedShelf.slot1Product = selectedType;
             _currentSelectedShelf.pendingProduct = ProductType.None;
         }
         else
         {
+            // Raftul are stoc din alt produs → angajații vor face schimbarea gradual
             _currentSelectedShelf.pendingProduct = selectedType;
-            if (_addProductButton != null)
-                _addProductButton.text = "În curs de schimbare...";
         }
 
         NotifyAllRestockers();
@@ -298,13 +208,11 @@ public class ShelfUIController : MonoBehaviour
 
     private void NotifyAllRestockers()
     {
-        var employees = _registry.GetAll<Employee>();
-        foreach (var emp in employees)
-        {
+        foreach (var emp in _registry.GetAll<Employee>())
             emp.WakeUpAndWork();
-        }
     }
 
+    // -----------------------------------------------------------------------
     void OnDestroy()
     {
         _eventBus?.Unsubscribe<StockChangedEvent>(OnStockChanged);

@@ -4346,7 +4346,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c36dfc749d8c6c44c9dbf032577736cd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EmployeeManager
-  malePrefabs: []
+  malePrefabs:
+  - {fileID: 4170139234539693714, guid: 87db475bf53f680419fc286f5c99bbfb, type: 3}
+  - {fileID: 9171926176235282195, guid: 1592d88b1a5f13c43ab2548299c4de76, type: 3}
   femalePrefabs:
   - {fileID: 3328114469579748824, guid: b559e4d05a913304aae8d71eef942d7a, type: 3}
   spawnPoint: {fileID: 207088907}
@@ -4493,11 +4495,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::CustomerSpawner
   customerPrefabs:
   - {fileID: 3783463697463908864, guid: 50e447888dd10be4db933526a8f6693c, type: 3}
+  - {fileID: 1549238938572668136, guid: a7835b621547e7d49a7a0eaabe8e971a, type: 3}
+  - {fileID: 7146736934492883817, guid: 29b893000a9bfff4fb986b77e583b5ad, type: 3}
+  - {fileID: 7061122304233431328, guid: e8130627f192d2e4485be5c2752e048d, type: 3}
+  - {fileID: 2331904856547926729, guid: 7caf03a9393def646b939315b38872f5, type: 3}
+  - {fileID: 7664944082513174517, guid: b139c4c551e26f74cbb0cf545846506a, type: 3}
+  - {fileID: 8585155846157063784, guid: 023b5fdd256d7f746a24a78998b9eaf8, type: 3}
   spawnPoints:
   - {fileID: 1522268933}
   exitPoint: {fileID: 1522268933}
   spawnInterval: 6
-  maxAliveCustomers: 1
+  maxAliveCustomers: 3
   spawnOnStart: 0
   minCustomerBudget: 50
   maxCustomerBudget: 250
@@ -4737,10 +4745,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
   dayDurationInSeconds: 40
-  startHour: 0
+  startHour: 6
   startMinute: 0
   openHour: 8
   closeHour: 22
+  isTimePaused: 0
 --- !u!114 &1644672772
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5067,6 +5076,77 @@ Grid:
   m_CellGap: {x: 0, y: 0, z: 0}
   m_CellLayout: 0
   m_CellSwizzle: 0
+--- !u!1 &1767932125
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1767932128}
+  - component: {fileID: 1767932127}
+  - component: {fileID: 1767932126}
+  m_Layer: 0
+  m_Name: FinanceManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1767932126
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767932125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 19102, guid: 0000000000000000e000000000000000, type: 0}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.dll::UnityEngine.UIElements.UIDocument
+  m_PanelSettings: {fileID: 11400000, guid: baf0e509d13ddff43ade2ccc836cfb20, type: 2}
+  m_ParentUI: {fileID: 0}
+  sourceAsset: {fileID: 9197481963319205126, guid: ec4bca42338bae34ab92cd58d4c1fd86, type: 3}
+  m_SortingOrder: 0
+  m_Position: 0
+  m_WorldSpaceSizeMode: 1
+  m_WorldSpaceWidth: 1920
+  m_WorldSpaceHeight: 1080
+  m_PivotReferenceSize: 0
+  m_Pivot: 0
+  m_WorldSpaceCollider: {fileID: 0}
+--- !u!114 &1767932127
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767932125}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cf775a418c6fdf8479197cb70b733bba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::FinanceManager
+  dailySales: 0
+  dailySalaries: 0
+  endDayReportPanel: {fileID: 1767932126}
+--- !u!4 &1767932128
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1767932125}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 6.79582, y: 0.1, z: -5.7605}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1780687950 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 3978449827948966692, guid: 011f17f7f0c24d649b377b979414e6a2, type: 3}
@@ -5871,3 +5951,4 @@ SceneRoots:
   - {fileID: 1925868745}
   - {fileID: 739067290}
   - {fileID: 1339128432}
+  - {fileID: 1767932128}

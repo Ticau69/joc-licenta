@@ -1,0 +1,203 @@
+/* ==========================================
+   DARK DROPDOWN - Fara benzi sus/jos
+   ========================================== */
+
+:root {
+    --unity-colors-dropdown-background: rgb(30, 30, 34);
+    --unity-colors-popup-background: rgb(30, 30, 34);
+    --unity-colors-window-background: rgb(30, 30, 34);
+}
+
+/* Container principal */
+.unity-base-dropdown__container {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgba(86, 86, 92, 0) !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Inner - padding 0 ca sa nu creeze benzi */
+.unity-base-dropdown__container-inner {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+        border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ScrollView */
+.unity-base-dropdown__container-inner > .unity-scroll-view {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+       border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Viewport */
+.unity-base-dropdown__container-inner .unity-scroll-view__content-viewport {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+        border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Content container */
+.unity-base-dropdown__container-inner .unity-scroll-view__content-container {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+        border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* ListView - sursa principala a benzilor */
+.unity-base-dropdown__container-inner .unity-list-view {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+.unity-base-dropdown__container-inner .unity-list-view__scroll-view {
+    background-color: rgb(30, 30, 34) !important;
+    border-color: rgb(86, 86, 92) !important;
+    border-left-width: 0 !important;
+    border-right-width: 0 !important;
+    border-top-width: 0 !important;
+    border-bottom-width: 0 !important;
+    border-radius: 8px !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+}
+
+/* Ascunde scrollbars */
+.unity-base-dropdown__container .unity-scroller--vertical,
+.unity-base-dropdown__container .unity-scroller--horizontal {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+.unity-base-popup-field__input {
+    background-color: rgba(30, 30, 34, 1);
+    border-color: rgb(86, 86, 92);
+    border-width: 1px;
+    border-radius: 6px;
+}
+
+.unity-base-popup-field__input:hover {
+    background-color: rgba(30, 30, 34, 1);
+    border-color: rgb(86, 86, 92);
+    border-width: 1px;
+    border-radius: 6px;
+}
+
+.unity-base-popup-field__arrow {
+    -unity-background-image-tint-color: rgb(255, 255, 255);
+}
+
+/* ---- Itemele ---- */
+.unity-base-dropdown__item {
+    background-color: rgb(42, 42, 46);
+    border-radius: 0px;
+    margin-top: 2px;
+    margin-bottom: 2px;
+    margin-left: 4px;
+    margin-right: 4px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-width: 0;
+    border-radius: 5px;
+}
+
+/* Primul item lipit de sus */
+.unity-base-dropdown__item:first-child {
+    margin-top: 0;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+/* Ultimul item lipit de jos */
+.unity-base-dropdown__item:last-child {
+    margin-bottom: 0;
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+/* Text item */
+.unity-base-dropdown__item .unity-label {
+    background-color: transparent;
+    color: rgb(240, 240, 240);
+    font-size: 14px;
+    -unity-text-align: middle-left;
+}
+
+/* Bifa */
+.unity-base-dropdown__checkmark {
+    display: none;
+    position: absolute;  /* nu mai ocupa spatiu in layout */
+    width: 0;
+    height: 0;
+    min-width: 0;
+    min-height: 0;
+    margin: 0;
+    padding: 0;
+    opacity: 0;
+    background-color: transparent;
+    -unity-background-image-tint-color: transparent;
+}
+
+/* Hover */
+.unity-base-dropdown__item:hover {
+    background-color: rgb(66, 133, 244);
+}
+
+.unity-base-dropdown__item:hover .unity-label {
+    color: white;
+}
+
+/* Selectat */
+.unity-base-dropdown__item:checked {
+    background-color: rgb(46, 103, 204);
+}
+
+.unity-base-dropdown__item:checked .unity-label {
+    color: white;
+}

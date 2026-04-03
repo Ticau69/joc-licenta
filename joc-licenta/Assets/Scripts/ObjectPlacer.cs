@@ -6,7 +6,7 @@ public class ObjectPlacer : MonoBehaviour
     [SerializeField]
     private List<GameObject> placedGameObjects = new();
 
-    public int PlaceObject(GameObject prefab, Vector3 position, Quaternion rotation)
+    public int PlaceObject(GameObject prefab, Vector3 position, Quaternion rotation, bool isFurniture = false)
     {
         // 1. Creăm Root-ul la poziția FINALĂ din lume
         GameObject root = new GameObject(prefab.name + "_Root");
@@ -41,6 +41,11 @@ public class ObjectPlacer : MonoBehaviour
         // Opțional: Dacă vrei să păstrezi Y-ul original (să nu intre în pământ dacă pivotul e jos)
         // Comentează linia de mai sus și folosește:
         // newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);
+
+        if (isFurniture && SoundFXManager.Instance != null)
+        {
+            SoundFXManager.Instance.PlaySound(SoundType.PlaceObject, newObject.transform);
+        }
 
         placedGameObjects.Add(root);
 

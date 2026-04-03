@@ -102,6 +102,11 @@ public class DoorPlacementState : IBuldingState
             return;
         }
 
+        if (FinanceManager.Instance != null)
+        {
+            FinanceManager.Instance.RegisterTransaction(TransactionCategory.Constructii_Teren, doorCost);
+        }
+
         // Plasăm ușa
         PlaceDoor(currentDoorPosition, currentDoorRotation);
     }

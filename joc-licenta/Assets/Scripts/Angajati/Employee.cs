@@ -260,6 +260,11 @@ public class Employee : MonoBehaviour
         {
             // Atenție: Dacă metoda ta din IMoneyService se numește altfel (ex: Subtract, Spend, Remove), modifică cuvântul "Spend" de mai jos:
             money.TrySpend(_currentSalary);
+            if (FinanceManager.Instance != null)
+            {
+                // Trimitem salariile plătite astăzi către contabilitate!
+                FinanceManager.Instance.RegisterTransaction(TransactionCategory.Salarii_Angajati, _currentSalary);
+            }
             Debug.Log($"S-au plătit {_currentSalary} RON pentru salariul lui {employeeName}.");
         }
     }

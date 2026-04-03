@@ -672,7 +672,15 @@ public class CustomerAI : MonoBehaviour
 
     public void OnCheckoutComplete()
     {
-        Debug.Log($"[CustomerAI] {name} - Plătit! Total coș: {_basket.Count} produse.");
+        int totalBill = CalculateTotalPriceRON();
+        Debug.Log($"[CustomerAI] {name} - Plătit {totalBill} RON.");
+
+        // NOU: Înregistrăm vânzarea în managerul de finanțe
+        if (FinanceManager.Instance != null)
+        {
+            FinanceManager.Instance.RegisterTransaction(TransactionCategory.Venituri_Vanzari, totalBill);
+        }
+
         LeaveStore();
     }
 

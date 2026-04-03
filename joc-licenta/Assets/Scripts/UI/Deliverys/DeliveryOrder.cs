@@ -5,24 +5,23 @@ using System.Collections.Generic;
 public class DeliveryOrder
 {
     public string id;
-
-    // --- SCHIMBARE: Acum ține o listă cu toate produsele din comandă ---
     public Dictionary<ProductType, int> products;
 
     public float totalTime;
     public float timeRemaining;
 
+    // --- NOU: Flag pentru comenzile de noapte ---
+    public bool isNightOrder;
+
+    // O comandă e gata fie când timer-ul ajunge la 0 (ziua), fie dacă e forțată (dimineața)
     public bool IsCompleted => timeRemaining <= 0;
 
-    // --- SCHIMBARE: Constructorul primește dicționarul ---
-    public DeliveryOrder(Dictionary<ProductType, int> items, float duration)
+    public DeliveryOrder(Dictionary<ProductType, int> items, float duration, bool nightOrder)
     {
         id = $"CMD-{Random.Range(100, 999)}";
-
-        // Copiem itemele pentru a le salva în această comandă
         products = new Dictionary<ProductType, int>(items);
-
         totalTime = duration;
         timeRemaining = duration;
+        isNightOrder = nightOrder; // Salvăm dacă e comandă de noapte
     }
 }

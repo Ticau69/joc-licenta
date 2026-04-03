@@ -52,7 +52,6 @@ public class EmployeeManager : MonoBehaviour
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnShopOpen += StartWorkDay;
-            TimeManager.Instance.OnShopClose += EndWorkDay;
         }
     }
 
@@ -61,7 +60,6 @@ public class EmployeeManager : MonoBehaviour
         if (TimeManager.Instance != null)
         {
             TimeManager.Instance.OnShopOpen -= StartWorkDay;
-            TimeManager.Instance.OnShopClose -= EndWorkDay;
         }
     }
     #endregion
@@ -296,7 +294,7 @@ public class EmployeeManager : MonoBehaviour
         }
     }
 
-    private void EndWorkDay()
+    public void EndWorkDay()
     {
         Debug.Log("[EmployeeManager] Ending work day for all employees");
 

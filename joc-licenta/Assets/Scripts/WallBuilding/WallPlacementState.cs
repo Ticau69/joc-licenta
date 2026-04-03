@@ -229,6 +229,10 @@ public class WallPlacementState : IBuldingState
 
         if (!gameManager.TrySpendMoney(totalCost))
             return false;
+        if (FinanceManager.Instance != null)
+        {
+            FinanceManager.Instance.RegisterTransaction(TransactionCategory.Constructii_Teren, totalCost);
+        }
 
         // NOU: Folosim sistemul cu segmente în loc să creăm un singur perete
         if (segmentData != null)
