@@ -19,295 +19,316 @@ public enum ProductType
     // --- Produse Congelator ---
     Inghetata,
     PizzaCongelata,
-    PuiCongelat
+    PuiCongelat,
+    Banane,
 }
 
 public enum ShelfType
 {
     StandardShelf,  // Raft Lemn/Metal
     Fridge,         // Frigider
-    Freezer         // Congelator
+    Freezer,         // Congelator
+    CosFructe,
 }
 
 /// <summary>
-/// WorkStation - Optimized with event support and validation
-/// Compatible cu noul sistem de services
+/// WorkStation — un singur tip de produs per raft.
+/// Storage-ul delegă complet către StorageRacks.
 /// </summary>
 public class WorkStation : MonoBehaviour
 {
+    // ── Inspector ─────────────────────────────────────────────────────────────
+
     [Header("Station Configuration")]
     public StationType stationType;
 
     [Header("Navigation")]
     public Transform interactionPoint;
 
-    [Header("Shelf Type (Only if Shelf)")]
+    [Header("Shelf Configuration")]
     public ShelfType shelfVariant;
+    public ProductDataSO productDatabase;
 
-    [Header("Slot Configuration")]
-    public ProductType slot1Product = ProductType.None;
+    [Header("Shelf Slot")]
+    public ProductType slotProduct = ProductType.None;
     public ProductType pendingProduct = ProductType.None;
-    public int slot1Stock = 0;
-    public int maxProductsPerSlot = 20;
+    public int slotStock = 0;
+    public int maxStock = 20;
+
+
     [Header("Visuals")]
     public SimpleDoorController doorController;
 
-    [Header("Storage: General Inventory")]
-    // Folosit DOAR dacă stationType == Storage
-    public Dictionary<ProductType, int> storageInventory = new Dictionary<ProductType, int>();
+    [Header("Storage Racks")]
+    [Tooltip("Rafturile fizice din depozit — active doar dacă stationType == Storage.")]
+    public List<StorageRacks> storageRacks = new List<StorageRacks>();
 
-    // Cache pentru event bus (dacă e disponibil)
+    // ── Runtime (nu se serializează) ──────────────────────────────────────────
+
+
     private IEventBus _eventBus;
-    private bool _hasEventBus = false;
-    private bool _isInitialized = false;
+    private ShelfDisplayController _displayController;
+    private bool _hasEventBus;
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void Awake()
     {
-        // Încearcă să obții event bus-ul
         _hasEventBus = ServiceLocator.Instance.TryGet(out _eventBus);
+
+        if (stationType == StationType.Storage && storageRacks.Count == 0)
+            storageRacks.AddRange(GetComponentsInChildren<StorageRacks>());
+
+        _displayController = GetComponent<ShelfDisplayController>();
     }
 
     void Start()
     {
-        // Dacă event bus-ul nu era disponibil în Awake, încearcă din nou
         if (!_hasEventBus)
-        {
             _hasEventBus = ServiceLocator.Instance.TryGet(out _eventBus);
-        }
 
-        _isInitialized = true;
+        ValidateShelf();
+        _displayController?.RefreshDisplay();
     }
 
-    // === STORAGE OPERATIONS (cu event support) ===
+    // ── SHELF OPERATIONS ──────────────────────────────────────────────────────
 
     /// <summary>
-    /// Adaugă marfă în depozit
-    /// </summary>
-    public void AddToStorage(ProductType type, int amount)
-    {
-        if (!ValidateStorageOperation(type, amount, "Add")) return;
-
-        int oldStock = GetStorageStock(type);
-
-        if (storageInventory.ContainsKey(type))
-        {
-            storageInventory[type] += amount;
-        }
-        else
-        {
-            storageInventory.Add(type, amount);
-        }
-
-        int newStock = storageInventory[type];
-
-        Debug.Log($"[DEPOZIT] Am primit {amount} x {type}. Total: {newStock}");
-
-        // Publish event dacă avem event bus
-        PublishStockChangedEvent(type, oldStock, newStock);
-    }
-
-    /// <summary>
-    /// Scoate marfă din depozit (metodă nouă pentru compatibilitate)
-    /// </summary>
-    public bool RemoveFromStorage(ProductType type, int amount)
-    {
-        if (!ValidateStorageOperation(type, amount, "Remove")) return false;
-
-        if (!storageInventory.ContainsKey(type))
-        {
-            Debug.LogWarning($"[DEPOZIT] Produsul {type} nu există în inventar!");
-            return false;
-        }
-
-        if (storageInventory[type] < amount)
-        {
-            Debug.LogWarning($"[DEPOZIT] Stoc insuficient pentru {type}. Disponibil: {storageInventory[type]}, Cerut: {amount}");
-            return false;
-        }
-
-        int oldStock = storageInventory[type];
-        storageInventory[type] -= amount;
-        int newStock = storageInventory[type];
-
-        Debug.Log($"[DEPOZIT] Am scos {amount} x {type}. Rămas: {newStock}");
-
-        // Publish event
-        PublishStockChangedEvent(type, oldStock, newStock);
-
-        return true;
-    }
-
-    /// <summary>
-    /// Scoate marfă din depozit (metodă originală - kept for backwards compatibility)
-    /// </summary>
-    public bool TakeFromStorage(ProductType type, int amount)
-    {
-        return RemoveFromStorage(type, amount);
-    }
-
-    /// <summary>
-    /// Verifică stocul din depozit
-    /// </summary>
-    public int GetStorageStock(ProductType type)
-    {
-        if (stationType != StationType.Storage) return 0;
-        return storageInventory.ContainsKey(type) ? storageInventory[type] : 0;
-    }
-
-    // === SHELF OPERATIONS ===
-
-    /// <summary>
-    /// Reumple complet slot-ul 1
-    /// </summary>
-    public void RestockSlot1()
-    {
-        if (slot1Product == ProductType.None)
-        {
-            Debug.LogWarning($"[WorkStation] {name} nu are produs setat!");
-            return;
-        }
-
-        int oldStock = slot1Stock;
-        slot1Stock = maxProductsPerSlot;
-
-        Debug.Log($"[WorkStation] {name} reumplut cu {slot1Product}");
-
-        PublishStockChangedEvent(slot1Product, oldStock, slot1Stock);
-    }
-
-    /// <summary>
-    /// Adaugă produse în slot (pentru Restocker)
+    /// Adaugă produse în slot. Folosit de Restocker.
     /// </summary>
     public void AddProduct(int amount)
     {
-        if (slot1Product == ProductType.None)
+        if (slotProduct == ProductType.None)
         {
-            Debug.LogWarning($"[WorkStation] {name} - nu se poate adăuga, slot gol!");
+            Debug.LogWarning($"[{name}] Niciun produs configurat în slot!");
             return;
         }
+        if (amount <= 0) return;
 
-        if (amount <= 0)
-        {
-            Debug.LogWarning($"[WorkStation] {name} - cantitate invalidă: {amount}");
-            return;
-        }
+        int oldStock = slotStock;
+        slotStock = Mathf.Min(slotStock + amount, maxStock);
 
-        int oldStock = slot1Stock;
-        slot1Stock += amount;
-
-        if (slot1Stock > maxProductsPerSlot)
-        {
-            slot1Stock = maxProductsPerSlot;
-        }
-
-        PublishStockChangedEvent(slot1Product, oldStock, slot1Stock);
+        PublishStockChanged(slotProduct, oldStock, slotStock);
+        _displayController?.RefreshDisplay();
     }
 
     /// <summary>
-    /// Ia produse din slot (pentru Client)
+    /// Ia produse din slot. Folosit de Client.
+    /// Returnează cantitatea efectiv luată.
     /// </summary>
     public int TakeProduct(int requestedAmount)
     {
-        if (slot1Stock <= 0)
-        {
-            return 0;
-        }
+        if (slotStock <= 0 || requestedAmount <= 0) return 0;
 
-        if (requestedAmount <= 0)
-        {
-            Debug.LogWarning($"[WorkStation] {name} - cantitate cerută invalidă: {requestedAmount}");
-            return 0;
-        }
+        int oldStock = slotStock;
+        int taken = Mathf.Min(requestedAmount, slotStock);
+        slotStock -= taken;
 
-        int oldStock = slot1Stock;
-        int amountToTake = Mathf.Min(requestedAmount, slot1Stock);
-        slot1Stock -= amountToTake;
-
-        // Logică schimbare automată tip
-        if (slot1Stock == 0 && pendingProduct != ProductType.None && pendingProduct != slot1Product)
+        // Comutare automată de tip când slotul e golit
+        if (slotStock == 0 &&
+            pendingProduct != ProductType.None &&
+            pendingProduct != slotProduct)
         {
-            Debug.Log($"[WorkStation] Raft golit! Schimbăm tipul din {slot1Product} în {pendingProduct}");
-            slot1Product = pendingProduct;
+            Debug.Log($"[{name}] Raft golit — schimbăm {slotProduct} -> {pendingProduct}");
+            slotProduct = pendingProduct;
             pendingProduct = ProductType.None;
         }
 
-        PublishStockChangedEvent(slot1Product, oldStock, slot1Stock);
-
-        return amountToTake;
+        PublishStockChanged(slotProduct, oldStock, slotStock);
+        _displayController?.RefreshDisplay();
+        return taken;
     }
 
-    // === HELPER METHODS ===
+    /// <summary>Reumple complet slotul.</summary>
+    public void Restock()
+    {
+        if (slotProduct == ProductType.None)
+        {
+            Debug.LogWarning($"[{name}] Nu se poate restock — niciun produs configurat!");
+            return;
+        }
+
+        int oldStock = slotStock;
+        slotStock = maxStock;
+        PublishStockChanged(slotProduct, oldStock, slotStock);
+        _displayController?.RefreshDisplay();
+    }
+
+    // ── STORAGE OPERATIONS — delegate catre StorageRacks ─────────────────────
 
     /// <summary>
-    /// Returnează lista de produse permise în funcție de tipul raftului
+    /// Distribuie marfa pe rafturile depozitului în ordine.
+    /// Returnează cantitatea care nu a încăput pe niciun raft.
     /// </summary>
-    public List<ProductType> GetAllowedProducts()
+    public int AddToStorage(ProductType type, int amount)
     {
-        List<ProductType> allowed = new List<ProductType>();
+        if (!ValidateStorageOp(type, amount, "Add")) return amount;
 
-        switch (shelfVariant)
+        int oldStock = GetStorageStock(type);
+        int remaining = amount;
+
+        foreach (StorageRacks rack in storageRacks)
         {
-            case ShelfType.StandardShelf:
-                allowed.Add(ProductType.Paine);
-                allowed.Add(ProductType.Chipsuri);
-                allowed.Add(ProductType.Biscuiti);
-                allowed.Add(ProductType.Conserve);
-                break;
-
-            case ShelfType.Fridge:
-                allowed.Add(ProductType.Cola);
-                allowed.Add(ProductType.Apa);
-                allowed.Add(ProductType.SucNatural);
-                allowed.Add(ProductType.Iaurt);
-                break;
-
-            case ShelfType.Freezer:
-                allowed.Add(ProductType.Inghetata);
-                allowed.Add(ProductType.PizzaCongelata);
-                allowed.Add(ProductType.PuiCongelat);
-                break;
+            if (remaining <= 0) break;
+            remaining = rack.AddProduct(type, remaining);
         }
+
+        int added = amount - remaining;
+        if (added > 0)
+        {
+            Debug.Log($"[DEPOZIT] +{added} x {type}. Total: {GetStorageStock(type)}");
+            PublishStockChanged(type, oldStock, GetStorageStock(type));
+        }
+
+        if (remaining > 0)
+            Debug.LogWarning($"[DEPOZIT] Nu a incaput {remaining} x {type} — rafturile sunt pline!");
+
+        return remaining;
+    }
+
+    /// <summary>
+    /// Scoate marfa din depozit cautand pe toate rafturile.
+    /// Returneaza true daca intreaga cantitate a fost gasita.
+    /// </summary>
+    public bool RemoveFromStorage(ProductType type, int amount)
+    {
+        if (!ValidateStorageOp(type, amount, "Remove")) return false;
+
+        int available = GetStorageStock(type);
+        if (available < amount)
+        {
+            Debug.LogWarning($"[DEPOZIT] Stoc insuficient {type}. Disponibil: {available}, Cerut: {amount}");
+            return false;
+        }
+
+        int oldStock = available;
+        int remaining = amount;
+
+        foreach (StorageRacks rack in storageRacks)
+        {
+            if (remaining <= 0) break;
+            remaining -= rack.TakeProduct(type, remaining);
+        }
+
+        Debug.Log($"[DEPOZIT] -{amount} x {type}. Ramas: {GetStorageStock(type)}");
+        PublishStockChanged(type, oldStock, GetStorageStock(type));
+        return true;
+    }
+
+    /// <summary>Alias pentru compatibilitate cu cod existent.</summary>
+    public bool TakeFromStorage(ProductType type, int amount) => RemoveFromStorage(type, amount);
+
+    /// <summary>Stoc total al unui tip de produs, sumat din toate rafturile.</summary>
+    public int GetStorageStock(ProductType type)
+    {
+        if (stationType != StationType.Storage) return 0;
+
+        int total = 0;
+        foreach (StorageRacks rack in storageRacks)
+            total += rack.GetStockAmount(type);
+        return total;
+    }
+
+    // ── PRODUCT FILTERING (via ProductDataSO) ─────────────────────────────────
+
+    public List<ProductData> GetAllowedProductData()
+    {
+        if (productDatabase == null)
+        {
+            Debug.LogWarning($"[{name}] productDatabase nu e asignat!");
+            return new List<ProductData>();
+        }
+
+        List<ProductData> allowed = new List<ProductData>();
+        foreach (ProductData data in productDatabase.allProducts)
+            if (data.compatibleShelfTypes.Contains(shelfVariant))
+                allowed.Add(data);
 
         return allowed;
     }
 
-    public Vector3 GetStandPosition()
+    public List<ProductType> GetAllowedProductTypes()
     {
-        if (interactionPoint != null)
-        {
-            return interactionPoint.position;
-        }
-        return transform.position;
+        List<ProductData> data = GetAllowedProductData();
+        List<ProductType> result = new List<ProductType>(data.Count);
+        foreach (ProductData d in data) result.Add(d.type);
+        return result;
     }
 
-    // === VALIDATION ===
+    public bool IsProductAllowed(ProductType type)
+    {
+        if (productDatabase == null) return false;
+        foreach (ProductData data in productDatabase.allProducts)
+            if (data.type == type && data.compatibleShelfTypes.Contains(shelfVariant))
+                return true;
+        return false;
+    }
 
-    private bool ValidateStorageOperation(ProductType type, int amount, string operation)
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    public Vector3 GetStandPosition() =>
+        interactionPoint != null ? interactionPoint.position : transform.position;
+
+    // ── PROPERTIES ────────────────────────────────────────────────────────────
+
+    public bool IsStorage => stationType == StationType.Storage;
+    public bool IsShelf => stationType == StationType.Shelf;
+
+    public bool NeedsRestocking =>
+        stationType == StationType.Shelf &&
+        slotProduct != ProductType.None &&
+        slotStock < maxStock &&
+        (pendingProduct == ProductType.None || pendingProduct == slotProduct);
+
+    public bool NeedsClearing =>
+        stationType == StationType.Shelf &&
+        pendingProduct != ProductType.None &&
+        pendingProduct != slotProduct &&
+        slotStock > 0;
+
+    public bool HasProducts =>
+        stationType == StationType.Shelf && slotStock > 0;
+
+    public float FillRatio =>
+        maxStock > 0 ? (float)slotStock / maxStock : 0f;
+
+    // ── INTERNAL ──────────────────────────────────────────────────────────────
+
+    private void ValidateShelf()
+    {
+        if (stationType != StationType.Shelf) return;
+
+
+        if (slotProduct != ProductType.None && !IsProductAllowed(slotProduct))
+            Debug.LogWarning($"[{name}] Produsul {slotProduct} nu e permis pe {shelfVariant}!");
+    }
+
+    private bool ValidateStorageOp(ProductType type, int amount, string op)
     {
         if (stationType != StationType.Storage)
         {
-            Debug.LogWarning($"[WorkStation] {name} nu e Storage! Nu se poate executa {operation}.");
+            Debug.LogWarning($"[{name}] Nu e Storage! Operatie {op} refuzata.");
             return false;
         }
-
         if (type == ProductType.None)
         {
-            Debug.LogWarning($"[WorkStation] {operation} - ProductType.None nu e valid!");
+            Debug.LogWarning($"[{name}] {op} — ProductType.None nu e valid!");
             return false;
         }
-
         if (amount <= 0)
         {
-            Debug.LogWarning($"[WorkStation] {operation} - cantitate invalidă: {amount}");
+            Debug.LogWarning($"[{name}] {op} — cantitate invalida: {amount}");
             return false;
         }
-
+        if (storageRacks.Count == 0)
+        {
+            Debug.LogWarning($"[{name}] {op} — niciun StorageRacks asignat!");
+            return false;
+        }
         return true;
     }
 
-    // === EVENT PUBLISHING ===
-
-    private void PublishStockChangedEvent(ProductType type, int oldStock, int newStock)
+    private void PublishStockChanged(ProductType type, int oldStock, int newStock)
     {
         if (!_hasEventBus || _eventBus == null) return;
 
@@ -320,26 +341,17 @@ public class WorkStation : MonoBehaviour
         });
     }
 
-    // === PROPERTIES ===
+    // ── GIZMOS ───────────────────────────────────────────────────────────────
 
-    public bool NeedsRestocking =>
-        stationType == StationType.Shelf &&
-        slot1Stock < maxProductsPerSlot &&
-        slot1Product != ProductType.None &&
-        (pendingProduct == ProductType.None || pendingProduct == slot1Product);
+#if UNITY_EDITOR
+    void OnDrawGizmosSelected()
+    {
 
-    public bool NeedsClearing =>
-        stationType == StationType.Shelf &&
-        pendingProduct != ProductType.None &&
-        pendingProduct != slot1Product &&
-        slot1Stock > 0;
-
-    public bool HasProducts =>
-        stationType == StationType.Shelf && slot1Stock > 0;
-
-    public bool IsStorage =>
-        stationType == StationType.Storage;
-
-    public bool IsShelf =>
-        stationType == StationType.Shelf;
+        Gizmos.color = slotProduct != ProductType.None ? Color.green : Color.yellow;
+        UnityEditor.Handles.Label(
+            transform.position + Vector3.up * 0.15f,
+            $"{slotProduct}\n{slotStock}/{maxStock}"
+        );
+    }
+#endif
 }

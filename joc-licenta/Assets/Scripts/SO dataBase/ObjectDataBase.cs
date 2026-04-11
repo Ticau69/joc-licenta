@@ -29,6 +29,7 @@ public class ObjectData
     [field: SerializeField] public ObjectCategory Category { get; private set; } = ObjectCategory.Equipment; // <--- NOU
     [field: SerializeField] public GameObject Prefab { get; private set; }
     [field: SerializeField] public Vector2Int Size { get; private set; } = Vector2Int.one;
+    [field: SerializeField] public bool IsDoor { get; private set; }
 
     [field: Header("Economie & Progresie")]
     [field: SerializeField] public int Cost { get; private set; }

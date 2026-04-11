@@ -3,54 +3,38 @@ using System.Collections.Generic;
 
 public class DoorPlacementState : IBuldingState
 {
-    private int selectedObjectIndex = -1;
-    private int ID;
-    private Grid grid;
-    private PreviewSystem previewSystem;
-    private ObjectDataBase dataBase;
-    private ObjectPlacer objectPlacer;
-    private GameManager gameManager;
-    private WallGridData wallData;
-    private WallSegmentData segmentData; // NOU: Pentru ștergerea segmentelor
-    private DoorData doorData; // NOU: Pentru ștergerea ușilor
-    private PlayerInput playerInput;
+    private readonly int ID;
+    private readonly Grid grid;
+    private readonly PreviewSystem previewSystem;
+    private readonly ObjectDataBase dataBase;
+    private readonly ObjectPlacer objectPlacer;
+    private readonly GameManager gameManager;
+    private readonly WallGridData wallData;
+    private readonly WallSegmentData segmentData;
+    private readonly DoorData doorData;
+    private readonly PlayerInput playerInput;
+    private readonly GameObject doorPrefab;
+    private readonly int selectedObjectIndex;
+    private readonly int doorSizeInSegments; // Size.x din database
 
-    private GameObject doorPreview;
-    private GameObject doorPrefab;
+    private GameObject _previewObj;
+    private Material _previewMat;
+    private List<WallSegment> _hoveredGroup; // grupul de segmente selectat
+    private bool _lastValid = false;
 
-    // Date despre plasamentul curent
-    private WallData currentWall = null;
-    private Vector3 currentDoorPosition;
-    private Quaternion currentDoorRotation;
-    private bool hasValidPlacement = false;
-
-    // Setări pentru uși
-    private float doorWidth = 1.8f; // Lățimea usei
-    private float snapDistance = 1.5f; // Distanța maximă pentru snap la perete
-
-    private Material previewMaterialInstance;
-    private bool lastValidState = false;
-    private WallData cachedNearestWall;
-    private Vector3 lastMousePos;
-    private const float MOUSE_MOVE_THRESHOLD = 0.1f;
+    private const float HOVER_SNAP_RADIUS = 1.0f;
 
     public DoorPlacementState(
-        int iD,
-        Grid grid,
-        PreviewSystem previewSystem,
-        ObjectDataBase database,
-        ObjectPlacer objectPlacer,
-        GameManager gameManager,
-        WallGridData wallData,
-        WallSegmentData segmentData,
-        DoorData doorData,
-        Material previewMaterial,
-        PlayerInput playerInput) // NOU
+        int iD, Grid grid, PreviewSystem previewSystem,
+        ObjectDataBase database, ObjectPlacer objectPlacer,
+        GameManager gameManager, WallGridData wallData,
+        WallSegmentData segmentData, DoorData doorData,
+        Material previewMaterial, PlayerInput playerInput)
     {
-        this.ID = iD;
+        ID = iD;
         this.grid = grid;
         this.previewSystem = previewSystem;
-        this.dataBase = database;
+        dataBase = database;
         this.objectPlacer = objectPlacer;
         this.gameManager = gameManager;
         this.wallData = wallData;
@@ -58,310 +42,260 @@ public class DoorPlacementState : IBuldingState
         this.doorData = doorData;
         this.playerInput = playerInput;
 
-        previewMaterialInstance = new Material(previewMaterial);
-        selectedObjectIndex = database.objectsData.FindIndex(data => data.ID == ID);
+        selectedObjectIndex = database.objectsData.FindIndex(d => d.ID == ID);
+        if (selectedObjectIndex < 0)
+            throw new System.Exception($"[DoorPlacement] ID {iD} negasit!");
 
-        if (selectedObjectIndex > -1)
-        {
-            doorPrefab = database.objectsData[selectedObjectIndex].Prefab;
+        doorPrefab = database.objectsData[selectedObjectIndex].Prefab;
+        doorSizeInSegments = database.objectsData[selectedObjectIndex].Size.x;
 
-            // Ascundem cursor-ul standard
-            previewSystem.ToggleCursorVisibility(false);
-
-            // Creăm preview-ul usei
-            CreateDoorPreview();
-        }
-        else
-        {
-            throw new System.Exception($"Nu s-a găsit obiectul cu ID {iD}");
-        }
+        _previewMat = new Material(previewMaterial);
+        previewSystem.ToggleCursorVisibility(false);
+        CreatePreview();
     }
+
+    // ── IBuildingState ────────────────────────────────────────────────────────
 
     public void EndState()
     {
-        // Distrugem doar instanța runtime, nu materialul original din Inspector
-        if (previewMaterialInstance != null)
-            GameObject.Destroy(previewMaterialInstance);
-        CleanupPreview();
+        DestroyPreview();
         previewSystem.ToggleCursorVisibility(false);
+        if (_previewMat != null) GameObject.Destroy(_previewMat);
     }
 
     public void OnAction(Vector3Int gridPosition)
     {
-        if (!hasValidPlacement)
+        if (_hoveredGroup == null || _hoveredGroup.Count < doorSizeInSegments)
         {
-            Debug.Log("Plasament invalid! Ușa trebuie plasată pe un perete.");
+            Debug.Log("[DoorPlacement] Grup de segmente insuficient.");
             return;
         }
-
-        // Verificăm banii
-        int doorCost = dataBase.objectsData[selectedObjectIndex].Cost;
-        if (!gameManager.TrySpendMoney(doorCost))
-        {
-            Debug.Log("Nu ai suficienți bani pentru a plasa ușa!");
-            return;
-        }
-
-        if (FinanceManager.Instance != null)
-        {
-            FinanceManager.Instance.RegisterTransaction(TransactionCategory.Constructii_Teren, doorCost);
-        }
-
-        // Plasăm ușa
-        PlaceDoor(currentDoorPosition, currentDoorRotation);
+        if (!IsPlacementValid()) return;
+        PlaceDoor(_hoveredGroup);
     }
 
     public void UpdateState(Vector3Int gridPosition)
     {
-        Vector3 mousePos = grid.CellToWorld(gridPosition);
+        Vector3 mouseWorld = playerInput.GetSelectedMapPostion();
 
-        // Găsim cel mai apropiat perete de mouse
-        WallData nearestWall = FindNearestWallToMouse(mousePos);
+        // Găsim segmentul cel mai aproape de mouse
+        WallSegment closest = FindClosestSegment(mouseWorld);
 
-        if (nearestWall != null)
+        if (closest == null)
         {
-            // Calculăm poziția și rotația usei EXACT PE PERETE
-            CalculateDoorPlacementOnWall(nearestWall, mousePos);
-            hasValidPlacement = true;
-        }
-        else
-        {
-            hasValidPlacement = false;
-        }
-
-        UpdateDoorPreview();
-    }
-
-    /// <summary>
-    /// Creează preview-ul pentru ușă
-    /// </summary>
-    private void CreateDoorPreview()
-    {
-        doorPreview = GameObject.Instantiate(doorPrefab);
-        doorPreview.name = "DoorPreview";
-
-        // Dezactivăm collider-ele
-        Collider[] colliders = doorPreview.GetComponentsInChildren<Collider>();
-        foreach (var col in colliders)
-        {
-            col.enabled = false;
-        }
-
-        // Aplicăm material transparent
-        ApplyPreviewMaterial(doorPreview, false);
-    }
-
-    /// <summary>
-    /// Găsește cel mai apropiat perete de poziția mouse-ului
-    /// </summary>
-    private WallData FindNearestWallToMouse(Vector3 mousePos)
-    {
-        // Skip dacă mouse-ul nu s-a mișcat suficient
-        if (Vector3.Distance(mousePos, lastMousePos) < MOUSE_MOVE_THRESHOLD)
-            return cachedNearestWall;
-
-        lastMousePos = mousePos;
-
-        var allWalls = wallData.GetAllWalls();
-        WallData nearestWall = null;
-        float minDistance = float.MaxValue;
-
-        foreach (var wall in allWalls)
-        {
-            float distance = DistanceToLineSegment(mousePos, wall.StartPosition, wall.EndPosition);
-            if (distance < minDistance && distance < snapDistance)
-            {
-                minDistance = distance;
-                nearestWall = wall;
-            }
-        }
-
-        cachedNearestWall = nearestWall;
-        return nearestWall;
-    }
-
-    /// <summary>
-    /// Calculează poziția EXACTĂ a usei pe perete (fără snap la centrul celulei)
-    /// </summary>
-    private void CalculateDoorPlacementOnWall(WallData wall, Vector3 mousePos)
-    {
-        currentWall = wall;
-
-        // 1. PROIECTĂM mouse-ul pe linia peretelui (fără snap la grid!)
-        Vector3 projectedPoint = ProjectPointOnLineSegment(mousePos, wall.StartPosition, wall.EndPosition);
-
-        // 2. Opțional: Snap la intervale regulate de-a lungul peretelui (nu la centrul celulei)
-        // Comentează această linie dacă vrei plasare complet liberă
-        projectedPoint = SnapAlongWall(projectedPoint, wall, 0.5f); // Snap la fiecare 0.5m
-
-        // 3. Verificăm dacă ușa încape pe perete (nu depășește capetele)
-        float distToStart = Vector3.Distance(projectedPoint, wall.StartPosition);
-        float distToEnd = Vector3.Distance(projectedPoint, wall.EndPosition);
-        float halfDoorWidth = doorWidth / 2f;
-
-        // Clamping: Dacă e prea aproape de capete, mutăm ușa
-        if (distToStart < halfDoorWidth)
-        {
-            Vector3 wallDir = wall.GetDirection();
-            projectedPoint = wall.StartPosition + wallDir * halfDoorWidth;
-        }
-        else if (distToEnd < halfDoorWidth)
-        {
-            Vector3 wallDir = wall.GetDirection();
-            projectedPoint = wall.EndPosition - wallDir * halfDoorWidth;
-        }
-
-        if (doorData.HasDoorAt(currentDoorPosition, doorWidth))
-        {
-            hasValidPlacement = false;
+            _hoveredGroup = null;
+            if (_previewObj != null) _previewObj.SetActive(false);
             return;
         }
 
-        hasValidPlacement = true;
+        // Găsim grupul de N segmente consecutive care include segmentul closest
+        _hoveredGroup = FindConsecutiveGroup(closest, doorSizeInSegments);
 
-        // 4. Setăm poziția finală (pe sol, y=0)
-        currentDoorPosition = new Vector3(projectedPoint.x, 0, projectedPoint.z);
+        if (_hoveredGroup == null || _hoveredGroup.Count < doorSizeInSegments)
+        {
+            if (_previewObj != null) _previewObj.SetActive(false);
+            return;
+        }
 
-        // 5. Calculăm rotația (perpendiculară pe perete)
-        Vector3 wallDirection = wall.GetDirection();
-        float angle = Mathf.Atan2(wallDirection.x, wallDirection.z) * Mathf.Rad2Deg;
-        currentDoorRotation = Quaternion.Euler(0, angle, 0);
+        // Centrul grupului = media pozițiilor tuturor segmentelor
+        Vector3 groupCenter = GetGroupCenter(_hoveredGroup);
+        groupCenter.y = 0f;
 
-        // Debug pentru vizualizare
-        Debug.DrawLine(wall.StartPosition, wall.EndPosition, Color.cyan, 0.1f);
-        Debug.DrawLine(mousePos, projectedPoint, Color.yellow, 0.1f);
-        Debug.DrawRay(currentDoorPosition, Vector3.up * 2f, Color.green, 0.1f);
+        Quaternion rot = GetDoorRotation(closest);
+
+        MovePreview(groupCenter, rot);
+        ApplyPreviewColor(IsPlacementValid());
+    }
+
+    // ── Segment Finding ───────────────────────────────────────────────────────
+
+    private WallSegment FindClosestSegment(Vector3 mouseWorld)
+    {
+        List<WallSegment> all = segmentData.GetAllSegments();
+
+        WallSegment closest = null;
+        float closestDist = HOVER_SNAP_RADIUS;
+
+        foreach (WallSegment seg in all)
+        {
+            float dist = Vector3.Distance(
+                new Vector3(mouseWorld.x, 0, mouseWorld.z),
+                new Vector3(seg.GetCenter().x, 0, seg.GetCenter().z)
+            );
+
+            if (dist < closestDist)
+            {
+                closestDist = dist;
+                closest = seg;
+            }
+        }
+
+        return closest;
     }
 
     /// <summary>
-    /// Snap de-a lungul peretelui la intervale regulate (nu la grid!)
+    /// Găsește N segmente consecutive (prin SegmentIndex) care includ targetSeg.
+    /// Încearcă să centreze grupul pe target — ia segmente înainte și după.
     /// </summary>
-    private Vector3 SnapAlongWall(Vector3 point, WallData wall, float snapInterval)
+    private List<WallSegment> FindConsecutiveGroup(WallSegment targetSeg, int count)
     {
-        // Calculăm distanța de la start la punctul proiectat
-        float distanceAlongWall = Vector3.Distance(wall.StartPosition, point);
+        if (count <= 1)
+            return new List<WallSegment> { targetSeg };
 
-        // Rotunjim la cel mai apropiat multiplu de snapInterval
-        float snappedDistance = Mathf.Round(distanceAlongWall / snapInterval) * snapInterval;
+        // Colectăm toate segmentele de pe același perete (același TotalSegments și direcție)
+        List<WallSegment> wallSegs = new List<WallSegment>();
+        Vector3 targetDir = targetSeg.GetDirection();
 
-        // Calculăm noua poziție
-        Vector3 wallDir = wall.GetDirection();
-        return wall.StartPosition + wallDir * snappedDistance;
+        foreach (WallSegment seg in segmentData.GetAllSegments())
+        {
+            // Același perete = direcție paralelă și apropiați în spațiu
+            float dot = Mathf.Abs(Vector3.Dot(seg.GetDirection(), targetDir));
+            float dist = Vector3.Distance(
+                new Vector3(seg.GetCenter().x, 0, seg.GetCenter().z),
+                new Vector3(targetSeg.GetCenter().x, 0, targetSeg.GetCenter().z)
+            );
+
+            if (dot > 0.99f && dist < targetSeg.Length * (count + 1))
+                wallSegs.Add(seg);
+        }
+
+        // Sortăm după SegmentIndex
+        wallSegs.Sort((a, b) => a.SegmentIndex.CompareTo(b.SegmentIndex));
+
+        // Găsim indexul target în listă
+        int targetIdx = wallSegs.IndexOf(targetSeg);
+        if (targetIdx < 0) return null;
+
+        // Centrăm grupul pe target
+        int startIdx = Mathf.Max(0, targetIdx - count / 2);
+        int endIdx = startIdx + count;
+
+        if (endIdx > wallSegs.Count)
+        {
+            endIdx = wallSegs.Count;
+            startIdx = Mathf.Max(0, endIdx - count);
+        }
+
+        if (endIdx - startIdx < count) return null; // nu sunt destule segmente
+
+        // Verificăm că sunt consecutive (fără goluri)
+        List<WallSegment> group = wallSegs.GetRange(startIdx, endIdx - startIdx);
+        for (int i = 1; i < group.Count; i++)
+        {
+            if (group[i].SegmentIndex != group[i - 1].SegmentIndex + 1)
+                return null; // gol în secvență (ex: altă ușă)
+        }
+
+        return group;
     }
 
-    /// <summary>
-    /// Actualizează preview-ul usei
-    /// </summary>
-    private void UpdateDoorPreview()
+    private Vector3 GetGroupCenter(List<WallSegment> group)
     {
-        if (doorPreview == null) return;
-
-        if (hasValidPlacement)
-        {
-            doorPreview.SetActive(true);
-            doorPreview.transform.position = currentDoorPosition;
-            doorPreview.transform.rotation = currentDoorRotation;
-
-            // Verificăm dacă avem bani
-            bool hasEnoughMoney = gameManager.CurrentMoney >= dataBase.objectsData[selectedObjectIndex].Cost;
-            ApplyPreviewMaterial(doorPreview, hasEnoughMoney);
-        }
-        else
-        {
-            doorPreview.SetActive(false);
-        }
+        Vector3 sum = Vector3.zero;
+        foreach (WallSegment seg in group)
+            sum += seg.GetCenter();
+        return sum / group.Count;
     }
 
-    /// <summary>
-    /// Plasează ușa în lume și șterge segmentele de perete
-    /// </summary>
-    private void PlaceDoor(Vector3 position, Quaternion rotation)
-    {
-        // 1. ȘTERGEM SEGMENTELE DE PERETE din zona usei
-        int removedCount = 0;
-        if (segmentData != null)
-        {
-            float clearanceRadius = doorWidth / 2f + 0.1f;
-            segmentData.RemoveSegmentsInRange(position, clearanceRadius, out removedCount);
-            Debug.Log($"Segmente de perete șterse pentru ușă: {removedCount}");
-        }
+    // ── Rotation ──────────────────────────────────────────────────────────────
 
-        // 2. PLASĂM UȘA
-        GameObject newDoor = GameObject.Instantiate(doorPrefab);
-        newDoor.transform.position = position;
-        newDoor.transform.rotation = rotation;
+    private Quaternion GetDoorRotation(WallSegment segment)
+    {
+        Vector3 wallDir = segment.GetDirection();
+        Vector3 doorForward = Vector3.Cross(wallDir, Vector3.up);
+        if (doorForward == Vector3.zero) return Quaternion.identity;
+        return Quaternion.LookRotation(doorForward, Vector3.up);
+    }
+
+    // ── Validation ────────────────────────────────────────────────────────────
+
+    private bool IsPlacementValid()
+    {
+        if (_hoveredGroup == null || _hoveredGroup.Count < doorSizeInSegments)
+            return false;
+
+        Vector3 center = GetGroupCenter(_hoveredGroup);
+        if (doorData.HasDoorAt(center, 0.4f)) return false;
+
+        int cost = dataBase.objectsData[selectedObjectIndex].Cost;
+        return gameManager.CurrentMoney >= cost;
+    }
+
+    // ── Place Door ────────────────────────────────────────────────────────────
+
+    private void PlaceDoor(List<WallSegment> group)
+    {
+        int cost = dataBase.objectsData[selectedObjectIndex].Cost;
+        if (!gameManager.TrySpendMoney(cost)) return;
+
+        if (FinanceManager.Instance != null)
+            FinanceManager.Instance.RegisterTransaction(
+                TransactionCategory.Constructii_Teren, cost);
+
+        Vector3 pos = GetGroupCenter(group);
+        Quaternion rot = GetDoorRotation(group[0]);
+        pos.y = 0f;
+
+        GameObject newDoor = GameObject.Instantiate(doorPrefab, pos, rot);
         newDoor.name = $"Door_{doorData.GetAllDoors().Count}";
+        doorData.AddDoor(pos, rot, ID, newDoor);
 
-        // 3. ADĂUGĂM ÎN TRACKING - ACEASTA ERA PROBLEMA!
-        doorData.AddDoor(position, rotation, ID, newDoor);
-        Debug.Log($"Ușă adăugată în doorData la poziția: {position}");
-
-        // 4. Consumăm energie dacă este cazul
-        int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
-        if (consumption > 0 && PowerManager.Instance != null)
+        // Ștergem exact segmentele din grup
+        foreach (WallSegment seg in group)
         {
-            PowerManager.Instance.RegisterConsumer(consumption);
+            float radius = seg.Length * 0.4f;
+            segmentData.RemoveSegmentsInRange(seg.GetCenter(), radius, out _);
         }
 
-        Debug.Log($"Ușă plasată la: {position}, rotație: {rotation.eulerAngles.y}°, segmente șterse: {removedCount}");
+        int power = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
+        if (power > 0 && PowerManager.Instance != null)
+            PowerManager.Instance.RegisterConsumer(power);
+
+        Debug.Log($"[DoorPlacement] Usa plasata la {pos}, {group.Count} segmente sterse.");
     }
 
-    /// <summary>
-    /// Curăță preview-ul
-    /// </summary>
-    private void CleanupPreview()
+    // ── Preview ───────────────────────────────────────────────────────────────
+
+    private void CreatePreview()
     {
-        if (doorPreview != null)
+        if (doorPrefab == null) return;
+        _previewObj = GameObject.Instantiate(doorPrefab);
+        _previewObj.name = "DoorPreview";
+        foreach (Collider col in _previewObj.GetComponentsInChildren<Collider>())
+            col.enabled = false;
+        ApplyPreviewMaterial(_previewObj);
+        _previewObj.SetActive(false);
+    }
+
+    private void MovePreview(Vector3 pos, Quaternion rot)
+    {
+        if (_previewObj == null) return;
+        _previewObj.SetActive(true);
+        _previewObj.transform.position = pos;
+        _previewObj.transform.rotation = rot;
+    }
+
+    private void ApplyPreviewColor(bool valid)
+    {
+        if (valid == _lastValid) return;
+        _lastValid = valid;
+        Color c = valid ? Color.white : Color.red;
+        c.a = 0.5f;
+        _previewMat.color = c;
+    }
+
+    private void ApplyPreviewMaterial(GameObject obj)
+    {
+        foreach (Renderer r in obj.GetComponentsInChildren<Renderer>())
         {
-            GameObject.Destroy(doorPreview);
-            doorPreview = null;
+            Material[] mats = new Material[r.materials.Length];
+            for (int i = 0; i < mats.Length; i++) mats[i] = _previewMat;
+            r.materials = mats;
         }
     }
 
-    private void ApplyPreviewMaterial(GameObject obj, bool isValid, float alpha = 0.5f)
+    private void DestroyPreview()
     {
-        // Nu facem nimic dacă starea nu s-a schimbat
-        if (isValid == lastValidState) return;
-        lastValidState = isValid;
-
-        // Schimbăm doar culoarea pe instanța existentă
-        Color color = isValid ? Color.white : Color.red;
-        color.a = alpha;
-        previewMaterialInstance.color = color;
-
-        // Aplicăm instanța pe toți rendererii
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
-        foreach (var r in renderers)
-            r.sharedMaterial = previewMaterialInstance;
-    }
-
-    // ============ FUNCȚII MATEMATICE HELPER ============
-
-    /// <summary>
-    /// Calculează distanța de la un punct la un segment de linie
-    /// </summary>
-    private float DistanceToLineSegment(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
-    {
-        Vector3 projectedPoint = ProjectPointOnLineSegment(point, lineStart, lineEnd);
-        return Vector3.Distance(point, projectedPoint);
-    }
-
-    /// <summary>
-    /// Proiectează un punct pe un segment de linie (perpendicular)
-    /// Returnează cel mai apropiat punct de pe linie
-    /// </summary>
-    private Vector3 ProjectPointOnLineSegment(Vector3 point, Vector3 lineStart, Vector3 lineEnd)
-    {
-        Vector3 lineDirection = lineEnd - lineStart;
-        float lineLength = lineDirection.magnitude;
-        lineDirection.Normalize();
-
-        Vector3 pointVector = point - lineStart;
-        float dot = Vector3.Dot(pointVector, lineDirection);
-
-        // Clamp la lungimea liniei (ca să nu depășească capetele)
-        dot = Mathf.Clamp(dot, 0, lineLength);
-
-        return lineStart + lineDirection * dot;
+        if (_previewObj != null) { GameObject.Destroy(_previewObj); _previewObj = null; }
     }
 }

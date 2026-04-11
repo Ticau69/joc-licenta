@@ -15,11 +15,22 @@ MonoBehaviour:
   allProducts:
   - productName: Paine
     type: 1
+    compatibleShelfTypes: 00000000
     icon: {fileID: 0}
+    displayPrefab: {fileID: 3655396040265903751, guid: 112029b065b22754ebd457ed743c7f4c, type: 3}
     baseCost: 3
     baseSellPrice: 3
   - productName: Apa Plata
     type: 6
+    compatibleShelfTypes: 01000000
     icon: {fileID: 0}
+    displayPrefab: {fileID: 8543999613728531867, guid: bf13c45e86c3bd04ca6f818a9edffec9, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Banane
+    type: 12
+    compatibleShelfTypes: 03000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 6550749035565425458, guid: 9135479199ba3694d822376934e863ed, type: 3}
     baseCost: 2
     baseSellPrice: 2

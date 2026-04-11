@@ -147,20 +147,6 @@
     border-radius: 5px;
 }
 
-/* Primul item lipit de sus */
-.unity-base-dropdown__item:first-child {
-    margin-top: 0;
-    border-top-left-radius: 8px;
-    border-top-right-radius: 8px;
-}
-
-/* Ultimul item lipit de jos */
-.unity-base-dropdown__item:last-child {
-    margin-bottom: 0;
-    border-bottom-left-radius: 8px;
-    border-bottom-right-radius: 8px;
-}
-
 /* Text item */
 .unity-base-dropdown__item .unity-label {
     background-color: transparent;

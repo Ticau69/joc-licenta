@@ -5,7 +5,7 @@
             <ui:VisualElement name="LeftPanel" style="width: 40%; border-right-width: 2px; border-right-color: rgba(255, 255, 255, 0.1); padding: 15px;">
                 <ui:Label text="ANGAJAȚII MEI" style="color: white; font-size: 24px; -unity-font-style: bold; -unity-text-align: middle-center; margin-bottom: 15px;"/>
                 <ui:ScrollView name="EmployeeListScrollView" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 5px;"/>
-                <ui:Button name="HireNewButton" text="+ ANGAJEAZĂ NOU" style="height: 50px; background-color: rgb(40, 167, 69); color: white; -unity-font-style: bold; font-size: 16px; border-radius: 8px; border-width: 0; margin-top: 15px;"/>
+                <ui:Button name="HireNewButton" text="+ ANGAJEAZĂ NOU" style="height: 50px; background-color: rgb(66, 133, 244); color: white; -unity-font-style: bold; font-size: 16px; border-radius: 8px; border-width: 0; margin-top: 15px;"/>
             </ui:VisualElement>
             <ui:VisualElement name="RightPanel" style="width: 60%; padding: 25px; justify-content: flex-start;">
                 <ui:Label name="SelectedEmployeeName" text="Selectează un angajat din stânga" style="color: white; font-size: 26px; -unity-font-style: bold; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.2); padding-bottom: 15px; margin-bottom: 20px;"/>
@@ -28,7 +28,7 @@
                     </ui:VisualElement>
                 </ui:VisualElement>
                 <ui:VisualElement style="flex-grow: 1; justify-content: flex-end;">
-                    <ui:Button name="FireButton" text="CONCEDIAZĂ" style="height: 40px; background-color: rgb(200, 50, 50); color: white; font-size: 14px; border-radius: 8px; border-width: 0;"/>
+                    <ui:Button name="FireButton" text="CONCEDIAZĂ" style="height: 50px; background-color: rgb(200, 50, 50); color: white; font-size: 14px; border-radius: 8px; border-width: 0; bottom: -10px; -unity-font-style: bold;"/>
                 </ui:VisualElement>
             </ui:VisualElement>
             <ui:Button name="ClosePanelButton" text="X" style="position: absolute; right: -15px; top: -15px; width: 45px; height: 45px; background-color: rgb(220, 50, 50); color: white; border-radius: 25px; border-width: 2px; border-color: white; -unity-font-style: bold; font-size: 22px;"/>

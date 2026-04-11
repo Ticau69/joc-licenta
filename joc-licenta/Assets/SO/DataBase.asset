@@ -13,18 +13,33 @@ MonoBehaviour:
   m_Name: DataBase
   m_EditorClassIdentifier: Assembly-CSharp::ObjectDataBase
   objectsData:
-  - <Name>k__BackingField: Podea
+  - <Name>k__BackingField: Podea magazin
     <ObjDescription>k__BackingField: Podea normala pentru plasat in magazin
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 0
     <Category>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 604535264888599239, guid: 22b4be6421ffcbd4aa04ae14376bf60d, type: 3}
     <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 0
+  - <Name>k__BackingField: Podea depozit
+    <ObjDescription>k__BackingField: Podea speciala pentru depozit pe care se pot
+      plasa rafturile pentru depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 5
+    <Category>k__BackingField: 1
+    <Prefab>k__BackingField: {fileID: 604535264888599239, guid: 800a035d78785ec439d0fc31e2dfab3f, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 100
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 1
   - <Name>k__BackingField: Wall
     <ObjDescription>k__BackingField: 
     <Icon>k__BackingField: {fileID: 0}
@@ -32,18 +47,20 @@ MonoBehaviour:
     <Category>k__BackingField: 1
     <Prefab>k__BackingField: {fileID: 5886555951527748466, guid: 57977ed4b43fa8148abfb0bd6ba175a3, type: 3}
     <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 0
-  - <Name>k__BackingField: Usa
+  - <Name>k__BackingField: Usa Simpla
     <ObjDescription>k__BackingField: 
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 2
     <Category>k__BackingField: 1
-    <Prefab>k__BackingField: {fileID: 5785866022173266267, guid: 7e1237167c195fc4d82d24c52f71887c, type: 3}
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 5659887254413831142, guid: ddfe4331cb879d042897eceb8f1ffd53, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 1
     <Cost>k__BackingField: 100
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
@@ -54,47 +71,89 @@ MonoBehaviour:
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 3
     <Category>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 7650287880413670760, guid: 984e0302f1653c442addd47f1130e051, type: 3}
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 6550845671925202243, guid: 03c7ed4c467cbe8499894a9ba8f7e6c9, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
     <Cost>k__BackingField: 150
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 0
     <ShelfVariant>k__BackingField: 0
-  - <Name>k__BackingField: Frigider Mare
-    <ObjDescription>k__BackingField: 
-    <Icon>k__BackingField: {fileID: 0}
-    <ID>k__BackingField: 4
-    <Category>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 942758342410213492, guid: 81635eeee72d7d84d8d22bd900df7fa3, type: 3}
-    <Size>k__BackingField: {x: 2, y: 1}
-    <Cost>k__BackingField: 250
-    <PowerConsumption>k__BackingField: 25
-    <UnlockLevel>k__BackingField: 1
-    <StationType>k__BackingField: 2
-    <ShelfVariant>k__BackingField: 1
-  - <Name>k__BackingField: Podea
-    <ObjDescription>k__BackingField: Podea speciala pentru depozit pe care se pot
-      plasa rafturile pentru depozit
-    <Icon>k__BackingField: {fileID: 0}
-    <ID>k__BackingField: 5
-    <Category>k__BackingField: 1
-    <Prefab>k__BackingField: {fileID: 604535264888599239, guid: 800a035d78785ec439d0fc31e2dfab3f, type: 3}
-    <Size>k__BackingField: {x: 1, y: 1}
-    <Cost>k__BackingField: 100
-    <PowerConsumption>k__BackingField: 0
-    <UnlockLevel>k__BackingField: 1
-    <StationType>k__BackingField: 2
-    <ShelfVariant>k__BackingField: 1
   - <Name>k__BackingField: Raft Depozit
     <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 6
     <Category>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 8034557012100483074, guid: 18e9bd652d1db5d45b4b682bd67d1c31, type: 3}
-    <Size>k__BackingField: {x: 2, y: 1}
+    <Prefab>k__BackingField: {fileID: 4272272896956151253, guid: fc2348c55d240804b97dc025987d4bcb, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
     <Cost>k__BackingField: 200
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 1
     <ShelfVariant>k__BackingField: 0
+  - <Name>k__BackingField: Frigider Nou
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 7
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 8877612173429674220, guid: 197911817510e8646a9a576d2242e7ff, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 1
+  - <Name>k__BackingField: Congelator
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 8
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 7974007077823097444, guid: 969c2e5cf2174c842beb06852e38ceb3, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 2
+  - <Name>k__BackingField: Raft Inclinat
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 9
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 6468629961433835718, guid: f25f5f377cc30dc44aa423e822d8ad04, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 0
+  - <Name>k__BackingField: Cos pentru fructe
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 10
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 6036069604635330778, guid: 33d9846776b81f84ba0a23f161b3a55e, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 3
+  - <Name>k__BackingField: Usa Automata
+    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 11
+    <Category>k__BackingField: 1
+    <Prefab>k__BackingField: {fileID: 8181120869591467040, guid: 5bc1cf293c45fe2489bb5759c4227106, type: 3}
+    <Size>k__BackingField: {x: 2, y: 2}
+    <IsDoor>k__BackingField: 1
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 3

@@ -398,7 +398,7 @@ public class CustomerAI : MonoBehaviour
 
         var item = _list[_currentIndex];
 
-        if (_targetShelf.slot1Product != item.product || _targetShelf.slot1Stock <= 0)
+        if (_targetShelf.slotProduct != item.product || _targetShelf.slotStock <= 0)
         {
             Debug.Log($"[CustomerAI] {name} - Raftul e gol. Sar peste {item.product}.");
             NotifyProductNotFound(item.product);

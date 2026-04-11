@@ -127,7 +127,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10dcd445f83826a42af6400030a0ab33, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ProceduralWall
-  height: 2.5
+  height: 1.5
   width: 0.2
   wallMaterial: {fileID: 2100000, guid: 7e7cde7ac1e52134daddaa6a680cfc10, type: 2}
 --- !u!208 &6290838994540591499

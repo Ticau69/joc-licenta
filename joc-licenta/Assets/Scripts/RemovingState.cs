@@ -65,7 +65,6 @@ public class RemovingState : IBuldingState
         RaycastHit[] hits = Physics.RaycastAll(ray, 100f, layerMask);
         System.Array.Sort(hits, (x, y) => x.distance.CompareTo(y.distance));
 
-        // PASUL 1: Verificăm TOATE hit-urile pentru uși mai întâi
         if (doorData != null)
         {
             foreach (RaycastHit hit in hits)
@@ -81,10 +80,43 @@ public class RemovingState : IBuldingState
                 {
                     RestoreResources(door.DoorID);
                     doorData.RemoveDoor(door.Position);
+
+                    // ── NOU: curatam si wallData in zona usii ─────────────────
+                    // Gasim peretii care trec prin pozitia usii si ii scoatem
+                    // din wallData ca sa permita plasarea unui perete nou
+                    if (wallData != null)
+                    {
+                        var allWalls = wallData.GetAllWalls();
+                        float tolerance = 1.5f; // cat de aproape trebuie sa fie peretele de usa
+
+                        foreach (var wall in allWalls)
+                        {
+                            // Verificam daca usa e pe acest perete
+                            Vector3 projected = ProjectPointOnSegment(
+                                door.Position, wall.StartPosition, wall.EndPosition);
+
+                            if (Vector3.Distance(projected, door.Position) < tolerance)
+                            {
+                                // Stergem si segmentele ramase ale acestui perete
+                                if (segmentData != null)
+                                {
+                                    string wallKey = $"wall_{wall.ID}_{wall.StartPosition.x:F2}_{wall.StartPosition.z:F2}";
+                                    segmentData.RemoveAllPartsFor(wallKey);
+                                }
+
+                                wallData.RemoveWall(wall.StartPosition, wall.EndPosition);
+                                break;
+                            }
+                        }
+                    }
+                    // ─────────────────────────────────────────────────────────
+
                     return;
                 }
             }
         }
+
+
 
         // PASUL 2: Dacă nu e ușă, verificăm pereți și restul
         int interactionLayer = LayerMask.NameToLayer("ObjectInteraction");
@@ -158,6 +190,15 @@ public class RemovingState : IBuldingState
             RemoveObjectAt(gridPosition, floorData);
             return;
         }
+    }
+
+    private Vector3 ProjectPointOnSegment(Vector3 point, Vector3 start, Vector3 end)
+    {
+        Vector3 dir = end - start;
+        float len = dir.magnitude;
+        dir.Normalize();
+        float dot = Mathf.Clamp(Vector3.Dot(point - start, dir), 0, len);
+        return start + dir * dot;
     }
 
     public void UpdateState(Vector3Int gridPosition)

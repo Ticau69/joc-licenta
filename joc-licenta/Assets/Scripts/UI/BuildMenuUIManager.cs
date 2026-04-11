@@ -1,6 +1,6 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UIElements;
+using System.Linq;
 
 public class BuildMenuUIManager : MonoBehaviour
 {
@@ -13,6 +13,8 @@ public class BuildMenuUIManager : MonoBehaviour
 
     [Header("UI Templates")]
     public VisualTreeAsset furnitureButtonTemplate; // Butonul mic din lista din stânga
+    [Header("Data")]
+    public ProductDataSO productDatabase; // Pentru a arăta ce produse sunt compatibile cu rafturile
 
     private ObjectCategory _currentCategory = ObjectCategory.Equipment;
 
@@ -257,16 +259,14 @@ public class BuildMenuUIManager : MonoBehaviour
     // Funcție magică: Citește ce produse sunt permise pe acest raft
     private string GetAllowedProductsString(ShelfType type)
     {
-        // Simulăm un raft fals doar pentru a accesa logica ta curată din WorkStation.cs
-        WorkStation tempStation = new GameObject("Temp").AddComponent<WorkStation>();
-        tempStation.shelfVariant = type;
+        if (productDatabase == null) return "Niciun produs.";
 
-        List<ProductType> allowed = tempStation.GetAllowedProducts();
-        Destroy(tempStation.gameObject); // Curățăm imediat
+        var allowed = productDatabase.allProducts
+            .Where(p => p.compatibleShelfTypes.Contains(type))
+            .Select(p => p.productName)
+            .ToList();
 
         if (allowed.Count == 0) return "Niciun produs.";
-
-        // Transformăm lista (Paine, Chipsuri) într-un string frumos cu virgulă
         return "Produse compatibile:\n• " + string.Join("\n• ", allowed);
     }
 

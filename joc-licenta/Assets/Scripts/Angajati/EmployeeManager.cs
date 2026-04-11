@@ -239,21 +239,36 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignCashierStation(Employee employee)
     {
-        WorkStation station = StationRegistry.GetAnyCashRegister();
+        // Cauta o casa fara casier asignat
+        var allQueues = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
 
-        if (station != null)
-        {
-            Transform targetPos = station.interactionPoint != null
-                ? station.interactionPoint
-                : station.transform;
+        CashRegisterQueue freeRegister = null;
 
-            employee.AssignRole(EmployeeRole.Cashier, targetPos);
-            Debug.Log($"[EmployeeManager] Assigned {employee.employeeName} to cash register at {targetPos.name}");
-        }
-        else
+        foreach (var queue in allQueues)
         {
-            Debug.LogWarning($"[EmployeeManager] No available cash register for {employee.employeeName}");
+            // Casa fara casier asignat sau cu casier invalid (plecat)
+            if (queue.AssignedCashier == null || !queue.AssignedCashier.gameObject.activeInHierarchy)
+            {
+                freeRegister = queue;
+                break;
+            }
         }
+
+        if (freeRegister == null)
+        {
+            Debug.LogWarning($"[EmployeeManager] Nu există case libere pentru {employee.employeeName}!");
+            return;
+        }
+
+        WorkStation station = freeRegister.GetComponent<WorkStation>();
+        Transform targetPos = station.interactionPoint != null
+            ? station.interactionPoint
+            : station.transform;
+
+        employee.AssignRole(EmployeeRole.Cashier, targetPos);
+        freeRegister.AssignCashier(employee);
+
+        Debug.Log($"[EmployeeManager] {employee.employeeName} asignat la casa {freeRegister.name}");
     }
 
     private void AssignRestockerStation(Employee employee)

@@ -32,7 +32,7 @@
             </ui:VisualElement>
             <ui:VisualElement style="align-items: center; margin-top: 30px; flex-direction: row;">
                 <ui:Button text="ASTEAPTA ZIUA URMATOARE" name="WaitForNextDay" style="background-color: rgb(73, 79, 89); color: white; -unity-font-style: bold; font-size: 15px; padding-left: 40px; padding-right: 40px; padding-top: 15px; padding-bottom: 15px; border-radius: 25px; border-width: 0; transition-duration: 0.2s; border-left-color: rgb(66, 133, 244); border-right-color: rgb(66, 133, 244); border-top-color: rgb(66, 133, 244); border-bottom-color: rgb(66, 133, 244); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px;"/>
-                <ui:Button text="ÎNCEPE ZIUA URMĂTOARE" name="NextDayButton" style="background-color: rgb(66, 133, 244); color: white; -unity-font-style: bold; font-size: 15px; padding-left: 40px; padding-right: 40px; padding-top: 15px; padding-bottom: 15px; border-radius: 25px; border-width: 0; transition-duration: 0.2s;"/>
+                <ui:Button text="ÎNCEPE ZIUA URMĂTOARE" name="StartNextDay" style="background-color: rgb(66, 133, 244); color: white; -unity-font-style: bold; font-size: 15px; padding-left: 40px; padding-right: 40px; padding-top: 15px; padding-bottom: 15px; border-radius: 25px; border-width: 0; transition-duration: 0.2s;"/>
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>

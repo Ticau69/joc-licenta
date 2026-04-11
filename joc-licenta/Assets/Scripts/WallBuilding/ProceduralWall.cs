@@ -10,7 +10,7 @@ public class ProceduralWall : MonoBehaviour
     private List<Vector2> uvs;
 
     // Setări Perete
-    [SerializeField] private float height = 2.5f;
+    [SerializeField] internal float height = 2.5f;
     [SerializeField] private float width = 0.2f;
     [SerializeField] private Material wallMaterial;
 
@@ -20,6 +20,11 @@ public class ProceduralWall : MonoBehaviour
 
     private MeshCollider meshCollider;
     private MeshRenderer meshRenderer;
+
+    public void SetHeight(float newHeight)
+    {
+        height = newHeight;
+    }
 
     private void Awake()
     {

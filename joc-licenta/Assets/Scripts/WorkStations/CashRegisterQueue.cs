@@ -24,11 +24,21 @@ public class CashRegisterQueue : MonoBehaviour
 
     private IMoneyService _money;
     private Employee _currentCashier;
+    public Employee AssignedCashier { get; private set; }
 
     public int QueueCount => _queue.Count;
 
     // ── NOU: expus pentru CustomerAI să poată verifica dacă coada e plină ──
     public int MaxQueueSize => maxQueueSize;
+    public void AssignCashier(Employee cashier)
+    {
+        AssignedCashier = cashier;
+    }
+
+    public void UnassignCashier()
+    {
+        AssignedCashier = null;
+    }
 
     /// <summary>
     /// Returnează poziția în coadă unde s-ar așeza clientul următor.

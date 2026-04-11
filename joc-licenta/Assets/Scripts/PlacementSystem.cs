@@ -165,7 +165,9 @@ public class PlacementSystem : MonoBehaviour
             playerInput.OnRightClick += CancelWallSegment;
             playerInput.OnConfirm += FinalizeWall;
         }
-        else if (ID == 2) // Ușă - WALL SNAP MODE
+        else if (database.objectsData.FindIndex(data => data.ID == ID) is int doorIdx
+         && doorIdx >= 0
+         && database.objectsData[doorIdx].IsDoor) // Ușă - WALL SNAP MODE
         {
             isWallMode = false;
             buildingState = new DoorPlacementState(

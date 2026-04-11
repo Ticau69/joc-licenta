@@ -92,7 +92,6 @@ public class Employee : MonoBehaviour
 
     // Restocker specific
     private RestockerStateMachine restockerStateMachine;
-    private DoorManager doorManager;
     #endregion
 
     #region Unity Lifecycle
@@ -102,8 +101,7 @@ public class Employee : MonoBehaviour
         if (animator == null) animator = GetComponent<Animator>();
         // Setup Notification System
         agent = GetComponent<NavMeshAgent>();
-        doorManager = new DoorManager();
-        restockerStateMachine = new RestockerStateMachine(this, doorManager, MAX_CARRY_CAPACITY);
+        restockerStateMachine = new RestockerStateMachine(this, MAX_CARRY_CAPACITY);
 
         // Adaugă:
         _notificationSystem = GetComponent<EmployeeNotification>();
@@ -431,43 +429,6 @@ public class Employee : MonoBehaviour
 #region Supporting Classes
 
 /// <summary>
-/// Manages door operations for employees
-/// </summary>
-public class DoorManager
-{
-    private SimpleDoorController lastOpenedDoor = null;
-
-    public void OpenDoor(WorkStation station, string context)
-    {
-        if (station == null)
-        {
-            Debug.LogWarning($"[DoorManager] Station is NULL in context: {context}");
-            return;
-        }
-
-        if (station.doorController == null)
-        {
-            Debug.LogWarning($"[DoorManager] Station '{station.name}' has no doorController assigned!");
-            return;
-        }
-
-        Debug.Log($"[DoorManager] Opening door at {station.name} ({context})");
-        station.doorController.Open();
-        lastOpenedDoor = station.doorController;
-    }
-
-    public void CloseLastDoor()
-    {
-        if (lastOpenedDoor != null)
-        {
-            Debug.Log("[DoorManager] Closing door");
-            lastOpenedDoor.Close();
-            lastOpenedDoor = null;
-        }
-    }
-}
-
-/// <summary>
 /// State machine for Restocker employee logic
 /// </summary>
 public class RestockerStateMachine
@@ -493,12 +454,10 @@ public class RestockerStateMachine
     private ProductType productInHandType = ProductType.None;
     private readonly int maxCarryCapacity;
     private readonly Employee owner;
-    private readonly DoorManager doorManager;
 
-    public RestockerStateMachine(Employee owner, DoorManager doorManager, int maxCapacity)
+    public RestockerStateMachine(Employee owner, int maxCapacity)
     {
         this.owner = owner;
-        this.doorManager = doorManager;
         this.maxCarryCapacity = maxCapacity;
     }
 
@@ -597,10 +556,6 @@ public class RestockerStateMachine
         if (!agent.pathPending && agent.remainingDistance < owner.DestinationThreshold)
         {
             WorkStation station = secondaryTarget.GetComponentInParent<WorkStation>();
-            if (station != null)
-            {
-                doorManager.OpenDoor(station, "Shelf");
-            }
 
             currentState = State.WorkingAtLocation;
             workTimer = 0;
@@ -671,7 +626,7 @@ public class RestockerStateMachine
             // Luăm rafturile la rând și verificăm dacă există marfă pentru ele în depozit
             foreach (WorkStation targetShelf in shelvesToStock)
             {
-                ProductType needed = targetShelf.slot1Product;
+                ProductType needed = targetShelf.slotProduct;
                 StorageRacks rackWithMarfa = inventory.FindRackWithProduct(needed);
 
                 // Am găsit și raft gol, ȘI marfă în depozit pentru el!
@@ -728,7 +683,7 @@ public class RestockerStateMachine
 
             if (shelf != null && rack != null)
             {
-                ProductType needed = shelf.slot1Product;
+                ProductType needed = shelf.slotProduct;
                 int amountTaken = rack.TakeProduct(needed, maxCarryCapacity);
 
                 if (amountTaken > 0)
@@ -738,13 +693,11 @@ public class RestockerStateMachine
                     SetBoxVisibility(boxVisual, true);
 
                     ClearProblem();
-                    doorManager.CloseLastDoor();
                     currentState = State.MovingToShelf;
                 }
                 else
                 {
                     ReportProblem("Cutia s-a golit fix când am ajuns!");
-                    doorManager.CloseLastDoor();
                     currentState = State.Idle;
                 }
             }
@@ -767,7 +720,6 @@ public class RestockerStateMachine
                 ClearProblem();
             }
 
-            doorManager.CloseLastDoor();
             currentState = State.Idle;
         }
     }
@@ -783,7 +735,7 @@ public class RestockerStateMachine
                 if (taken > 0)
                 {
                     productsInHand = taken;
-                    productInHandType = shelf.slot1Product;
+                    productInHandType = shelf.slotProduct;
                     SetBoxVisibility(boxVisual, true);
 
                     if (ServiceLocator.Instance.TryGet(out IInventoryService inventory))
@@ -792,7 +744,6 @@ public class RestockerStateMachine
                         if (emptyRack != null)
                         {
                             owner.myWorkStation = emptyRack.transform;
-                            doorManager.CloseLastDoor();
                             currentState = State.MovingToStorage;
                             return;
                         }
@@ -805,7 +756,6 @@ public class RestockerStateMachine
                 }
                 else
                 {
-                    doorManager.CloseLastDoor();
                     currentState = State.Idle;
                 }
             }
@@ -821,7 +771,6 @@ public class RestockerStateMachine
 
             productsInHand = 0;
             SetBoxVisibility(boxVisual, false);
-            doorManager.CloseLastDoor();
             currentState = State.Idle;
         }
     }

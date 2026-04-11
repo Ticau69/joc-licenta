@@ -93,6 +93,17 @@ public class PlacementState : IBuldingState
             currentRotation,
             isFurniture);
 
+        GameObject placedObj = objectPlacer.GetPlacedObject(index);
+        if (placedObj != null)
+        {
+            WorkStation ws = placedObj.GetComponentInChildren<WorkStation>();
+            if (ws != null)
+            {
+                ws.shelfVariant = dataBase.objectsData[selectedObjectIndex].ShelfVariant;
+                ws.stationType = dataBase.objectsData[selectedObjectIndex].StationType;
+            }
+        }
+
         int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
         if (consumption > 0 && PowerManager.Instance != null)
         {

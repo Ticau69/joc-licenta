@@ -4,26 +4,9 @@ using UnityEngine.InputSystem;
 
 public class CameraController : MonoBehaviour
 {
-    InputSystem inputSystem;
-
-    Vector2 currentMovementInput;
-    Vector3 currentMovement;
-    bool isMovementPressed;
-    float currentRotationInput;
-
-    Vector3 targetPosition;
     [Header("Movement Settings")]
     public float panSpeed = 20f;
     public float scrollSpeed = 20f;
-    public float panBorderThickness = 5f;
-
-    [Header("Auto Limits")]
-    [Tooltip("Trage aici podeaua/podelele de start din scenă")]
-    public List<Renderer> mapRenderers = new List<Renderer>();
-    public bool autoCalculateLimits = true;
-
-    // NOU: O cutie limitatoare precisă (înlocuiește panLimit-ul vechi)
-    private Bounds _cameraLimits;
 
     [Header("Zoom Settings")]
     public float minY = 6f;
@@ -35,174 +18,169 @@ public class CameraController : MonoBehaviour
     [Header("Smoothing")]
     public float smoothTime = 0.2f;
 
-    public InputAction mousePositionAction;
+    [Header("Auto Limits")]
+    [Tooltip("Trage aici podeaua/podelele de start din scenă.")]
+    public List<Renderer> mapRenderers = new List<Renderer>();
+    public bool autoCalculateLimits = true;
+
+    // ── Private ───────────────────────────────────────────────────────────────
+
+    private InputSystem _input;
+
+    private Vector2 _moveInput;
+    private float _rotateInput;
+
+    private Vector3 _targetPosition;
+    private float _targetRotationY;
+
     private Vector3 _moveVelocity = Vector3.zero;
-    private float targetRotationY;
     private float _rotateVelocity;
+
+    private Bounds _cameraLimits;
+    private bool _limitsValid = false; // protecție când mapRenderers e gol
+
+    // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void Awake()
     {
-        inputSystem = new InputSystem();
+        _input = new InputSystem();
 
-        inputSystem.CameraControl.Move.started += onMovemmentInput;
-        inputSystem.CameraControl.Move.canceled += onMovemmentInput;
-        inputSystem.CameraControl.Move.performed += onMovemmentInput;
+        _input.CameraControl.Move.started += OnMoveInput;
+        _input.CameraControl.Move.canceled += OnMoveInput;
+        _input.CameraControl.Move.performed += OnMoveInput;
 
-        inputSystem.CameraControl.Rotate.started += onRotateInput;
-        inputSystem.CameraControl.Rotate.canceled += onRotateInput;
-        inputSystem.CameraControl.Rotate.performed += onRotateInput;
+        _input.CameraControl.Rotate.started += OnRotateInput;
+        _input.CameraControl.Rotate.canceled += OnRotateInput;
+        _input.CameraControl.Rotate.performed += OnRotateInput;
     }
 
     void Start()
     {
-        targetPosition = transform.position;
-        targetRotationY = transform.eulerAngles.y;
+        _targetPosition = transform.position;
+        _targetRotationY = transform.eulerAngles.y;
 
-        // Apelăm funcția la începutul jocului
         RecalculateLimits();
     }
 
-    // Funcție pe care o apelăm când se deblochează o parcelă nouă
-    public void AddMapRenderer(Renderer newRenderer)
+    void OnEnable() => _input.CameraControl.Enable();
+    void OnDisable() => _input.CameraControl.Disable();
+
+    void OnDestroy()
     {
-        if (newRenderer != null && !mapRenderers.Contains(newRenderer))
-        {
-            mapRenderers.Add(newRenderer);
-            RecalculateLimits();
-        }
-    }
+        _input.CameraControl.Move.started -= OnMoveInput;
+        _input.CameraControl.Move.canceled -= OnMoveInput;
+        _input.CameraControl.Move.performed -= OnMoveInput;
 
-    public void RecalculateLimits()
-    {
-        if (autoCalculateLimits && mapRenderers.Count > 0)
-        {
-            // 1. Luăm forma primei podele din listă
-            Bounds combinedBounds = mapRenderers[0].bounds;
+        _input.CameraControl.Rotate.started -= OnRotateInput;
+        _input.CameraControl.Rotate.canceled -= OnRotateInput;
+        _input.CameraControl.Rotate.performed -= OnRotateInput;
 
-            // 2. O extindem ca să cuprindă și restul podelelor adăugate
-            for (int i = 1; i < mapRenderers.Count; i++)
-            {
-                if (mapRenderers[i] != null)
-                {
-                    combinedBounds.Encapsulate(mapRenderers[i].bounds);
-                }
-            }
-
-            // 3. Adăugăm marginea de siguranță (panBorder)
-            float margin = 5f;
-            combinedBounds.Expand(new Vector3(margin * 2, 0, margin * 2));
-
-            _cameraLimits = combinedBounds;
-
-            Debug.Log($"[Camera] Limite asimetrice recalculate! Acoperă {mapRenderers.Count} parcele.");
-        }
-    }
-    void onMovemmentInput(InputAction.CallbackContext context)
-    {
-        currentMovementInput = context.ReadValue<Vector2>();
-        currentMovement.x = currentMovementInput.x;
-        currentMovement.z = currentMovementInput.y;
-        isMovementPressed = currentMovementInput.x != 0 || currentMovementInput.y != 0;
-    }
-
-    void onRotateInput(InputAction.CallbackContext context)
-    {
-        currentRotationInput = context.ReadValue<float>();
-    }
-
-    void OnEnable()
-    {
-        inputSystem.CameraControl.Enable();
-
-        /*if (mousePositionAction == null || !mousePositionAction.enabled)
-        {
-            mousePositionAction = new InputAction(
-                type: InputActionType.Value,
-                binding: "<Pointer>/position" // Works for mouse & touch
-            );
-            mousePositionAction.Enable();
-        }*/
-    }
-
-    void OnDisable()
-    {
-        inputSystem.CameraControl.Disable();
-        mousePositionAction.Disable();
-    }
-
-    void HandleRotation()
-    {
-        // 1. Calculăm ținta rotației
-        if (currentRotationInput != 0)
-        {
-            targetRotationY += currentRotationInput * rotationSpeed * Time.unscaledDeltaTime;
-        }
-
-        // 2. Aplicăm rotația fluidă pe obiect
-        float currentY = transform.eulerAngles.y;
-        // SmoothDampAngle este esențial pentru a gestiona corect trecerea de la 360 la 0 grade
-        float smoothedY = Mathf.SmoothDampAngle(currentY, targetRotationY, ref _rotateVelocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
-
-        transform.rotation = Quaternion.Euler(60, smoothedY, 0);
-    }
-
-    void HandleMovement()
-    {
-        // Calculăm direcțiile FATA și DREAPTA relative la rotația camerei
-        // Important: Setăm y=0 pentru a nu intra în pământ când apăsăm W
-        Vector3 camForward = transform.forward;
-        camForward.y = 0;
-        camForward.Normalize();
-
-        Vector3 camRight = transform.right;
-        camRight.y = 0;
-        camRight.Normalize();
-
-        Vector3 moveDir = Vector3.zero;
-
-        // Mouse Edge Scrolling
-        /*if (screenPos.y >= Screen.height - panBorderThickness)
-            moveDir += camForward;
-        else if (screenPos.y <= panBorderThickness)
-            moveDir -= camForward;
-
-        if (screenPos.x >= Screen.width - panBorderThickness)
-            moveDir += camRight;
-        else if (screenPos.x <= panBorderThickness)
-            moveDir -= camRight;*/
-
-        // Keyboard Input (WASD)
-        if (isMovementPressed)
-        {
-            moveDir += (camForward * currentMovementInput.y) + (camRight * currentMovementInput.x);
-        }
-
-        moveDir.Normalize(); // Previne viteza dublă pe diagonală
-
-        // Adăugăm la poziția țintă
-        targetPosition += moveDir * panSpeed * Time.unscaledDeltaTime;
-
-        // Zoom Logic
-        float scroll = inputSystem.CameraControl.Zoom.ReadValue<float>();
-        if (scroll != 0)
-        {
-            // Normalizăm scroll-ul pentru consistență
-            float scrollDir = scroll > 0 ? 1 : -1;
-            targetPosition.y += scrollDir * scrollSpeed * 10f * Time.unscaledDeltaTime;
-        }
-
-        // Limitări (Clamp)
-        targetPosition.x = Mathf.Clamp(targetPosition.x, _cameraLimits.min.x, _cameraLimits.max.x);
-        targetPosition.z = Mathf.Clamp(targetPosition.z, _cameraLimits.min.z, _cameraLimits.max.z);
-        targetPosition.y = Mathf.Clamp(targetPosition.y, minY, maxY);
-
-        // Aplicăm mișcarea finală
-        transform.position = Vector3.SmoothDamp(transform.position, targetPosition, ref _moveVelocity, smoothTime, Mathf.Infinity, Time.unscaledDeltaTime);
+        _input.Dispose();
     }
 
     void Update()
     {
-        HandleRotation();
-        HandleMovement();
+        float dt = Time.unscaledDeltaTime;
+        HandleRotation(dt);
+        HandleMovement(dt);
+    }
+
+    // ── Input Callbacks ───────────────────────────────────────────────────────
+
+    private void OnMoveInput(InputAction.CallbackContext ctx)
+        => _moveInput = ctx.ReadValue<Vector2>();
+
+    private void OnRotateInput(InputAction.CallbackContext ctx)
+        => _rotateInput = ctx.ReadValue<float>();
+
+    // ── Movement & Rotation ───────────────────────────────────────────────────
+
+    private void HandleRotation(float dt)
+    {
+        if (_rotateInput != 0f)
+            _targetRotationY += _rotateInput * rotationSpeed * dt;
+
+        float currentY = transform.eulerAngles.y;
+        float smoothedY = Mathf.SmoothDampAngle(
+            currentY, _targetRotationY,
+            ref _rotateVelocity, smoothTime,
+            Mathf.Infinity, dt);
+
+        transform.rotation = Quaternion.Euler(60f, smoothedY, 0f);
+    }
+
+    private void HandleMovement(float dt)
+    {
+        // ── Direcții relative la rotația camerei ─────────────────────────────
+        Vector3 camForward = transform.forward; camForward.y = 0f; camForward.Normalize();
+        Vector3 camRight = transform.right; camRight.y = 0f; camRight.Normalize();
+
+        // ── WASD ─────────────────────────────────────────────────────────────
+        if (_moveInput != Vector2.zero)
+        {
+            Vector3 moveDir = camForward * _moveInput.y + camRight * _moveInput.x;
+
+            // Normalizăm doar dacă vectorul e non-zero (evităm NaN pe Vector3.zero)
+            if (moveDir.sqrMagnitude > 0.001f)
+                moveDir.Normalize();
+
+            _targetPosition += moveDir * panSpeed * dt;
+        }
+
+        // ── Scroll / Zoom ─────────────────────────────────────────────────────
+        float scroll = _input.CameraControl.Zoom.ReadValue<float>();
+        if (scroll != 0f)
+        {
+            float scrollDir = scroll > 0f ? 1f : -1f;
+            _targetPosition.y += scrollDir * scrollSpeed * 10f * dt;
+        }
+
+        // ── Clamp ─────────────────────────────────────────────────────────────
+        if (_limitsValid)
+        {
+            _targetPosition.x = Mathf.Clamp(_targetPosition.x, _cameraLimits.min.x, _cameraLimits.max.x);
+            _targetPosition.z = Mathf.Clamp(_targetPosition.z, _cameraLimits.min.z, _cameraLimits.max.z);
+        }
+        _targetPosition.y = Mathf.Clamp(_targetPosition.y, minY, maxY);
+
+        // ── SmoothDamp final ──────────────────────────────────────────────────
+        transform.position = Vector3.SmoothDamp(
+            transform.position, _targetPosition,
+            ref _moveVelocity, smoothTime,
+            Mathf.Infinity, dt);
+    }
+
+    // ── Limits ────────────────────────────────────────────────────────────────
+
+    public void AddMapRenderer(Renderer newRenderer)
+    {
+        if (newRenderer == null || mapRenderers.Contains(newRenderer)) return;
+        mapRenderers.Add(newRenderer);
+        RecalculateLimits();
+    }
+
+    public void RecalculateLimits()
+    {
+        if (!autoCalculateLimits || mapRenderers.Count == 0)
+        {
+            _limitsValid = false;
+            return;
+        }
+
+        Bounds combined = mapRenderers[0].bounds;
+
+        for (int i = 1; i < mapRenderers.Count; i++)
+        {
+            if (mapRenderers[i] != null)
+                combined.Encapsulate(mapRenderers[i].bounds);
+        }
+
+        float margin = 2f;
+        combined.Expand(new Vector3(margin * 2f, 0f, margin * 2f));
+
+        _cameraLimits = combined;
+        _limitsValid = true;
+
+        Debug.Log($"[Camera] Limite recalculate — {mapRenderers.Count} parcele.");
     }
 }

@@ -130,7 +130,7 @@ public class ShelfUIController : MonoBehaviour
 
     private void UpdateStatusLabels()
     {
-        if (_currentSelectedShelf.slot1Product == ProductType.None)
+        if (_currentSelectedShelf.slotProduct == ProductType.None)
         {
             _statusText.text = "Raftul este gol.";
             _statusText.style.color = Color.gray;
@@ -139,17 +139,17 @@ public class ShelfUIController : MonoBehaviour
         }
         else
         {
-            _statusText.text = $"Produs: {_currentSelectedShelf.slot1Product}";
+            _statusText.text = $"Produs: {_currentSelectedShelf.slotProduct}";
             _statusText.style.color = Color.white;
 
-            float fill = (float)_currentSelectedShelf.slot1Stock
-                       / _currentSelectedShelf.maxProductsPerSlot;
+            float fill = (float)_currentSelectedShelf.slotStock
+                       / _currentSelectedShelf.maxStock;
 
-            Color stockColor = _currentSelectedShelf.slot1Stock == 0
+            Color stockColor = _currentSelectedShelf.slotStock == 0
                 ? _config.criticalStockColor
                 : fill <= 0.5f ? _config.lowStockColor : _config.goodStockColor;
 
-            _stockText.text = $"Raft: {_currentSelectedShelf.slot1Stock}/{_currentSelectedShelf.maxProductsPerSlot}";
+            _stockText.text = $"Raft: {_currentSelectedShelf.slotStock}/{_currentSelectedShelf.maxStock}";
             _stockText.style.color = stockColor;
             _stockText.style.display = DisplayStyle.Flex;
         }
@@ -162,14 +162,26 @@ public class ShelfUIController : MonoBehaviour
         // Dezactivăm callback-ul temporar ca să nu declanșăm schimbări la populare
         _uiDropdown.UnregisterValueChangedCallback(OnProductDropdownChanged);
 
-        _uiDropdown.choices = _currentSelectedShelf.GetAllowedProducts()
+        _uiDropdown.choices = _currentSelectedShelf.GetAllowedProductTypes()
             .Select(x => x.ToString())
             .ToList();
 
-        // Selectăm produsul curent în dropdown (sau primul dacă raftul e gol)
-        _uiDropdown.value = _currentSelectedShelf.slot1Product != ProductType.None
-            ? _currentSelectedShelf.slot1Product.ToString()
-            : _uiDropdown.choices.FirstOrDefault() ?? "";
+        if (_currentSelectedShelf.slotProduct != ProductType.None)
+        {
+            _uiDropdown.value = _currentSelectedShelf.slotProduct.ToString();
+        }
+        else if (_uiDropdown.choices.Count > 0)
+        {
+            // Setăm primul produs disponibil atât în dropdown cât și pe WorkStation
+            string firstChoice = _uiDropdown.choices[0];
+            _uiDropdown.value = firstChoice;
+
+            if (System.Enum.TryParse(firstChoice, out ProductType firstType))
+            {
+                _currentSelectedShelf.slotProduct = firstType;
+                _currentSelectedShelf.pendingProduct = ProductType.None;
+            }
+        }
 
         _uiDropdown.RegisterValueChangedCallback(OnProductDropdownChanged);
     }
@@ -187,13 +199,13 @@ public class ShelfUIController : MonoBehaviour
     {
         if (_currentSelectedShelf == null) return;
 
-        bool shelfEmpty = _currentSelectedShelf.slot1Stock == 0;
-        bool sameProduct = _currentSelectedShelf.slot1Product == selectedType;
+        bool shelfEmpty = _currentSelectedShelf.slotStock == 0;
+        bool sameProduct = _currentSelectedShelf.slotProduct == selectedType;
 
         if (shelfEmpty || sameProduct)
         {
             // Schimbare imediată
-            _currentSelectedShelf.slot1Product = selectedType;
+            _currentSelectedShelf.slotProduct = selectedType;
             _currentSelectedShelf.pendingProduct = ProductType.None;
         }
         else

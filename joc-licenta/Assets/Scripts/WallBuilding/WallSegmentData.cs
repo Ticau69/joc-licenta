@@ -19,6 +19,7 @@ public class WallSegmentData
 
     // Materialul per wall (necesar pentru rebuild)
     private Dictionary<string, Material> wallMaterials = new();
+    private Dictionary<string, float> wallHeights = new Dictionary<string, float>();
 
     private float segmentLength = 1f;
 
@@ -29,6 +30,13 @@ public class WallSegmentData
 
     public void AddWall(Vector3 startPos, Vector3 endPos, int wallID, GameObject wallPrefab, Material wallMaterial)
     {
+        float wallHeight = 1.5f; // fallback
+        if (wallPrefab != null)
+        {
+            ProceduralWall prefabWall = wallPrefab.GetComponent<ProceduralWall>();
+            if (prefabWall != null)
+                wallHeight = prefabWall.height; // trebuie sa fie public sau internal
+        }
         float totalLength = Vector3.Distance(startPos, endPos);
         Vector3 direction = (endPos - startPos).normalized;
 
@@ -36,6 +44,7 @@ public class WallSegmentData
         float actualSegmentLength = totalLength / segmentCount;
 
         string wallKey = $"wall_{wallID}_{startPos.x:F2}_{startPos.z:F2}";
+        wallHeights[wallKey] = wallHeight;
 
         List<string> segmentKeysForThisWall = new List<string>();
         List<MeshFilter> tempMeshFilters = new List<MeshFilter>();
@@ -56,7 +65,7 @@ public class WallSegmentData
             segmentToWallKey[segmentKey] = wallKey;
             segmentKeysForThisWall.Add(segmentKey);
 
-            GameObject tempObj = CreateTempSegmentObject(segStart, segEnd, wallMaterial);
+            GameObject tempObj = CreateTempSegmentObject(segStart, segEnd, wallMaterial, wallHeight);
             tempObjects.Add(tempObj);
             tempMeshFilters.Add(tempObj.GetComponent<MeshFilter>());
         }
@@ -93,13 +102,15 @@ public class WallSegmentData
         return false;
     }
 
-    private GameObject CreateTempSegmentObject(Vector3 start, Vector3 end, Material material)
+    private GameObject CreateTempSegmentObject(Vector3 start, Vector3 end,
+                                                Material material, float height)
     {
         GameObject obj = new GameObject("TempSegment");
         obj.AddComponent<MeshFilter>();
         obj.AddComponent<MeshRenderer>();
 
         ProceduralWall pWall = obj.AddComponent<ProceduralWall>();
+        pWall.SetHeight(height); // ── NOU
         pWall.GenerateWall(start, end);
 
         if (material != null)
@@ -123,6 +134,7 @@ public class WallSegmentData
         MeshFilter mf = combined.AddComponent<MeshFilter>();
         mf.mesh = new Mesh();
         mf.mesh.CombineMeshes(combine, true, true);
+        mf.mesh.RecalculateBounds(); // ── NOU: bounds corecte inainte de obstacle
 
         MeshRenderer mr = combined.AddComponent<MeshRenderer>();
         if (material != null)
@@ -309,7 +321,8 @@ public class WallSegmentData
                 if (!allSegmentsData.ContainsKey(segKey)) continue;
 
                 WallSegment seg = allSegmentsData[segKey];
-                GameObject tempObj = CreateTempSegmentObject(seg.StartPosition, seg.EndPosition, mat);
+                float h = wallHeights.ContainsKey(wallKey) ? wallHeights[wallKey] : 1.5f;
+                GameObject tempObj = CreateTempSegmentObject(seg.StartPosition, seg.EndPosition, mat, h);
                 tempObjects.Add(tempObj);
                 tempMeshFilters.Add(tempObj.GetComponent<MeshFilter>());
             }
@@ -333,6 +346,9 @@ public class WallSegmentData
             segmentObjects[groupKey] = newCombined;
 
             foreach (var temp in tempObjects) GameObject.Destroy(temp);
+
+            UnityEngine.AI.NavMesh.pathfindingIterationsPerFrame =
+                UnityEngine.AI.NavMesh.pathfindingIterationsPerFrame;
         }
     }
 
@@ -424,13 +440,17 @@ public class WallSegmentData
         if (mf == null || mf.mesh == null) return;
 
         var obstacle = wallObject.AddComponent<UnityEngine.AI.NavMeshObstacle>();
-        obstacle.carving = true;
+        obstacle.carving = false; // off intai
+        obstacle.carvingMoveThreshold = 0f;
         obstacle.carvingTimeToStationary = 0f;
         obstacle.shape = UnityEngine.AI.NavMeshObstacleShape.Box;
 
         Bounds meshBounds = mf.mesh.bounds;
         obstacle.center = meshBounds.center;
         obstacle.size = meshBounds.size;
+
+        // Forteaza carving imediat indiferent de timeScale
+        obstacle.carving = true;
     }
 
     public List<WallSegment> FindSegmentsNearPoint(Vector3 point, float tolerance = 0.2f)

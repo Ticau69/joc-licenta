@@ -59,7 +59,7 @@ public class WorkStationRegistry
             .Where(s =>
                 s != null &&
                 s.stationType == StationType.Shelf &&
-                s.slot1Product == product)
+                s.slotProduct == product)
             .ToList();
     }
 
@@ -75,8 +75,8 @@ public class WorkStationRegistry
             .Where(s =>
                 s != null &&
                 s.stationType == StationType.Shelf &&
-                s.slot1Product == product &&
-                s.slot1Stock > 0)
+                s.slotProduct == product &&
+                s.slotStock > 0)
             .ToList();
     }
 
