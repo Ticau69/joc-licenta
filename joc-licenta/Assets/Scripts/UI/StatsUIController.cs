@@ -135,6 +135,17 @@ public class StatsUIController : MonoBehaviour
             _history.Add(new DayData(_clockManager.currentDate.ToString("dd MMM"), 0, 0));
         }
 
+        for (int i = 0; i < MAX_HISTORY_DAYS; i++)
+        {
+            string dateLabel = i == MAX_HISTORY_DAYS - 1
+                ? (_clockManager != null
+                ? _clockManager.currentDate.ToString("dd MMM")
+                : "Azi")
+                : "";
+
+            _history.Add(new DayData(dateLabel, 0, 0));
+        }
+
         UpdateChartDisplay();
 
         // 3. Forțăm o actualizare a barei de XP la deschiderea jocului

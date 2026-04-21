@@ -273,29 +273,23 @@ public class EmployeeManager : MonoBehaviour
 
     private void AssignRestockerStation(Employee employee)
     {
-        List<WorkStation> allStorages = StationRegistry.GetAllStorages();
+        // Căutăm direct StorageRacks în scenă în loc de WorkStation cu tip Storage
+        StorageRacks[] allRacks = Object.FindObjectsByType<StorageRacks>(FindObjectsSortMode.None);
 
-        if (allStorages.Count > 0)
+        if (allRacks.Length == 0)
         {
-            WorkStation storage = allStorages[0]; // Assign first available storage
-
-            Transform targetPos = storage.interactionPoint != null
-                ? storage.interactionPoint
-                : storage.transform;
-
-            employee.myWorkStation = storage.transform;
-            employee.AssignRole(EmployeeRole.Restocker, targetPos);
-
-            // Let the employee find shelves dynamically - don't assign specific shelf
-            employee.secondaryTarget = null;
-
-            Debug.Log($"[MANAGER] Rol schimbat pentru {employee.employeeName}: {employee.role}");
-            Debug.Log($"[EmployeeManager] Assigned {employee.employeeName} to storage at {targetPos.name}");
+            Debug.LogWarning($"[EmployeeManager] Nu există StorageRacks în scenă pentru {employee.employeeName}!");
+            return;
         }
-        else
-        {
-            Debug.LogWarning($"[EmployeeManager] No storage available for Restocker {employee.employeeName}!");
-        }
+
+        // Luăm primul rack disponibil
+        StorageRacks targetRack = allRacks[0];
+
+        employee.myWorkStation = targetRack.transform;
+        employee.AssignRole(EmployeeRole.Restocker, targetRack.transform);
+        employee.secondaryTarget = null;
+
+        Debug.Log($"[EmployeeManager] {employee.employeeName} asignat la StorageRacks: {targetRack.name}");
     }
     #endregion
 

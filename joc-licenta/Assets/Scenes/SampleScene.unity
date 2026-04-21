@@ -1166,6 +1166,53 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e04abc314d14573458ffc8120ece574f, type: 3}
   m_PrefabInstance: {fileID: 632653845}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &178670272
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 178670273}
+  - component: {fileID: 178670274}
+  m_Layer: 0
+  m_Name: TaxManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &178670273
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178670272}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.0139301, y: 0, z: -1.5060501}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380194646}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &178670274
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 178670272}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71793eb764dda3b4eb6cd3ba0297c924, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TaxManager
+  purchaseTaxRate: 0.21
+  salesTaxRate: 0.21
+  salesTaxIncludedInPrice: 1
 --- !u!4 &187089509 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 22420be88be429d4682f0c82141f1c37, type: 3}
@@ -1617,37 +1664,6 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 7c0702189987d21449b15a447afe2b4c, type: 3}
---- !u!1 &221671538
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 221671539}
-  m_Layer: 0
-  m_Name: GameObject
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &221671539
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 221671538}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.18618, y: 0.155, z: 1.48887}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &224031188
 GameObject:
   m_ObjectHideFlags: 0
@@ -2465,7 +2481,6 @@ MonoBehaviour:
   smoothTime: 0.2
   mapRenderers:
   - {fileID: 1999294342}
-  - {fileID: 0}
   autoCalculateLimits: 1
 --- !u!1001 &331992259
 PrefabInstance:
@@ -5150,7 +5165,7 @@ MonoBehaviour:
   dailyVolatility: 0.05
   targetInflation: 1.2
   meanReversionStrength: 0.01
-  eventChancePerDay: 0.05
+  eventChancePerDay: 0.07
   positiveShockRange: {x: 0.1, y: 0.2}
   negativeShockRange: {x: 0.05, y: 0.15}
   positiveEventProbability: 0.6
@@ -5187,7 +5202,9 @@ MonoBehaviour:
   uiDocument: {fileID: 784697281}
   daysToShow: 10
   targetInflationPercent: 5
+  targetBandWidth: 1
   showAsPercent: 1
+  impactProductType: 0
 --- !u!1001 &698336737
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10984,7 +11001,7 @@ MonoBehaviour:
   m_OverrideTileSize: 0
   m_TileSize: 256
   m_OverrideVoxelSize: 0
-  m_VoxelSize: 0.13
+  m_VoxelSize: 0.05
   m_MinRegionArea: 2
   m_NavMeshData: {fileID: 23800000, guid: 96f5c08b255681248bfcec1097c5845a, type: 2}
   m_BuildHeightMesh: 0
@@ -11421,6 +11438,40 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: bfefbfbaab099fb4791529cdc1d4e5e1, type: 3}
+--- !u!1 &1380194645
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1380194646}
+  m_Layer: 0
+  m_Name: Economie
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1380194646
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1380194645}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -3.98126, y: 0.155, z: 2.15909}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 1767932128}
+  - {fileID: 178670273}
+  - {fileID: 1966891306}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1393453444 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 22420be88be429d4682f0c82141f1c37, type: 3}
@@ -11985,6 +12036,74 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 2a72b81430521934c96583a23dac9dd8, type: 3}
+--- !u!1 &1474821449
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1474821451}
+  - component: {fileID: 1474821450}
+  - component: {fileID: 1474821452}
+  m_Layer: 0
+  m_Name: CleanlinessManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1474821450
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1474821449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 12c380d2c7391194bb9e46a27c265090, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CleanlinessManager
+  dirtPrefabs:
+  - {fileID: 6929500272160891371, guid: 2c3a86d6eafbb644aa80e831a78706a2, type: 3}
+  - {fileID: 893517318071087869, guid: 503119720b5a8ff45b709a94787fc712, type: 3}
+  maxDirtObjects: 50
+  dirtyThreshold: 0.3
+  dirtSpawnChancePerStep: 0.02
+  minDistanceBetweenDirt: 0.5
+--- !u!4 &1474821451
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1474821449}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1474821452
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1474821449}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1c6eafe05be69f540a096c358644bb07, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::SanitaryInspection
+  inspectionChancePerHour: 0.15
+  minFine: 500
+  maxFine: 2000
+  minHoursBetweenInspections: 3
 --- !u!1001 &1476235456
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -13259,6 +13378,7 @@ MonoBehaviour:
   gameConfig: {fileID: 11400000, guid: c2777215caa42254e8588bb0efbbd3c4, type: 2}
   productDB: {fileID: 11400000, guid: f5077b9aad56b2049bf7ec0cdb4acb06, type: 2}
   uiDocument: {fileID: 784697281}
+  inventoryRowTemplate: {fileID: 9197481963319205126, guid: 00a11a8d28569b4478bc0f9f96b04dd1, type: 3}
 --- !u!114 &1644672769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13297,7 +13417,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d58a5a5a9a0103419c0dc1976833243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  dayDurationInSeconds: 100
+  dayDurationInSeconds: 35
   startHour: 6
   startMinute: 0
   openHour: 8
@@ -14268,12 +14388,12 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1767932125}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 6.79582, y: 0.1, z: -5.7605}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 10.777081, y: -0.055, z: -7.91959}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1380194646}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1768161257 stripped
 Transform:
@@ -15369,6 +15489,54 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e04abc314d14573458ffc8120ece574f, type: 3}
   m_PrefabInstance: {fileID: 331992259}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1966891305
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1966891306}
+  - component: {fileID: 1966891307}
+  m_Layer: 0
+  m_Name: CompetitiveMarketManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1966891306
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966891305}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 1.0139301, y: 0, z: -1.5060501}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1380194646}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1966891307
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1966891305}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7c1c8b5f0007b4741a5073af04be86ef, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CompetitiveMarketManager
+  competitors:
+  - {fileID: 11400000, guid: 2a3f9078e1a74214ab2510127fdc8fd7, type: 2}
+  competitorPriceImpactFactor: 0.5
+  priceThresholdForImpact: 0.05
 --- !u!1001 &1969160206
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -16822,6 +16990,6 @@ SceneRoots:
   - {fileID: 1925868745}
   - {fileID: 739067290}
   - {fileID: 1339128432}
-  - {fileID: 1767932128}
   - {fileID: 1177469039}
-  - {fileID: 221671539}
+  - {fileID: 1474821451}
+  - {fileID: 1380194646}

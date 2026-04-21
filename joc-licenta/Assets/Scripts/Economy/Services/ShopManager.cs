@@ -45,7 +45,10 @@ public class ShopManager : IShopService
             return;
         }
 
-        int totalCost = CalculateCost(type, quantity);
+        int baseCost = CalculateCost(type, quantity);
+        int totalCost = TaxManager.Instance != null
+             ? TaxManager.Instance.ApplyPurchaseTax(baseCost)
+               : baseCost;
 
         if (!_money.TrySpend(totalCost))
         {

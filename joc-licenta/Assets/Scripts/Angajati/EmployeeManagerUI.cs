@@ -15,6 +15,7 @@ public class EmployeeUIManager : MonoBehaviour
     public int hireCost = 500;
 
     private VisualElement _employeePanel;
+    private VisualElement _rightPanel;
     private ScrollView _employeeListScrollView;
 
     // Butoane UI
@@ -50,6 +51,7 @@ public class EmployeeUIManager : MonoBehaviour
 
         _employeePanel = localRoot.Q<VisualElement>("EmployeeManagementContainer");
         if (_employeePanel == null) return;
+        _rightPanel = _employeePanel.Q<VisualElement>("RightPanel");
 
         _employeePanel.style.display = DisplayStyle.None;
 
@@ -123,19 +125,20 @@ public class EmployeeUIManager : MonoBehaviour
 
         bool wasAlreadyOpen = _employeePanel.style.display == DisplayStyle.Flex;
 
-        // 1. STRIGĂM PRIN RADIO să se închidă restul panourilor!
         if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))
-        {
             eventBus.Publish(new CloseAllUIEvent());
-        }
 
-        // 2. Dacă era deja deschis, ne oprim aici
         if (wasAlreadyOpen) return;
 
-        // 3. Altfel, îl deschidem
         _employeePanel.style.display = DisplayStyle.Flex;
+
+        if (_rightPanel != null)
+            _rightPanel.style.display = DisplayStyle.None;
+
+        // ── NOU: resetăm selectedEmployee ca PopulateEmployeeList să selecteze primul ──
+        _selectedEmployee = null;
+
         PopulateEmployeeList();
-        ClearRightPanel();
     }
 
     public void ClosePanel()
@@ -227,17 +230,21 @@ public class EmployeeUIManager : MonoBehaviour
 
         List<Employee> allEmployees = EmployeeManager.Instance.AllEmployees;
 
+        // ── NOU: dacă nu avem angajați, ascundem panoul din dreapta ──
+        if (allEmployees.Count == 0)
+        {
+            if (_rightPanel != null)
+                _rightPanel.style.display = DisplayStyle.None;
+            UpdateHireButtonState();
+            return;
+        }
+
         foreach (var emp in allEmployees)
         {
             VisualElement newCard = employeeCardTemplate.Instantiate();
             newCard.Q<Label>("EmployeeNameLabel").text = emp.employeeName;
             newCard.Q<Label>("EmployeeRoleLabel").text = TranslateRoleToRomanian(emp.role);
-
-            // Acum emoji-ul din stânga se va actualiza cu valoarea reală!
             newCard.Q<Label>("EmployeeMoodEmoji").text = GetMoodEmoji(emp.mood);
-
-            // Setăm și emoji-ul (dacă ai implementat partea cu Mood-ul)
-            // newCard.Q<Label>("EmployeeMoodEmoji").text = GetMoodEmoji(emp.mood);
 
             Button cardBtn = newCard.Q<Button>("CardButton");
             cardBtn.clicked += () => OnEmployeeCardClicked(emp);
@@ -245,7 +252,14 @@ public class EmployeeUIManager : MonoBehaviour
             _employeeListScrollView.Add(newCard);
         }
 
-        // --- NOU: Actualizăm butonul după ce am desenat lista ---
+        // ── NOU: selectăm primul angajat automat ──
+        if (_selectedEmployee == null && allEmployees.Count > 0)
+        {
+            if (_rightPanel != null)
+                _rightPanel.style.display = DisplayStyle.Flex;
+            OnEmployeeCardClicked(allEmployees[0]);
+        }
+
         UpdateHireButtonState();
     }
 
@@ -253,6 +267,9 @@ public class EmployeeUIManager : MonoBehaviour
     {
         _selectedEmployee = emp;
         _selectedNameText.text = $"{emp.employeeName} {GetMoodEmoji(emp.mood)}";
+
+        if (_rightPanel != null)
+            _rightPanel.style.display = DisplayStyle.Flex;
 
         if (_roleDropdown != null)
             _roleDropdown.value = TranslateRoleToRomanian(emp.role);
@@ -269,7 +286,8 @@ public class EmployeeUIManager : MonoBehaviour
         if (_salaryText != null) _salaryText.text = $"{emp.currentSalary} RON";
 
         if (_expectedSalaryText != null)
-            _expectedSalaryText.text = $"Salariu așteptat: {emp.ExpectedSalary} RON";
+            _expectedSalaryText.text =
+                $"Salariu asteptat: {emp.ExpectedSalaryMin} - {emp.ExpectedSalaryMax} RON";
 
         // 2. Setăm Circular Progress Bar-ul (Nivelul și XP-ul)
         if (_levelProgress != null)

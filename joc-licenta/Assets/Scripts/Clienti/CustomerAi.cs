@@ -414,16 +414,19 @@ public class CustomerAI : MonoBehaviour
 
         float buyChance = 1.0f;
 
-        // Dacă jucătorul a scumpit produsul cu peste 20% (markup > 1.2f)
-        if (markupRatio > 1.0f)
+        if (CompetitiveMarketManager.Instance != null)
         {
-            // Formula: Pentru fiecare 1% adăugat la preț, scade 1% din șansă.
-            // Ex: markup 1.5 (150% din preț) -> buyChance devine 1.0 - 0.5 = 0.5 (50%)
-            buyChance = 1.0f - (markupRatio - 1.0f);
+            float marketModifier = CompetitiveMarketManager.Instance.GetBuyChanceModifier(item.product, unitPrice);
+            buyChance *= marketModifier;
 
-            // Limităm șansa conform cerinței tale: Minim 5% (0.05f), Maxim 100% (1.0f)
-            buyChance = Mathf.Clamp(buyChance, 0.05f, 1.0f);
+            if (marketModifier < 0.8f)
+            {
+                Debug.Log($"[CustomerAI] {name} — concurentul e mai ieftin la {item.product}! " +
+                     $"Sansa de cumparare: {buyChance * 100:F0}%");
+            }
         }
+
+        buyChance = Mathf.Clamp(buyChance, 0.05f, 1.0f);
 
         if (UnityEngine.Random.value > buyChance)
         {

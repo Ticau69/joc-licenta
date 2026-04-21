@@ -172,6 +172,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ac5e08267ddecec498653bf223ae9229, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8585155846157063784}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ac5e08267ddecec498653bf223ae9229, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8500087991419152078}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ac5e08267ddecec498653bf223ae9229, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 3203695118740814202}
   m_SourcePrefab: {fileID: 100100000, guid: ac5e08267ddecec498653bf223ae9229, type: 3}
 --- !u!1 &7324872983655713233 stripped
 GameObject:
@@ -246,6 +252,43 @@ MonoBehaviour:
   checkoutDuration: 2
   _list: []
   currentState: 0
+--- !u!114 &8500087991419152078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7324872983655713233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 98f1b3a0410f9e44bb5356a777e1032f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CustomerDirtSpawner
+  stepDistance: 1.5
+  floorLayerMask:
+    serializedVersion: 2
+    m_Bits: 8
+  interiorCheckMask:
+    serializedVersion: 2
+    m_Bits: 8
+  yOffset: 0.15
+--- !u!114 &3203695118740814202
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7324872983655713233}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20914dbc4a31ff6459f4cd3afae05719, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoorInteractor
+  detectionRange: 1.5
+  doorLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  checkInterval: 0.1
 --- !u!4 &7993042198915961707 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: ac5e08267ddecec498653bf223ae9229, type: 3}

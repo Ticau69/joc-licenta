@@ -109,8 +109,11 @@ public class CashRegisterQueue : MonoBehaviour
         if (first != null)
         {
             int total = first.CalculateTotalPriceRON();
-            if (total > 0 && _money != null)
-                _money.Add(total);
+            int netRevenue = TaxManager.Instance != null
+                ? TaxManager.Instance.ProcessSale(total)
+                : total;
+            if (netRevenue > 0 && _money != null)
+                _money.Add(netRevenue);
 
             // NOU: Acordăm XP Casierului pentru că a servit un client
             if (_currentCashier != null)

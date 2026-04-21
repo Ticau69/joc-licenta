@@ -20,6 +20,7 @@ public class GameManager : MonoBehaviour
 
     [Header("UI")]
     [SerializeField] private UIDocument uiDocument;
+    [SerializeField] private VisualTreeAsset inventoryRowTemplate;
 
     // Services (private - access via ServiceLocator)
     private IEconomyService _economy;
@@ -165,7 +166,7 @@ public class GameManager : MonoBehaviour
         if (_inventoryUI == null) _inventoryUI = gameObject.AddComponent<InventoryUIController>();
         if (_shelfUI == null) _shelfUI = gameObject.AddComponent<ShelfUIController>();
 
-        _inventoryUI.Initialize(root, _economy, _eventBus, gameConfig, _inventory, productDB);
+        _inventoryUI.Initialize(root, _economy, _eventBus, gameConfig, _inventory, productDB, inventoryRowTemplate);
         _shelfUI.Initialize(root, _economy, _shop, _eventBus, _objectRegistry, gameConfig);
 
         if (gameConfig.verboseLogging)

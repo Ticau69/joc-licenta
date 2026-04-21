@@ -187,3 +187,12 @@
 .unity-base-dropdown__item:checked .unity-label {
     color: white;
 }
+
+.unity-base-popup-field__input .unity-text-element {
+    color: rgb(255, 255, 255);
+}
+
+/* Și pentru label-ul din dropdown field */
+.unity-dropdown-field .unity-base-field__label {
+    color: rgb(255, 255, 255);
+}

@@ -12,6 +12,7 @@ public class InventoryUIController : MonoBehaviour
     private VisualElement _inventoryTab;
     private ScrollView _inventoryList;
     private VisualElement _detailsPanel;
+    [SerializeField] private VisualTreeAsset inventoryRowTemplate;
 
     private Label _detailNameLabel;
     private Label _detailStockLabel;
@@ -20,6 +21,8 @@ public class InventoryUIController : MonoBehaviour
     private Label _priceDisplayLabel;
     private Label _profitDisplayLabel;
     private Label _storageCapacityLabel;
+    private Label _competitorPriceLabel;
+    private Label _marketStatusLabel;
 
     private IEconomyService _economy;
     private IInventoryService _inventory;
@@ -38,7 +41,7 @@ public class InventoryUIController : MonoBehaviour
         = new Dictionary<ProductType, (int, string, Color)>();
     private bool _needsRefresh = true;
 
-    public void Initialize(VisualElement root, IEconomyService economy, IEventBus eventBus, GameConfigSO config, IInventoryService inventory, ProductDataSO productDB)
+    public void Initialize(VisualElement root, IEconomyService economy, IEventBus eventBus, GameConfigSO config, IInventoryService inventory, ProductDataSO productDB, VisualTreeAsset rowTemplate = null)
     {
         _economy = economy ?? throw new ArgumentNullException(nameof(economy));
         _inventory = inventory ?? throw new ArgumentNullException(nameof(inventory));
@@ -53,6 +56,9 @@ public class InventoryUIController : MonoBehaviour
         {
             Debug.Log("[InventoryUI] Initialized successfully");
         }
+
+        if (rowTemplate != null)
+            UIRowFactory.SetRowTemplate(rowTemplate);
     }
 
     private void CacheUIElements(VisualElement root)
@@ -69,6 +75,8 @@ public class InventoryUIController : MonoBehaviour
         _profitDisplayLabel = root.Q<Label>("ProfitDisplay");
         _priceWarningLabel = root.Q<Label>("PriceWarningLabel");
         _storageCapacityLabel = root.Q<Label>("StorageCapacityLabel");
+        _competitorPriceLabel = root.Q<Label>("CompetitorPriceLabel");
+        _marketStatusLabel = root.Q<Label>("MarketStatusLabel");
 
         if (_inventoryList == null) Debug.LogError("[InventoryUI] InventoryList not found in UI!");
         if (_detailsPanel == null) Debug.LogError("[InventoryUI] DetailsPanel not found in UI!");
@@ -99,23 +107,14 @@ public class InventoryUIController : MonoBehaviour
     private void OnPriceChanged(ChangeEvent<float> evt)
     {
         if (_currentViewingProduct == ProductType.None) return;
-
         _economy.UpdateSellingPrice(_currentViewingProduct, evt.newValue);
 
         if (_economy.TryGetProductData(_currentViewingProduct, out ProductEconomics data))
         {
             UpdatePriceLabels(data);
-        }
-
-        // --- NOU: Dacă modifică prețul, scoatem produsul din "lista neagră" a clienților! ---
-        if (_overpricedProducts.Contains(_currentViewingProduct))
-        {
-            _overpricedProducts.Remove(_currentViewingProduct);
-            _needsRefresh = true;
-            if (_priceWarningLabel != null) _priceWarningLabel.style.display = DisplayStyle.None;
+            UpdateMarketInfo(_currentViewingProduct, evt.newValue); // ── NOU
         }
     }
-
     private void OnProductPricedTooHigh(ProductPricedTooHighEvent evt)
     {
         // Adăugăm produsul în lista neagră. Dacă nu era deja acolo, dăm refresh la UI.
@@ -146,20 +145,88 @@ public class InventoryUIController : MonoBehaviour
         }
     }
 
+    private void UpdateStorageCapacityLabel()
+    {
+        if (_storageCapacityLabel == null || _inventory == null) return;
+
+        int used = _inventory.GetUsedCapacity();
+        int total = _inventory.GetTotalCapacity();
+
+        if (total == 0)
+        {
+            _storageCapacityLabel.text = "Fără Rafturi!";
+            _storageCapacityLabel.style.color = new StyleColor(new Color(1f, 0.2f, 0.2f));
+            return;
+        }
+
+        _storageCapacityLabel.text = $"{used} / {total}";
+
+        if (used >= total)
+            _storageCapacityLabel.style.color = new StyleColor(new Color(1f, 0.2f, 0.2f));
+        else if (used >= total * 0.8f)
+            _storageCapacityLabel.style.color = new StyleColor(new Color(1f, 0.8f, 0.2f));
+        else
+            _storageCapacityLabel.style.color = new StyleColor(Color.white);
+    }
+
+    private void UpdateMarketInfo(ProductType type, float playerPrice)
+    {
+        if (_competitorPriceLabel == null || _marketStatusLabel == null) return;
+        if (CompetitiveMarketManager.Instance == null)
+        {
+            _competitorPriceLabel.style.display = DisplayStyle.None;
+            _marketStatusLabel.style.display = DisplayStyle.None;
+            return;
+        }
+
+        var (cheapestStore, cheapestPrice) =
+            CompetitiveMarketManager.Instance.GetCheapestCompetitor(type);
+
+        if (cheapestStore == null || cheapestPrice <= 0f)
+        {
+            _competitorPriceLabel.text = "Fără concurență pe această piață";
+            _competitorPriceLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+            _marketStatusLabel.text = "";
+            return;
+        }
+
+        _competitorPriceLabel.text =
+            $"{cheapestStore.storeName}: {cheapestPrice:F2} RON";
+
+        float diff = playerPrice - cheapestPrice;
+        float diffPct = cheapestPrice > 0 ? (diff / cheapestPrice) * 100f : 0f;
+
+        if (diff < -0.01f)
+        {
+            // Jucătorul e mai ieftin
+            _marketStatusLabel.text = $"✓ Ești mai ieftin cu {Mathf.Abs(diffPct):F0}%";
+            _marketStatusLabel.style.color = new Color(0.3f, 0.85f, 0.3f);
+            _competitorPriceLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+        }
+        else if (diff > 0.01f)
+        {
+            // Concurentul e mai ieftin
+            _marketStatusLabel.text = $"⚠ Ești mai scump cu {diffPct:F0}%";
+            _marketStatusLabel.style.color = new Color(1f, 0.5f, 0.2f);
+            _competitorPriceLabel.style.color = new Color(1f, 0.7f, 0.3f);
+        }
+        else
+        {
+            // Prețuri egale
+            _marketStatusLabel.text = "≈ Preț similar cu concurența";
+            _marketStatusLabel.style.color = new Color(0.9f, 0.9f, 0.9f);
+            _competitorPriceLabel.style.color = new Color(0.6f, 0.6f, 0.6f);
+        }
+    }
+
     private void RefreshInventoryList()
     {
         if (_inventoryList == null) return;
-
-        if (_productDB == null)
-        {
-            Debug.LogError("[InventoryUI] Nu pot genera lista - ProductDB lipsește!");
-            return;
-        }
+        if (_productDB == null) return;
 
         _inventoryList.Clear();
         _cachedStockData.Clear();
 
-        // Variabilă nouă pentru a ști când suntem la primul produs
         bool isFirstProduct = true;
 
         foreach (var productData in _productDB.allProducts)
@@ -167,70 +234,48 @@ public class InventoryUIController : MonoBehaviour
             ProductType type = productData.type;
             if (type == ProductType.None) continue;
 
-            int amount = _inventory.GetStock(type);
-            var (color, status) = _config.GetStockStatus(amount);
+            // ── Date stoc ────────────────────────────────────────────────────────
+            int stockAmount = _inventory.GetStock(type);
+            int maxStock = 999; // sau un maxim din config
+            var (color, status) = _config.GetStockStatus(stockAmount);
+            _cachedStockData[type] = (stockAmount, status, color);
 
-            _cachedStockData[type] = (amount, status, color);
+            // ── Profit per unitate ────────────────────────────────────────────────
+            float profitPerUnit = 0f;
+            if (_economy.TryGetProductData(type, out ProductEconomics econ))
+                profitPerUnit = econ.Profit;
 
-            var row = UIRowFactory.CreateInventoryRow(
-                type,
-                amount,
-                status,
-                color,
-                () => ShowProductDetails(type));
+            // ── Creăm rândul cu noul factory ─────────────────────────────────────
+            VisualElement row = UIRowFactory.CreateInventoryRow(
+                type: type,
+                stockAmount: stockAmount,
+                maxStock: maxStock,
+                profitPerUnit: profitPerUnit,
+                status: status,
+                statusColor: color,
+                onViewClicked: () => ShowProductDetails(type)
+            );
 
-            // Lipim iconița de avertisment pe rândul din listă, dacă e cazul
+            // Warning preț prea mare
             if (_overpricedProducts != null && _overpricedProducts.Contains(type))
             {
-                Label listWarningIcon = new Label("📉 Preț prea mare!");
-                listWarningIcon.style.color = new Color(1f, 0.2f, 0.2f);
-                listWarningIcon.style.unityFontStyleAndWeight = FontStyle.Bold;
-
-                // --- REPARAȚIA: Poziționare Absolută ---
-                listWarningIcon.style.position = Position.Absolute;
-                listWarningIcon.style.right = 80; // Îl punem cu 80px spre stânga (chiar înainte de butonul VIEW)
-                listWarningIcon.style.alignSelf = Align.Center;
-
-                row.Add(listWarningIcon);
+                Label warning = new Label("📉");
+                warning.style.position = Position.Absolute;
+                warning.style.right = 60;
+                warning.style.alignSelf = Align.Center;
+                row.Add(warning);
             }
 
             _inventoryList.Add(row);
 
-            // --- NOU: Autoselectarea primului produs la deschiderea panoului ---
-            // Dacă este primul produs generat ȘI jucătorul nu se uită deja la altceva
+            // Auto-selectare primul produs
             if (isFirstProduct && _currentViewingProduct == ProductType.None)
-            {
                 ShowProductDetails(type);
-            }
-            isFirstProduct = false; // După prima trecere, nu mai este primul produs
+
+            isFirstProduct = false;
         }
 
-        if (_storageCapacityLabel != null && _inventory != null)
-        {
-            int used = _inventory.GetUsedCapacity();
-            int total = _inventory.GetTotalCapacity();
-
-            _storageCapacityLabel.text = $"{used} / {total}";
-
-            // Feedback vizual (Colorăm textul dacă depozitul se umple)
-            if (total == 0)
-            {
-                _storageCapacityLabel.text = "Fără Rafturi!";
-                _storageCapacityLabel.style.color = new Color(1f, 0.2f, 0.2f); // Roșu
-            }
-            else if (used >= total)
-            {
-                _storageCapacityLabel.style.color = new Color(1f, 0.2f, 0.2f); // Roșu (Plin)
-            }
-            else if (used >= total * 0.8f)
-            {
-                _storageCapacityLabel.style.color = new Color(1f, 0.8f, 0.2f); // Portocaliu (Aproape plin - 80%)
-            }
-            else
-            {
-                _storageCapacityLabel.style.color = new Color(1f, 1f, 1f); // Alb normal
-            }
-        }
+        UpdateStorageCapacityLabel();
     }
 
     private void ShowProductDetails(ProductType type)
@@ -254,6 +299,9 @@ public class InventoryUIController : MonoBehaviour
             bool isOverpriced = _overpricedProducts.Contains(type);
             _priceWarningLabel.style.display = isOverpriced ? DisplayStyle.Flex : DisplayStyle.None;
         }
+
+        if (_economy.TryGetProductData(type, out ProductEconomics data))
+            UpdateMarketInfo(type, data.sellingPrice);
     }
 
     private void UpdateProductInfo(ProductType type)

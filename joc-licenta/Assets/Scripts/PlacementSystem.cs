@@ -19,6 +19,7 @@ public class PlacementSystem : MonoBehaviour
 
     [SerializeField] private ToolTipController toolTipController;
 
+    private CameraController cameraController;
     private GridData floorData, furnitureData;
     private WallGridData wallData;
     private WallSegmentData segmentData;
@@ -159,10 +160,10 @@ public class PlacementSystem : MonoBehaviour
                 ID, grid, previewSystem, database,
                 objectPlacer, gameManager, playerInput,
                 wallData, segmentData,
-                wallPreviewMaterial, toolTipController); // în loc de wallPreviewShader
+                wallPreviewMaterial, toolTipController, floorData, cameraController); // în loc de wallPreviewShader
 
             playerInput.OnClick += PlaceStructure;
-            playerInput.OnRightClick += CancelWallSegment;
+            playerInput.OnRightClick += UndoWallSegment;
             playerInput.OnConfirm += FinalizeWall;
         }
         else if (database.objectsData.FindIndex(data => data.ID == ID) is int doorIdx
@@ -190,6 +191,12 @@ public class PlacementSystem : MonoBehaviour
 
         playerInput.OnExit += StopPlacement;
         playerInput.OnRotate += RotateStructure;
+    }
+
+    private void UndoWallSegment()
+    {
+        if (buildingState is WallPlacementState wallState)
+            wallState.UndoLastSegment();
     }
 
     public void StartRemoving()
@@ -268,9 +275,8 @@ public class PlacementSystem : MonoBehaviour
 
         playerInput.canInteract = true;
 
-        // Unsubscribe de la toate evenimentele
         playerInput.OnClick -= PlaceStructure;
-        playerInput.OnRightClick -= CancelWallSegment;
+        playerInput.OnRightClick -= UndoWallSegment;  // ← schimbat
         playerInput.OnExit -= StopPlacement;
         playerInput.OnRotate -= RotateStructure;
         playerInput.OnConfirm -= FinalizeWall;

@@ -255,6 +255,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8b89aabeb4a13a449a0a1e01ae6dd482, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7068330375815981579}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 8b89aabeb4a13a449a0a1e01ae6dd482, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6970381418740436210}
   m_SourcePrefab: {fileID: 100100000, guid: 8b89aabeb4a13a449a0a1e01ae6dd482, type: 3}
 --- !u!4 &2694285995441074018 stripped
 Transform:
@@ -331,6 +334,8 @@ MonoBehaviour:
   _currentXP: 0
   _currentSalary: 150
   _mood: 100
+  salaryRangeMin: 30
+  salaryRangeMax: 80
 --- !u!114 &7068330375815981579
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -346,3 +351,20 @@ MonoBehaviour:
   notificationDocument: {fileID: 5349784125157828234}
   clickSound: {fileID: 8300000, guid: be6b7b39fbdadda43a8cd63c26b6b6ea, type: 3}
   showDebugLogs: 1
+--- !u!114 &6970381418740436210
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3328114469579748824}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 20914dbc4a31ff6459f4cd3afae05719, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DoorInteractor
+  detectionRange: 1.5
+  doorLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  checkInterval: 0.1

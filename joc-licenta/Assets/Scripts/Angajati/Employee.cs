@@ -44,7 +44,12 @@ public class Employee : MonoBehaviour
 
     public int XPForNextLevel => _level * 100;
 
-    public int ExpectedSalary => 50 + (_level * 100);
+    [Header("Salary Expectations")]
+    [SerializeField] private int salaryRangeMin = 30;  // variație minimă față de baza
+    [SerializeField] private int salaryRangeMax = 80;
+    private JanitorStateMachine _janitorStateMachine;
+
+    private int _salaryExpectationOffset;
 
     public int level => _level;
     public int currentXP => _currentXP;
@@ -80,6 +85,10 @@ public class Employee : MonoBehaviour
         get => _secondaryTarget;
         set => _secondaryTarget = value;
     }
+
+    public int ExpectedSalaryMin => 50 + (_level * 100) - salaryRangeMin;
+    public int ExpectedSalaryMax => 50 + (_level * 100) + salaryRangeMax;
+    public int ExpectedSalary => 50 + (_level * 100) + _salaryExpectationOffset;
     #endregion
 
     #region Private Fields
@@ -99,6 +108,10 @@ public class Employee : MonoBehaviour
     {
         animator = GetComponentInChildren<Animator>();
         if (animator == null) animator = GetComponent<Animator>();
+
+        _salaryExpectationOffset = Random.Range(salaryRangeMin, salaryRangeMax);
+        _janitorStateMachine = new JanitorStateMachine(this);
+
         // Setup Notification System
         agent = GetComponent<NavMeshAgent>();
         restockerStateMachine = new RestockerStateMachine(this, MAX_CARRY_CAPACITY);
@@ -188,6 +201,9 @@ public class Employee : MonoBehaviour
             restockerStateMachine.ResetDailyMemory();
         }
 
+        if (_role == EmployeeRole.Janitor)
+            _janitorStateMachine.Reset();
+
         gameObject.SetActive(true);
         agent.speed = baseSpeed * GetMovementSpeedMultiplier();
         agent.Warp(spawnPos);
@@ -212,13 +228,13 @@ public class Employee : MonoBehaviour
     {
         int difference = _currentSalary - ExpectedSalary;
 
-        if (difference >= 50)
+        if (_currentSalary >= ExpectedSalaryMax)
         {
             // Plătit foarte bine
             _mood = Mathf.Clamp(_mood + 15f, 0f, 100f);
             Debug.Log($"[{employeeName}] este foarte fericit pentru bonus! Mood: {_mood}%");
         }
-        else if (difference >= 0)
+        else if (_currentSalary >= ExpectedSalaryMin)
         {
             // Plătit corect
             _mood = Mathf.Clamp(_mood + 5f, 0f, 100f);
@@ -227,8 +243,8 @@ public class Employee : MonoBehaviour
         else
         {
             // Sub-plătit
-            float moodPenalty = Mathf.Abs(difference) * 0.2f;
-            _mood = Mathf.Clamp(_mood - moodPenalty, 0f, 100f);
+            float penalty = (ExpectedSalaryMin - _currentSalary) * 0.2f;
+            _mood = Mathf.Clamp(_mood - penalty, 0f, 100f);
 
             Debug.LogWarning($"[{employeeName}] este supărat pe salariul mic ({_currentSalary} vs {ExpectedSalary})! Mood scade la: {_mood}%");
 
@@ -325,7 +341,7 @@ public class Employee : MonoBehaviour
 
     private void DoJanitorWork()
     {
-        WanderBehavior();
+        _janitorStateMachine.Update(agent);
     }
 
     private void DoCashierWork()
@@ -619,36 +635,36 @@ public class RestockerStateMachine
 
     private bool TryAssignRestockingTask(List<WorkStation> shelvesToStock)
     {
+        Debug.Log($"[Restocker] Rafturi de reumplut: {shelvesToStock.Count}");
+
         if (shelvesToStock.Count == 0) return false;
 
         if (ServiceLocator.Instance.TryGet(out IInventoryService inventory))
         {
-            // Luăm rafturile la rând și verificăm dacă există marfă pentru ele în depozit
             foreach (WorkStation targetShelf in shelvesToStock)
             {
                 ProductType needed = targetShelf.slotProduct;
                 StorageRacks rackWithMarfa = inventory.FindRackWithProduct(needed);
 
-                // Am găsit și raft gol, ȘI marfă în depozit pentru el!
+                Debug.Log($"[Restocker] Raft: {targetShelf.name} | Produs: {needed} | Rack gasit: {rackWithMarfa != null}");
+
                 if (rackWithMarfa != null)
                 {
                     AssignTarget(targetShelf);
                     owner.myWorkStation = rackWithMarfa.transform;
                     currentTask = TaskType.Restocking;
                     currentState = State.MovingToStorage;
-                    ClearProblem(); // Ștergem orice eroare veche
+                    ClearProblem();
                     return true;
                 }
             }
 
-            // Dacă a verificat TOATE rafturile goale și pentru niciunul nu avem marfă
             ReportProblem("Nu avem marfa necesară în depozit!");
             return false;
         }
 
         return false;
     }
-
     private void AssignTarget(WorkStation station)
     {
         Transform targetTransform = station.interactionPoint != null
