@@ -225,10 +225,18 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -1924330416772942832, guid: a304e3e9a0ebc3b4ab01e7ab0ae8a4d5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 31ccabc87db71bd449b8e06ded262cef, type: 2}
     - target: {fileID: 919132149155446097, guid: a304e3e9a0ebc3b4ab01e7ab0ae8a4d5, type: 3}
       propertyPath: m_Name
       value: character-male-f
       objectReference: {fileID: 0}
+    - target: {fileID: 6435320000920075851, guid: a304e3e9a0ebc3b4ab01e7ab0ae8a4d5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 31ccabc87db71bd449b8e06ded262cef, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
@@ -302,7 +310,7 @@ NavMeshAgent:
   avoidancePriority: 50
   m_AngularSpeed: 120
   m_StoppingDistance: 0
-  m_AutoTraverseOffMeshLink: 1
+  m_AutoTraverseOffMeshLink: 0
   m_AutoBraking: 1
   m_AutoRepath: 1
   m_Height: 0.69

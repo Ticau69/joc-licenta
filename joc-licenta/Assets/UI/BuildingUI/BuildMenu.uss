@@ -1,0 +1,36 @@
+/* ─── Scrollbar minimalist pentru FurnitureListScrollView ─────────────────── */
+
+/* Track-ul (fundalul barei) — invizibil */
+#FurnitureListScrollView > .unity-scroll-view__content-and-vertical-scroll-container
+    > .unity-scroller--vertical {
+    width: 6px;
+    background-color: transparent;
+    border-width: 0;
+    margin: 0;
+    padding: 2px 0;
+}
+
+/* Butoanele săgeată — ascunse */
+#FurnitureListScrollView .unity-scroller--vertical .unity-base-slider__tracker,
+#FurnitureListScrollView .unity-scroller--vertical > .unity-repeat-button {
+    display: none;
+    width: 0;
+    height: 0;
+}
+
+/* Thumb-ul (mânerul barei) — linie subțire albă */
+#FurnitureListScrollView .unity-scroller--vertical .unity-base-slider__dragger {
+    width: 4px;
+    min-height: 24px;
+    border-radius: 2px;
+    background-color: rgba(255, 255, 255, 0.25);
+    border-width: 0;
+    margin-left: 1px;
+    transition-duration: 0.15s;
+    transition-property: background-color;
+}
+
+/* Hover pe thumb */
+#FurnitureListScrollView .unity-scroller--vertical .unity-base-slider__dragger:hover {
+    background-color: rgba(255, 255, 255, 0.5);
+}

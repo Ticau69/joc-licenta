@@ -15,6 +15,7 @@ MonoBehaviour:
   storeName: S.C. VINDEM RULMENTI S.R.L.
   description: 
   storeIcon: {fileID: 0}
+  soldProducts: 0200000007000000
   specialtyProducts: 0200000007000000
   specialtyPriceMultiplier: 0.85
   defaultPriceMultiplier: 1.1

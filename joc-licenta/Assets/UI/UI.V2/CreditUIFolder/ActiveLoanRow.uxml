@@ -1,0 +1,64 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="ActiveLoanRow"
+        style="flex-direction: row; align-items: center;
+               background-color: rgb(28, 30, 38);
+               border-radius: 10px;
+               border-width: 1px; border-color: rgba(255,255,255,0.07);
+               padding: 12px 14px;
+               margin-bottom: 8px;">
+
+        <!-- ── Stânga: nume bancă + detalii ── -->
+        <ui:VisualElement style="flex-grow: 1; flex-shrink: 1; margin-right: 12px;">
+
+            <ui:Label name="LoanBankLabel" text="Banca România"
+                style="font-size: 13px; color: rgb(240,240,240);
+                       -unity-font-style: bold; margin-bottom: 3px;" />
+
+            <ui:Label name="LoanDetailsLabel" text="15.000 RON · 8.2%/an · 30 zile"
+                style="font-size: 10px; color: rgb(130,130,150);
+                       white-space: normal;" />
+
+            <!-- Progress bar -->
+            <ui:VisualElement
+                style="flex-direction: row; align-items: center; margin-top: 8px;">
+
+                <!-- Track -->
+                <ui:VisualElement
+                    style="flex-grow: 1; height: 5px; border-radius: 3px;
+                           background-color: rgba(255,255,255,0.08); margin-right: 8px;">
+                    <!-- Fill -->
+                    <ui:VisualElement name="LoanProgressBar"
+                        style="height: 5px; border-radius: 3px;
+                               background-color: rgb(100,200,140);
+                               width: 40%;" />
+                </ui:VisualElement>
+
+                <ui:Label name="LoanProgressLabel" text="40%"
+                    style="font-size: 9px; color: rgb(100,200,140);
+                           -unity-font-style: bold; min-width: 28px;
+                           -unity-text-align: middle-right;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- ── Dreapta: rata + ziua ── -->
+        <ui:VisualElement
+            style="align-items: flex-end; flex-shrink: 0;
+                   background-color: rgba(255,200,50,0.07);
+                   border-radius: 8px; padding: 8px 12px;
+                   border-width: 1px; border-color: rgba(255,200,50,0.2);">
+
+            <ui:Label name="NextPaymentAmountLabel" text="350 RON"
+                style="font-size: 15px; color: rgb(255,210,60);
+                       -unity-font-style: bold;
+                       -unity-text-align: middle-right;" />
+
+            <ui:Label name="NextPaymentDayLabel" text="Ziua 14"
+                style="font-size: 10px; color: rgba(255,210,60,0.6);
+                       -unity-text-align: middle-right;
+                       margin-top: 2px;" />
+
+        </ui:VisualElement>
+
+    </ui:VisualElement>
+</ui:UXML>

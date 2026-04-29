@@ -1,0 +1,27 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="ProductRow"
+        style="flex-direction: row; align-items: center;
+               padding: 10px 14px; margin-bottom: 4px;
+               background-color: rgba(255,255,255,0.06);
+               border-top-left-radius: 8px; border-top-right-radius: 8px;
+               border-bottom-left-radius: 8px; border-bottom-right-radius: 8px;
+               border-left-width: 3px; border-left-color: rgb(76,175,80);
+               min-height: 48px;">
+
+        <ui:VisualElement style="flex-direction: column; flex-grow: 1;">
+            <ui:Label name="ProductNameLabel" text="Produs"
+                style="color: white; font-size: 15px; -unity-font-style: bold;
+                       margin-bottom: 2px;"/>
+            <ui:Label name="BestPriceLabel" text="de la 0.00 RON/buc"
+                style="color: rgb(150,220,150); font-size: 11px;"/>
+        </ui:VisualElement>
+
+        <ui:Button name="SelectProductBtn" text="Selecteaza"
+            style="height: 34px; width: 110px; flex-shrink: 0;
+                   background-color: rgba(255,255,255,0.1);
+                   color: white; font-size: 13px;
+                   border-top-left-radius: 6px; border-top-right-radius: 6px;
+                   border-bottom-left-radius: 6px; border-bottom-right-radius: 6px;
+                   border-width: 1px; border-color: rgba(255,255,255,0.2);"/>
+    </ui:VisualElement>
+</ui:UXML>

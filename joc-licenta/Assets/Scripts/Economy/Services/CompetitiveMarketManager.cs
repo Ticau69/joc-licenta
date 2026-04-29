@@ -38,10 +38,31 @@ public class CompetitiveMarketManager : MonoBehaviour
 
     void Start()
     {
-        InitializeCompetitorPrices();
-
         if (TimeManager.Instance != null)
             TimeManager.Instance.OnDayChanged += UpdateCompetitorPrices;
+
+        // Amânăm initializarea cu un frame ca ServiceLocator să fie gata
+        StartCoroutine(InitializeDelayed());
+    }
+
+    private System.Collections.IEnumerator InitializeDelayed()
+    {
+        yield return null; // așteaptă un frame
+
+        int attempts = 0;
+        while (attempts < 10)
+        {
+            if (ServiceLocator.Instance != null &&
+                ServiceLocator.Instance.TryGet(out IEconomyService _))
+            {
+                InitializeCompetitorPrices();
+                yield break;
+            }
+            attempts++;
+            yield return new WaitForSeconds(0.1f);
+        }
+
+        Debug.LogError("[Market] IEconomyService nu a fost găsit după 10 încercări!");
     }
 
     void OnDestroy()
@@ -70,7 +91,7 @@ public class CompetitiveMarketManager : MonoBehaviour
     {
         if (!ServiceLocator.Instance.TryGet(out IEconomyService economy)) return;
 
-        foreach (ProductType type in Enum.GetValues(typeof(ProductType)))
+        foreach (ProductType type in competitor.soldProducts)
         {
             if (type == ProductType.None) continue;
 

@@ -1,0 +1,113 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <ui:VisualElement name="BankCard"
+        style="width: 220px; min-height: 280px; margin: 8px; border-radius: 12px;
+               background-color: rgb(28, 30, 38);
+               border-width: 1px; border-color: rgba(255,255,255,0.08);
+               flex-direction: column; overflow: hidden;">
+
+        <!-- ── Accent bar top ── -->
+        <ui:VisualElement name="BankAccentBar"
+            style="height: 4px; background-color: rgb(255,200,50);" />
+
+        <!-- ── Header: nome + tag ── -->
+        <ui:VisualElement
+            style="flex-direction: row; align-items: center;
+                   padding: 12px 14px 8px 14px;">
+            <ui:Label name="BankNameLabel" text="Banca România"
+                style="flex-grow: 1; font-size: 14px; color: rgb(240,240,240);
+                       -unity-font-style: bold; white-space: normal;" />
+            <ui:Label name="BankTagLabel" text="Conservatoare"
+                style="font-size: 9px; color: rgb(160,160,160);
+                       background-color: rgba(255,255,255,0.07);
+                       padding: 2px 7px; border-radius: 8px;
+                       -unity-text-align: middle-center;" />
+        </ui:VisualElement>
+
+        <!-- ── Dobânda mare ── -->
+        <ui:VisualElement
+            style="align-items: center; padding: 10px 14px 6px 14px;
+                   background-color: rgba(255,200,50,0.06);
+                   margin: 0 10px; border-radius: 8px;">
+            <ui:Label name="CurrentRateLabel" text="8.2%"
+                style="font-size: 36px; color: rgb(255,210,60);
+                       -unity-font-style: bold; margin-bottom: 0;" />
+            <ui:Label text="dobândă anuală"
+                style="font-size: 10px; color: rgba(255,210,60,0.6);
+                       -unity-text-align: middle-center;" />
+
+            <!-- Breakdown baza + inflatie -->
+            <ui:VisualElement
+                style="flex-direction: row; align-items: center;
+                       margin-top: 6px; justify-content: center;">
+                <ui:Label name="BaseRateLabel" text="Bază 5.0%"
+                    style="font-size: 10px; color: rgb(140,200,140);
+                           background-color: rgba(100,200,100,0.12);
+                           padding: 2px 6px; border-radius: 4px;" />
+                <ui:Label text="+"
+                    style="font-size: 10px; color: rgba(255,255,255,0.3);
+                           margin: 0 4px;" />
+                <ui:Label name="InflationContribLabel" text="Inflație 3.2%"
+                    style="font-size: 10px; color: rgb(255,160,80);
+                           background-color: rgba(255,140,60,0.12);
+                           padding: 2px 6px; border-radius: 4px;" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+
+        <!-- ── Separator ── -->
+        <ui:VisualElement
+            style="height: 1px; background-color: rgba(255,255,255,0.06);
+                   margin: 10px 14px;" />
+
+        <!-- ── Info rows ── -->
+        <ui:VisualElement style="padding: 0 14px; flex-grow: 1;">
+
+            <!-- Suma -->
+            <ui:VisualElement
+                style="flex-direction: row; align-items: center; margin-bottom: 7px;">
+                <ui:VisualElement
+                    style="width: 6px; height: 6px; border-radius: 3px;
+                           background-color: rgb(100,160,255); margin-right: 7px;" />
+                <ui:Label text="Sumă"
+                    style="font-size: 10px; color: rgb(130,130,150); flex-grow: 1;" />
+                <ui:Label name="LimitRangeLabel" text="500 – 50.000 RON"
+                    style="font-size: 10px; color: rgb(210,210,220);
+                           -unity-font-style: bold; -unity-text-align: middle-right;" />
+            </ui:VisualElement>
+
+            <!-- Termene -->
+            <ui:VisualElement
+                style="flex-direction: row; align-items: center; margin-bottom: 7px;">
+                <ui:VisualElement
+                    style="width: 6px; height: 6px; border-radius: 3px;
+                           background-color: rgb(100,200,160); margin-right: 7px;" />
+                <ui:Label text="Termene"
+                    style="font-size: 10px; color: rgb(130,130,150); flex-grow: 1;" />
+                <ui:Label name="TermsLabel" text="7 / 14 / 30 zile"
+                    style="font-size: 10px; color: rgb(210,210,220);
+                           -unity-font-style: bold; -unity-text-align: middle-right;" />
+            </ui:VisualElement>
+
+            <!-- Penalizare -->
+            <ui:VisualElement
+                style="flex-direction: row; align-items: center; margin-bottom: 7px;">
+                <ui:VisualElement
+                    style="width: 6px; height: 6px; border-radius: 3px;
+                           background-color: rgb(255,100,100); margin-right: 7px;" />
+                <ui:Label text="Penalizare"
+                    style="font-size: 10px; color: rgb(130,130,150); flex-grow: 1;" />
+                <ui:Label name="PenaltyLabel" text="5% / rată restantă"
+                    style="font-size: 10px; color: rgb(255,130,130);
+                           -unity-font-style: bold; -unity-text-align: middle-right;" />
+            </ui:VisualElement>
+
+        </ui:VisualElement>
+
+        <!-- ── Buton select ── -->
+        <ui:Button name="SelectBankBtn" text="Alege această bancă"
+            style="margin: 10px; height: 36px; border-radius: 8px;
+                   background-color: rgb(255,200,50); color: rgb(20,20,20);
+                   -unity-font-style: bold; font-size: 12px;
+                   border-width: 0;" />
+
+    </ui:VisualElement>
+</ui:UXML>

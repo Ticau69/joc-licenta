@@ -1,0 +1,94 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="CreditRoot" style="flex-grow: 1; background-color: rgba(15, 15, 20, 0.97); padding: 20px;">
+        <ui:VisualElement name="CreditHeader" style="flex-direction: row; align-items: center; margin-bottom: 12px;">
+            <ui:Label text="🏦 Credite Bancare" style="font-size: 20px; color: rgb(255, 220, 100); flex-grow: 1; -unity-font-style: bold;"/>
+            <ui:Label name="InflationInfoLabel" text="Inflație: 0.0%" style="font-size: 12px; color: rgb(180, 180, 180); background-color: rgba(255, 255, 255, 0.05); padding: 4px 10px; border-radius: 12px;"/>
+            <ui:Button text="X" name="Exit" style="border-top-width: 1px; border-right-width: 1px; border-bottom-width: 1px; border-left-width: 1px; border-top-left-radius: 36px; border-top-right-radius: 36px; border-bottom-right-radius: 36px; border-bottom-left-radius: 36px; width: 44px; height: 44px; font-size: 34px; color: rgb(255, 255, 255); background-color: rgb(197, 19, 19); border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); -unity-text-align: middle-center;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="StepIndicatorRow" style="flex-direction: row; align-items: center; justify-content: center; margin-bottom: 20px;">
+            <ui:VisualElement name="StepIndicator1" class="step-indicator step-active" style="width: 32px; height: 32px; border-radius: 16px; background-color: rgb(255, 200, 50); align-items: center; justify-content: center;">
+                <ui:Label text="1" style="color: rgb(20, 20, 20); -unity-font-style: bold; font-size: 13px;"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="height: 2px; width: 60px; background-color: rgba(255, 255, 255, 0.15); margin: 0 6px;"/>
+            <ui:VisualElement name="StepIndicator2" class="step-indicator step-inactive" style="width: 32px; height: 32px; border-radius: 16px; background-color: rgba(255, 255, 255, 0.1); align-items: center; justify-content: center;">
+                <ui:Label text="2" style="color: rgb(150, 150, 150); -unity-font-style: bold; font-size: 13px;"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="height: 2px; width: 60px; background-color: rgba(255, 255, 255, 0.15); margin: 0 6px;"/>
+            <ui:VisualElement name="StepIndicator3" class="step-indicator step-inactive" style="width: 32px; height: 32px; border-radius: 16px; background-color: rgba(255, 255, 255, 0.1); align-items: center; justify-content: center;">
+                <ui:Label text="3" style="color: rgb(150, 150, 150); -unity-font-style: bold; font-size: 13px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Step0Panel" style="flex-grow: 1;">
+            <ui:Label text="Alege o bancă" style="font-size: 14px; color: rgb(200, 200, 200); margin-bottom: 12px;"/>
+            <ui:VisualElement name="BankCardList" style="flex-grow: 1; flex-direction: row; align-content: center; align-self: auto; justify-content: center;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="Step1Panel" style="flex-grow: 1; display: none;">
+            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 16px; background-color: rgba(255, 255, 255, 0.04); padding: 10px 14px; border-radius: 8px;">
+                <ui:Label name="Step1BankNameLabel" text="Banca România" style="font-size: 16px; color: rgb(255, 220, 100); -unity-font-style: bold; flex-grow: 1;"/>
+                <ui:Label name="Step1RateLabel" text="Dobândă: 8.2%/an" style="font-size: 13px; color: rgb(100, 220, 150);"/>
+            </ui:VisualElement>
+            <ui:Label text="Sumă credit" style="font-size: 13px; color: rgb(180, 180, 180); margin-bottom: 4px;"/>
+            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 6px;">
+                <ui:Slider name="AmountSlider" low-value="500" high-value="50000" value="5000" style="flex-grow: 1; margin-right: 12px;"/>
+                <ui:Label name="AmountValueLabel" text="5.000 RON" style="font-size: 15px; color: white; -unity-font-style: bold; min-width: 100px; -unity-text-align: middle-right;"/>
+            </ui:VisualElement>
+            <ui:Label text="Termen rambursare" style="font-size: 13px; color: rgb(180, 180, 180); margin-top: 14px; margin-bottom: 6px;"/>
+            <ui:VisualElement name="TermButtonsContainer" style="flex-direction: row; flex-wrap: wrap;"/>
+            <ui:VisualElement style="margin-top: 20px; padding: 14px; border-radius: 8px; background-color: rgba(255, 220, 100, 0.07); border-width: 1px; border-color: rgba(255, 220, 100, 0.2);">
+                <ui:Label name="WeeklyPaymentPreview" text="Rată săptămânală: —" style="font-size: 15px; color: rgb(255, 220, 100); -unity-font-style: bold; margin-bottom: 4px;"/>
+                <ui:Label name="TotalOwedPreview" text="Total de rambursat: —" style="font-size: 13px; color: rgb(200, 200, 200);"/>
+            </ui:VisualElement>
+            <ui:VisualElement style="flex-direction: row; margin-top: 20px;">
+                <ui:Button name="Step1BackBtn" text="← Înapoi" style="flex-grow: 1; margin-right: 8px; height: 38px; background-color: rgba(255, 255, 255, 0.08); color: white; border-radius: 6px;"/>
+                <ui:Button name="Step1NextBtn" text="Continuă →" style="flex-grow: 2; height: 38px; background-color: rgb(255, 200, 50); color: rgb(20, 20, 20); -unity-font-style: bold; border-radius: 6px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="Step2Panel" style="flex-grow: 1; display: none;">
+            <ui:Label text="Sumar contract" style="font-size: 14px; color: rgb(200, 200, 200); margin-bottom: 12px;"/>
+            <ui:VisualElement style="background-color: rgba(255, 255, 255, 0.04); border-radius: 10px; padding: 16px;">
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Bancă" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryBankLabel" text="—" style="color: white; font-size: 13px; -unity-font-style: bold;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Sumă împrumutată" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryAmountLabel" text="—" style="color: rgb(100, 220, 150); font-size: 13px; -unity-font-style: bold;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Dobândă anuală" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryRateLabel" text="—" style="color: white; font-size: 13px;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Termen" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryTermLabel" text="—" style="color: white; font-size: 13px;"/>
+                </ui:VisualElement>
+                <ui:VisualElement style="height: 1px; background-color: rgba(255, 255, 255, 0.1); margin: 8px 0;"/>
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Rată săptămânală" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryWeeklyLabel" text="—" style="color: rgb(255, 220, 100); font-size: 15px; -unity-font-style: bold;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="summary-row" style="flex-direction: row; margin-bottom: 8px;">
+                    <ui:Label text="Total de rambursat" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryTotalLabel" text="—" style="color: rgb(255, 120, 100); font-size: 13px; -unity-font-style: bold;"/>
+                </ui:VisualElement>
+                <ui:VisualElement class="summary-row" style="flex-direction: row;">
+                    <ui:Label text="Prima rată" style="flex-grow: 1; color: rgb(150, 150, 150); font-size: 13px;"/>
+                    <ui:Label name="SummaryFirstPaymentLabel" text="—" style="color: white; font-size: 13px;"/>
+                </ui:VisualElement>
+            </ui:VisualElement>
+            <ui:Label text="⚠ Rata va fi dedusa automat. Intarzierea atrage penalizari." style="font-size: 11px; color: rgb(255, 180, 80); margin-top: 10px; -unity-text-align: middle-center; white-space: normal;"/>
+            <ui:VisualElement style="flex-direction: row; margin-top: 16px;">
+                <ui:Button name="Step2BackBtn" text="← Înapoi" style="flex-grow: 1; margin-right: 8px; height: 40px; background-color: rgba(255, 255, 255, 0.08); color: white; border-radius: 6px;"/>
+                <ui:Button name="ConfirmLoanBtn" text="✓ Confirmă Creditul" style="flex-grow: 2; height: 40px; background-color: rgb(80, 200, 120); color: rgb(10, 10, 10); -unity-font-style: bold; border-radius: 6px;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:VisualElement name="ActiveLoansSection" style="margin-top: 20px; border-top-width: 1px; border-color: rgba(255, 255, 255, 0.08); padding-top: 14px;">
+            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 8px;">
+                <ui:Label text="Credite active" style="font-size: 14px; color: rgb(200, 200, 200); flex-grow: 1;"/>
+                <ui:Label name="TotalBurdenLabel" text="" style="font-size: 12px; color: rgb(255, 120, 100);"/>
+            </ui:VisualElement>
+            <ui:Label name="NoLoansLabel" text="Nu ai niciun credit activ." style="color: rgb(120, 120, 120); font-size: 13px; -unity-text-align: middle-center; padding: 10px; display: flex;"/>
+            <ui:ScrollView name="ActiveLoansList" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="Hidden" style="max-height: 160px; display: none;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

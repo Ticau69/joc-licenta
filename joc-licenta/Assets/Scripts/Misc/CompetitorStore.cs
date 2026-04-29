@@ -12,6 +12,10 @@ public class CompetitorStore : ScriptableObject
 
     public Sprite storeIcon;
 
+    [Header("Produse Vandute")]
+    [Tooltip("Lista exacta de produse pe care le vinde acest competitor.")]
+    public List<ProductType> soldProducts = new List<ProductType>();
+
     [Header("Specialitate")]
     [Tooltip("Tipurile de produse la care acest concurent e mai competitiv.")]
     public List<ProductType> specialtyProducts = new List<ProductType>();

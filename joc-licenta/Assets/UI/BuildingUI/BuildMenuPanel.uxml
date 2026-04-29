@@ -1,11 +1,16 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <Style src="BuildMenu.uss" />
     <ui:VisualElement name="BuildMenuContainer" style="position: absolute; left: 20px; top: 20px; bottom: 100px; flex-direction: row; align-items: flex-start; picking-mode: Ignore; height: 485px; display: none;">
         <ui:VisualElement style="width: 250px; height: 100%; background-color: rgba(30, 30, 35, 0.95); border-radius: 12px; border-width: 2px; border-color: rgba(255, 255, 255, 0.1); flex-direction: column; padding: 15px;">
             <ui:VisualElement style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding-bottom: 10px;">
                 <ui:Label text="CATALOG" style="color: white; font-size: 20px; -unity-font-style: bold;"/>
                 <ui:Button name="CloseMenuButton" text="X" style="width: 30px; height: 30px; background-color: rgb(220, 50, 50); color: white; border-radius: 15px; border-width: 0; -unity-font-style: bold; font-size: 16px; margin: 0; padding: 0;"/>
             </ui:VisualElement>
-            <ui:ScrollView name="FurnitureListScrollView" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 5px;"/>
+            <ui:ScrollView name="FurnitureListScrollView"
+            vertical-scroller-visibility="Auto"
+            horizontal-scroller-visibility="Hidden"
+            style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.3); border-radius: 8px; padding: 5px;
+                   --unity-metrics-single-line-height: 4px;"/>
         </ui:VisualElement>
         <ui:VisualElement name="InfoPanel" style="display: none; width: 280px; margin-left: 15px; background-color: rgba(30, 30, 35, 0.98); border-radius: 12px; border-width: 2px; border-color: rgba(255, 255, 255, 0.1); padding: 15px; flex-shrink: 0; box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);">
             <ui:Label name="InfoTitle" text="Nume Echipament" style="color: white; font-size: 22px; -unity-font-style: bold; margin-bottom: 12px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding-bottom: 8px;"/>

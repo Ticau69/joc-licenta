@@ -1,15 +1,9 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
-    
     <ui:Button name="CardButton" style="background-color: rgba(255, 255, 255, 0.05); border-radius: 8px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); padding: 8px; margin-bottom: 5px; flex-direction: row; align-items: center; overflow: hidden;">
-        
-        <ui:VisualElement name="FurnitureIcon" style="width: 40px; height: 40px; background-color: rgba(0, 0, 0, 0.5); border-radius: 6px; margin-right: 12px;" picking-mode="Ignore"/>
-        
-        <ui:Label name="FurnitureNameLabel" text="Nume Raft" style="color: white; font-size: 18px; -unity-font-style: bold; flex-grow: 1;" picking-mode="Ignore"/>
-
-        <ui:VisualElement name="LockedOverlay" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: flex-end; padding-right: 15px; display: none;" picking-mode="Ignore">
+        <ui:VisualElement name="FurnitureIcon" picking-mode="Ignore" style="width: 40px; height: 40px; min-width: 40px; min-height: 40px; flex-shrink: 0; background-color: rgba(0, 0, 0, 0.5); border-radius: 6px; margin-right: 12px;"/>
+        <ui:Label name="FurnitureNameLabel" text="gewgqfqegwreqrwetrtwetwrtrwqtwqtqet" picking-mode="Ignore" style="color: white; font-size: 18px; -unity-font-style: bold; flex-grow: 1; white-space: normal; width: 0%; height: auto;"/>
+        <ui:VisualElement name="LockedOverlay" picking-mode="Ignore" style="position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: flex-end; padding-right: 15px; display: none;">
             <ui:Label text="🔒" style="font-size: 20px; color: white;"/>
         </ui:VisualElement>
-
     </ui:Button>
-
 </ui:UXML>

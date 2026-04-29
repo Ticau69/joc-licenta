@@ -1,0 +1,27 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e426f9021acb19049978ae0d648d1937, type: 3}
+  m_Name: FurnizoriSO
+  m_EditorClassIdentifier: Assembly-CSharp::FurnizoriSO
+  supplierName: S.C. VINDEM AVIOANE S.R.L.
+  supplierIcon: {fileID: 0}
+  description: Vindem banane
+  products:
+  - productType: 12
+    basePricePerUnit: 2
+    stockOverride: 0
+  deliveryDays: 1
+  maxStockPerDay: 200
+  startingRelationship: 50
+  allowsPayOnDelivery: 1
+  allowsCredit: 1
+  creditInterestRate: 0.05
