@@ -1,0 +1,74 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements">
+    <ui:VisualElement name="ObjectivesContainer" style="
+        position: absolute;
+        top: 12px;
+        left: 12px;
+        width: 280px;
+        background-color: rgba(15, 15, 20, 0.85);
+        border-top-left-radius: 10px;
+        border-top-right-radius: 10px;
+        border-bottom-right-radius: 10px;
+        border-bottom-left-radius: 10px;
+        border-left-width: 1px;
+        border-right-width: 1px;
+        border-top-width: 1px;
+        border-bottom-width: 1px;
+        border-left-color: rgba(255, 200, 50, 0.3);
+        border-right-color: rgba(255, 200, 50, 0.3);
+        border-top-color: rgba(255, 200, 50, 0.3);
+        border-bottom-color: rgba(255, 200, 50, 0.3);
+        padding-top: 10px;
+        padding-bottom: 10px;
+        padding-left: 12px;
+        padding-right: 12px;
+        display: flex;
+    ">
+        <!-- Header -->
+        <ui:VisualElement name="ObjectivesHeader" style="
+            flex-direction: row;
+            align-items: center;
+            margin-bottom: 8px;
+            border-bottom-width: 1px;
+            border-bottom-color: rgba(255,255,255,0.1);
+            padding-bottom: 6px;
+        ">
+            <ui:Label text="🎯" name="ObjectivesIcon" style="font-size: 14px; margin-right: 6px;" />
+            <ui:Label text="OBIECTIVE" name="ObjectivesTitle" style="
+                color: rgb(255, 200, 50);
+                font-size: 11px;
+                -unity-font-style: bold;
+                letter-spacing: 1px;
+                flex-grow: 1;
+            "/>
+            <ui:Label text="1/5" name="ObjectivesProgress" style="
+                color: rgba(255,255,255,0.4);
+                font-size: 10px;
+                margin-right: 6px;
+            "/>
+            <ui:Button text="✕" name="ObjectivesCloseBtn" style="
+                width: 18px;
+                height: 18px;
+                background-color: rgba(255,255,255,0.08);
+                color: rgba(255,255,255,0.5);
+                font-size: 10px;
+                -unity-font-style: bold;
+                border-top-left-radius: 9px;
+                border-top-right-radius: 9px;
+                border-bottom-left-radius: 9px;
+                border-bottom-right-radius: 9px;
+                border-top-width: 0;
+                border-right-width: 0;
+                border-bottom-width: 0;
+                border-left-width: 0;
+                padding-top: 0;
+                padding-bottom: 0;
+                padding-left: 0;
+                padding-right: 0;
+                -unity-text-align: middle-center;
+            "/>
+        </ui:VisualElement>
+
+        <!-- Lista de obiective (populate dinamic) -->
+        <ui:VisualElement name="ObjectivesList" style="flex-direction: column;" />
+    </ui:VisualElement>
+</ui:UXML>

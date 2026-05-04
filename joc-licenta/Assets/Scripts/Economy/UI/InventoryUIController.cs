@@ -34,6 +34,7 @@ public class InventoryUIController : MonoBehaviour
     private float _updateTimer = 0f;
 
     private readonly HashSet<ProductType> _overpricedProducts = new HashSet<ProductType>();
+    private readonly HashSet<ProductType> _belowCostNotified = new HashSet<ProductType>(); // debounce Fane
     private Label _priceWarningLabel;
 
     // Caching pentru performanță
@@ -112,7 +113,19 @@ public class InventoryUIController : MonoBehaviour
         if (_economy.TryGetProductData(_currentViewingProduct, out ProductEconomics data))
         {
             UpdatePriceLabels(data);
-            UpdateMarketInfo(_currentViewingProduct, evt.newValue); // ── NOU
+            UpdateMarketInfo(_currentViewingProduct, evt.newValue);
+
+            // Notificăm Fane dacă prețul a ajuns sub cost (o singură dată per produs)
+            if (data.Profit < 0f)
+            {
+                if (_belowCostNotified.Add(_currentViewingProduct)) // Add returnează false dacă era deja
+                    MentorSystem.Instance?.NotifyPriceBelowCost();
+            }
+            else
+            {
+                // Resetăm dacă jucătorul a corectat prețul
+                _belowCostNotified.Remove(_currentViewingProduct);
+            }
         }
     }
     private void OnProductPricedTooHigh(ProductPricedTooHighEvent evt)

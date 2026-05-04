@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 /// <summary>
 /// Gestionează comenzile plasate la furnizori specifici.
-/// Lucrează alături de DeliveryManager (camion) și FleetManager.
+/// Lucrează alături de DeliveryManager (UI vizual) și FleetManager (camioane).
 /// </summary>
 public class SupplierOrderSystem : MonoBehaviour
 {
@@ -12,12 +12,20 @@ public class SupplierOrderSystem : MonoBehaviour
 
     [Header("Referințe")]
     [SerializeField] private FleetManager fleetManager;
+    [SerializeField] private DeliveryManager deliveryManager;
 
+    // FIX #4: Evenimentele OnOrderPlaced/OnOrderDelivered erau moarte (nimeni nu se abona).
+    // Le-am păstrat ca API public — pot fi folosite de sisteme viitoare (rapoarte, tutorial etc.)
+    // Dacă nu le folosești deloc, le poți șterge.
     public event Action<SupplierDeliveryOrder> OnOrderPlaced;
     public event Action<SupplierDeliveryOrder> OnOrderDelivered;
 
     private List<SupplierDeliveryOrder> _activeOrders = new List<SupplierDeliveryOrder>();
     public IReadOnlyList<SupplierDeliveryOrder> ActiveOrders => _activeOrders;
+
+    // FIX #2: Flag corect pentru prima comandă — Count==1 putea fi adevărat
+    // de mai multe ori dacă comenzile se terminau și se plasau altele noi.
+    private bool _firstOrderPlaced = false;
 
     void Awake()
     {
@@ -26,6 +34,10 @@ public class SupplierOrderSystem : MonoBehaviour
 
         if (fleetManager == null)
             fleetManager = FindFirstObjectByType<FleetManager>();
+
+        // FIX #3: Fallback FindFirstObjectByType pentru deliveryManager
+        if (deliveryManager == null)
+            deliveryManager = FindFirstObjectByType<DeliveryManager>();
     }
 
     void Start()
@@ -65,18 +77,15 @@ public class SupplierOrderSystem : MonoBehaviour
             return false;
         }
 
-        // Verificăm camioane disponibile
         if (fleetManager != null && !fleetManager.HasAvailableTrucks(1))
         {
             errorMessage = "Nu ai camioane disponibile! Fă upgrade la flotă.";
             return false;
         }
 
-        float pricePerUnit = SupplierRelationshipManager.Instance
-            .GetFinalPrice(supplier, product);
+        float pricePerUnit = SupplierRelationshipManager.Instance.GetFinalPrice(supplier, product);
         int totalCost = Mathf.RoundToInt(pricePerUnit * quantity);
 
-        // Plată imediată — verificăm banii
         if (paymentType == PaymentType.Immediate)
         {
             if (!ServiceLocator.Instance.TryGet(out IMoneyService money) ||
@@ -85,13 +94,9 @@ public class SupplierOrderSystem : MonoBehaviour
                 errorMessage = $"Fonduri insuficiente! Necesar: {totalCost} RON";
                 return false;
             }
-
-            if (FinanceManager.Instance != null)
-                FinanceManager.Instance.RegisterTransaction(
-                    TransactionCategory.Marfa_Depozit, totalCost);
+            FinanceManager.Instance?.RegisterTransaction(TransactionCategory.Marfa_Depozit, totalCost);
         }
 
-        // Credit — disponibil doar la relație Prietenos
         if (paymentType == PaymentType.Credit)
         {
             var status = SupplierRelationshipManager.Instance.GetStatus(supplier);
@@ -120,12 +125,29 @@ public class SupplierOrderSystem : MonoBehaviour
 
         _activeOrders.Add(order);
 
-        // Plata la livrare/credit → înregistrăm datoria
+        // Afișăm vizual în tab-ul Livrări
+        if (deliveryManager != null)
+            deliveryManager.RegisterSupplierOrder(order);
+        else
+            Debug.LogWarning("[SupplierOrderSystem] deliveryManager null — livrarea nu apare în UI!");
+
+        Debug.Log($"[DEBUG] MentorSystem.Instance = {MentorSystem.Instance}");
+        Debug.Log($"[DEBUG] _firstOrderPlaced = {_firstOrderPlaced}");
+        // FIX #2: Flag boolean în loc de Count == 1
+        if (_firstOrderPlaced == false)
+        {
+            _firstOrderPlaced = true;
+            MentorSystem.Instance?.NotifyFirstSupplierOrder();
+        }
+
         if (paymentType != PaymentType.Immediate)
             SupplierRelationshipManager.Instance.AddPendingDebt(supplier, totalCost);
 
-        // Înregistrăm camionul folosit
         fleetManager?.RentTruck();
+
+        // Notificăm Fane dacă flota e plină după această comandă
+        if (fleetManager != null && !fleetManager.HasAvailableTrucks(1))
+            MentorSystem.Instance?.NotifyFleetFull();
 
         SupplierRelationshipManager.Instance.OnOrderPlaced(supplier);
         OnOrderPlaced?.Invoke(order);
@@ -149,25 +171,20 @@ public class SupplierOrderSystem : MonoBehaviour
 
             DeliverOrder(order);
 
-            if (order.Payment == PaymentType.OnDelivery ||
-                order.Payment == PaymentType.Credit)
+            if (order.Payment == PaymentType.OnDelivery || order.Payment == PaymentType.Credit)
             {
                 if (ServiceLocator.Instance.TryGet(out IMoneyService money))
                 {
                     if (money.TrySpend(order.TotalCost))
                     {
-                        SupplierRelationshipManager.Instance
-                            .OnPaymentMade(order.Supplier, onTime: true);
-
-                        if (FinanceManager.Instance != null)
-                            FinanceManager.Instance.RegisterTransaction(
-                                TransactionCategory.Marfa_Depozit, order.TotalCost);
+                        SupplierRelationshipManager.Instance.OnPaymentMade(order.Supplier, onTime: true);
+                        FinanceManager.Instance?.RegisterTransaction(
+                            TransactionCategory.Marfa_Depozit, order.TotalCost);
                     }
                     else
                     {
-                        SupplierRelationshipManager.Instance
-                            .OnPaymentMade(order.Supplier, onTime: false);
-                        Debug.LogWarning($"[SupplierOrder] Fonduri insuficiente pentru plata la livrare!");
+                        SupplierRelationshipManager.Instance.OnPaymentMade(order.Supplier, onTime: false);
+                        Debug.LogWarning("[SupplierOrder] Fonduri insuficiente pentru plata la livrare!");
                     }
                 }
             }
@@ -184,8 +201,7 @@ public class SupplierOrderSystem : MonoBehaviour
             inventory.AddStock(order.Product, order.Quantity);
 
         OnOrderDelivered?.Invoke(order);
-        Debug.Log($"[SupplierOrder] Livrat: {order.Quantity}x {order.Product} " +
-                  $"de la {order.Supplier.supplierName}");
+        Debug.Log($"[SupplierOrder] Livrat: {order.Quantity}x {order.Product} de la {order.Supplier.supplierName}");
     }
 
     // ── Plată manuală datorie ─────────────────────────────────────────────────
@@ -195,8 +211,7 @@ public class SupplierOrderSystem : MonoBehaviour
         int debt = SupplierRelationshipManager.Instance.GetPendingDebt(supplier);
         if (debt <= 0) return true;
 
-        if (!ServiceLocator.Instance.TryGet(out IMoneyService money) ||
-            !money.TrySpend(debt))
+        if (!ServiceLocator.Instance.TryGet(out IMoneyService money) || !money.TrySpend(debt))
         {
             Debug.LogWarning($"[SupplierOrder] Fonduri insuficiente pentru datorie: {debt} RON");
             return false;

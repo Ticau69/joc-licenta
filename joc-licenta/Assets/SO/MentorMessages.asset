@@ -1,0 +1,156 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ab391f3569840d54095e622ba7633cd1, type: 3}
+  m_Name: MentorMessages
+  m_EditorClassIdentifier: Assembly-CSharp::MentorMessageSO
+  welcomeMessages:
+  - text: "Bun venit! Sunt Fane, consultantul t\u0103u de afaceri. Hai s\u0103 construim
+      \xEEmpreun\u0103 un magazin profitabil! Prima regul\u0103: cumperi ieftin,
+      vinzi scump. Simplu, nu?"
+    importance: 3
+  - text: "\xCEnainte de orice, asigur\u0103-te c\u0103 ai rafturi pline \u0219i
+      o cas\u0103 de marcat cu casier. F\u0103r\u0103 stoc, clien\u021Bii pleac\u0103.
+      F\u0103r\u0103 casier, nu po\u021Bi \xEEncasa. Bazele, \xEEntotdeauna bazele!"
+    importance: 3
+  inflationSpikeMessages:
+  - text: "\u26A1 \u0218oc de infla\u021Bie! Pre\u021Burile au crescut brusc.\n\n\xCEn
+      economie real\u0103, asta se \xEEnt\xE2mpl\u0103 din cauza crizelor energetice
+      sau problemelor \xEEn lan\u021Bul de aprovizionare. Verific\u0103 dac\u0103
+      pre\u021Burile tale de v\xE2nzare mai acoper\u0103 costurile!"
+    importance: 2
+  - text: "Infla\u021Bie \xEEn cre\u0219tere! \U0001F4C8\n\nB\u0103ncile centrale
+      r\u0103spund la infla\u021Bie cresc\xE2nd dob\xE2nzile \u2014 de aceea creditele
+      tale devin mai scumpe acum. Dac\u0103 pl\u0103nuie\u0219ti un \xEEmprumut,
+      mai bine acum dec\xE2t m\xE2ine."
+    importance: 2
+  deflationMessages:
+  - text: "Infla\u021Bia a sc\u0103zut! Sun\u0103 bine, dar defla\u021Bia persistent\u0103
+      e problematic\u0103.\n\nC\xE2nd pre\u021Burile scad constant, consumatorii
+      am\xE2n\u0103 cump\u0103r\u0103turile \u2014 de ce s\u0103 cumperi azi dac\u0103
+      m\xE2ine e mai ieftin? Paradoxul economiei!"
+    importance: 1
+  competitorCheaperMessages:
+  - text: "Un competitor vinde mai ieftin ca tine! \U0001F3EA\n\nAi dou\u0103 op\u021Biuni
+      strategice: scazi \u0219i tu pre\u021Bul (price war \u2014 periculos pe termen
+      lung) sau te diferen\u021Biezi prin stoc constant \u0219i servicii mai bune.
+      Walmart \u0219i-a c\xE2\u0219tigat clien\u021Bii prin volum, nu neap\u0103rat
+      calitate."
+    importance: 2
+  - text: "Concuren\u021Ba a t\u0103iat pre\u021Burile. Clien\u021Bii t\u0103i vor
+      observa!\n\nSfat: calculeaz\u0103 marja ta minim\u0103 (cost achizi\u021Bie
+      + TVA + overhead). Nu po\u021Bi vinde sub cost dec\xE2t dac\u0103 vrei s\u0103
+      dai faliment."
+    importance: 1
+  playerCheapestMessages:
+  - text: "Excelent! E\u0219ti cel mai ieftin de pe pia\u021B\u0103 la acest produs.
+      \U0001F947\n\nAten\u021Bie: pre\u021Bul mic atrage clien\u021Bi, dar dac\u0103
+      marja e prea mic\u0103 nu supravie\u021Buie\u0219ti. Asigur\u0103-te c\u0103
+      tot acoperi costurile \u2014 profit mic e mai bun dec\xE2t pierdere."
+    importance: 0
+  employeeResignedMessages:
+  - text: "Un angajat a plecat din cauza salariului mic. \U0001F61E\n\n\xCEn management
+      real, fluctua\u021Bia de personal cost\u0103 enorm \u2014 recrutare, training,
+      productivitate pierdut\u0103. Un studiu Gallup arat\u0103 c\u0103 \xEEnlocuirea
+      unui angajat cost\u0103 50-200% din salariul anual. Pl\u0103te\u0219te corect
+      de la \xEEnceput!"
+    importance: 3
+  employeeLowMoodMessages:
+  - text: "Angajatul t\u0103u e nemul\u021Bumit! Productivitatea lui a sc\u0103zut.\n\nTeoria
+      motiva\u021Biei a lui Maslow spune c\u0103 oamenii au nevoie de mai mult dec\xE2t
+      bani \u2014 recunoa\u0219tere, siguran\u021B\u0103, sens. \xCEn joc, cre\u0219te
+      salariul. \xCEn via\u021B\u0103 real\u0103, adaug\u0103 \u0219i celelalte dimensiuni."
+    importance: 1
+  loanTakenMessages:
+  - text: "Ai contractat un credit! \U0001F3E6\n\nLevierul financiar (debt leverage)
+      poate accelera cre\u0219terea, dar \u0219i falimentul. Regula de aur: nu \xEEmprumuta
+      mai mult dec\xE2t po\u021Bi rambursa din profitul opera\u021Bional. Rata datorii/venituri
+      sub 30% e considerat\u0103 s\u0103n\u0103toas\u0103."
+    importance: 2
+  - text: "Credit luat! Dob\xE2nda pe care o pl\u0103te\u0219ti urmeaz\u0103 infla\u021Bia.\n\n\u0102sta
+      e motivul pentru care b\u0103ncile centrale ajusteaz\u0103 dob\xE2nzile \u2014
+      vor s\u0103 controleze infla\u021Bia f\u0103r\u0103 s\u0103 sufoc\u0103 economia
+      cu credite prea scumpe. Un echilibru dificil, numit politic\u0103 monetar\u0103."
+    importance: 1
+  loanMissedMessages:
+  - text: "Ai ratat o rat\u0103! Penaliz\u0103rile se acumuleaz\u0103. \u26A0\uFE0F\n\n\xCEn
+      lumea real\u0103, neplata unui credit \xEE\u021Bi afecteaz\u0103 scorul de
+      credit \u2014 accesul la finan\u021Bare viitoare devine mai scump sau imposibil.
+      Cash flow-ul zilnic e mai important dec\xE2t profitul pe h\xE2rtie."
+    importance: 3
+  sanitaryFineMessages:
+  - text: "Amend\u0103 de la inspec\u021Bie sanitar\u0103! \U0001F9F9\n\nCostul cur\u0103\u021Beniei
+      e mic fa\u021B\u0103 de costul unei amenzi sau al reputa\u021Biei afectate.
+      \xCEn retail, cur\u0103\u021Benia e parte din 'experien\u021Ba clientului'
+      \u2014 un concept care valoreaz\u0103 miliarde \xEEn industria modern\u0103."
+    importance: 2
+  sanitaryPassMessages:
+  - text: "Inspec\u021Bie trecut\u0103 cu succes! \u2705\n\nConformitatea cu reglement\u0103rile
+      nu e doar obligatorie \u2014 e \u0219i un avantaj competitiv. Clien\u021Bii
+      din ce \xEEn ce mai mult aleg magazinele curate \u0219i bine organizate."
+    importance: 0
+  outOfStockMessages:
+  - text: "Raft gol! Un client a plecat f\u0103r\u0103 s\u0103 cumpere. \U0001F4E6\n\nRuptura
+      de stoc cost\u0103 dublu: pierzi v\xE2nzarea \u0219i ri\u0219ti s\u0103 pierzi
+      clientul permanent. Marile lan\u021Buri folosesc sisteme automate de reaprovizionare
+      \u2014 tu ai angajatul Restocker. \u021Aine-l activ!"
+    importance: 1
+  profitableDayMessages:
+  - text: "Zi profitabil\u0103! Felicit\u0103ri! \U0001F389\n\nAminte\u0219te-\u021Bi:
+      profitul pe h\xE2rtie \u2260 bani \xEEn cont. Un business poate fi profitabil
+      \u0219i totu\u0219i s\u0103 dea faliment din lips\u0103 de lichiditate. Urm\u0103re\u0219te
+      mereu cash flow-ul zilnic!"
+    importance: 0
+  - text: "Bun rezultat azi! \U0001F4B0\n\nReinvesti\u021Bia profitului e cheia cre\u0219terii.
+      Bezos a reinvestit 100% din profitul Amazon timp de 7 ani \xEEnainte s\u0103
+      devin\u0103 profitabil pentru ac\u021Bionari. Strategia pe termen lung bate
+      c\xE2\u0219tigul imediat."
+    importance: 0
+  unprofitableDayMessages:
+  - text: "Pierdere azi. Nu e motiv de panic\u0103, dar e un semnal. \U0001F4C9\n\nVerific\u0103:
+      cheltuielile fixe (salarii, credite) vs veniturile variabile (v\xE2nz\u0103ri).
+      Dac\u0103 cheltuielile fixe dep\u0103\u0219esc veniturile medii, structura
+      de costuri e gre\u0219it\u0103."
+    importance: 2
+  lowFundsMessages:
+  - text: "Fonduri critice! \u26A0\uFE0F\n\nRegula de aur \xEEn business: men\u021Bine
+      mereu o rezerv\u0103 de urgen\u021B\u0103 de minimum 3 luni de cheltuieli fixe.
+      F\u0103r\u0103 aceasta, orice surpriz\u0103 nepl\u0103cut\u0103 poate \xEEnchide
+      afacerea. Se nume\u0219te 'runway' \u2014 c\xE2t timp po\u021Bi supravie\u021Bui
+      f\u0103r\u0103 venituri."
+    importance: 3
+  firstSupplierOrderMessages:
+  - text: "Prima comand\u0103 la furnizor! \U0001F69A\n\nRela\u021Bia cu furnizorii
+      e un activ strategic. Companiile mari negociaz\u0103 termene de plat\u0103
+      de 90-120 zile \u2014 asta \xEEnseamn\u0103 c\u0103 v\xE2nd produsul \xEEnainte
+      s\u0103-l pl\u0103teasc\u0103. Construie\u0219te rela\u021Bii bune \u0219i
+      vei ob\u021Bine condi\u021Bii mai avantajoase."
+    importance: 2
+  supplierAngryMessages:
+  - text: "Furnizorul t\u0103u e sup\u0103rat! Comenzile sunt blocate. \U0001F624\n\nSupply
+      chain disruption \u2014 un termen familiar dup\u0103 2020. Dependen\u021Ba
+      de un singur furnizor e un risc major. Diversificarea furnizorilor e o strategie
+      de rezilien\u021B\u0103."
+    importance: 2
+  fleetFullMessages:
+  - text: "Flota e la capacitate maxim\u0103! \U0001F69B\n\nLogistica e o barier\u0103
+      de cre\u0219tere. \xCEn retail modern, companiile ca Amazon investesc masiv
+      \xEEn propria infrastructur\u0103 logistic\u0103 tocmai pentru c\u0103 a depinde
+      de ter\u021Bi limiteaz\u0103 scalabilitatea."
+    importance: 1
+  buildMenuOpenedMessages:
+  - text: "Aten\u021Bie la podele! \U0001F3EA Ai dou\u0103 zone distincte: podeaua
+      magazinului \u2014 unde vor circula clien\u021Bii \u0219i vei plasa rafturile
+      \u2014 \u0219i podeaua depozitului, zona ta de stocare. Planific\u0103 spa\u021Biul
+      cu grij\u0103: un depozit prea mic \xEEnseamn\u0103 c\u0103 nu po\u021Bi comanda
+      \xEEn cantit\u0103\u021Bi mari, iar un magazin prea \xEEnghesuit alung\u0103
+      clien\u021Bii."
+    importance: 3

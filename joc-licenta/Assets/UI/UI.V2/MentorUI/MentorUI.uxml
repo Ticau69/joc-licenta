@@ -1,0 +1,19 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="MentorContainer" style="position: absolute; bottom: 150px; right: 16px; width: 340px; flex-direction: row; align-items: flex-end; display: flex; transition-duration: 0.35s; transition-property: translate, opacity;">
+        <ui:VisualElement name="MentorBubble" style="flex-grow: 1; flex-direction: column; background-color: rgb(22, 26, 36); border-radius: 12px; border-width: 1px; border-color: rgba(80, 180, 255, 0.35); padding: 10px 12px 8px 12px; overflow: hidden;">
+            <ui:VisualElement style="flex-direction: row; align-items: center; margin-bottom: 6px;">
+                <ui:Label text="Fane" style="font-size: 12px; color: rgb(80, 180, 255); -unity-font-style: bold; flex-grow: 1;"/>
+                <ui:Label name="MentorPhaseLabel" text="Mentor activ" style="font-size: 9px; color: rgb(100, 200, 100); margin-right: 8px;"/>
+                <ui:Button name="MentorCloseBtn" text="✕" style="width: 18px; height: 18px; font-size: 9px; background-color: rgba(255, 255, 255, 0.05); color: rgba(255, 255, 255, 0.4); border-width: 0; border-radius: 9px; padding: 0;"/>
+            </ui:VisualElement>
+            <ui:VisualElement name="MentorTypingDots" style="flex-direction: row; align-items: center; height: 20px; display: none;">
+                <ui:Label text="●" style="font-size: 10px; color: rgba(80, 180, 255, 0.6); margin-right: 3px;"/>
+                <ui:Label text="●" style="font-size: 10px; color: rgba(80, 180, 255, 0.4); margin-right: 3px;"/>
+                <ui:Label text="●" style="font-size: 10px; color: rgba(80, 180, 255, 0.2);"/>
+            </ui:VisualElement>
+            <ui:Label name="MentorMessage" text="" style="font-size: 11px; color: rgb(210, 215, 230); white-space: normal; -unity-text-align: upper-left;"/>
+            <ui:VisualElement style="height: 2px; border-radius: 1px; background-color: rgba(80, 180, 255, 0.2); margin-top: 8px;"/>
+        </ui:VisualElement>
+        <ui:VisualElement name="MentorAvatar" style="width: 90px; height: 110px; min-width: 90px; margin-right: 0; flex-shrink: 0; align-self: flex-end; margin-left: 10px;"/>
+    </ui:VisualElement>
+</ui:UXML>

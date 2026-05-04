@@ -1,72 +1,44 @@
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Collections.Generic;
-using System.Linq;
+using System.Collections;
 
+/// <summary>
+/// Gestionează UI-ul flotei și afișează vizual comenzile active de la furnizori.
+/// Logica de livrare (inventar, plăți, zile) e în SupplierOrderSystem.
+/// </summary>
 public class DeliveryManager : MonoBehaviour
 {
-    // =========================================================================
-    // INSPECTOR
-    // =========================================================================
-
     [Header("UI References")]
     [SerializeField] private UIDocument uiDocument;
     [SerializeField] private VisualTreeAsset deliveryItemTemplate;
 
-    [Header("Config")]
-    [SerializeField] private float deliverySpeedBase = 15f;
-
     [Header("References")]
     [SerializeField] private FleetManager fleetManager;
-    [SerializeField] private SupplierPanelUI supplierPanelUI; // deschide popup-ul la click pe Furnizori
 
-    // =========================================================================
-    // PRIVATE UI
-    // =========================================================================
+    // FIX #6: _root nu trebuie stocat ca field — e folosit doar în InitUI()
+    private ScrollView _activeDeliveryList;
+    private Label _fleetCapacityLabel;
+    private Button _upgradeFleetBtn;
 
-    private VisualElement root;
-    private ScrollView activeDeliveryList;
-    private Label fleetCapacityLabel;
-    private Button upgradeFleetBtn;
-    private Button supplierOrderBtn;
-
-    // =========================================================================
-    // STATE
-    // =========================================================================
-
-    private readonly List<DeliveryOrder> activeOrders = new();
-    private readonly Dictionary<DeliveryOrder, VisualElement> orderToVisualMap = new();
+    // FIX #1: flag ca să nu apelăm InitUI de două ori → dubla înregistrare clicked
+    private bool _uiInitialized = false;
 
     // =========================================================================
     // LIFECYCLE
     // =========================================================================
 
+    void Awake()
+    {
+        InitUI();
+    }
+
     void OnEnable()
     {
-        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
-        root = uiDocument.rootVisualElement;
-
-        // --- Delivery list ---
-        activeDeliveryList = root.Q<ScrollView>("ActiveDeliveryList");
-        activeDeliveryList?.Clear();
-
-        // --- Fleet UI ---
-        fleetCapacityLabel = root.Q<Label>("FleetCapacityLabel");
-        upgradeFleetBtn = root.Q<Button>("UpgradeFleetBtn");
-
-        if (upgradeFleetBtn != null)
-            upgradeFleetBtn.clicked += () => fleetManager?.TryUpgradeFleet();
-
         if (fleetManager != null)
         {
             fleetManager.OnFleetStatusChanged += UpdateFleetUI;
             UpdateFleetUI();
         }
-
-        // --- Supplier button → deleagă la SupplierPanelUI ---
-        supplierOrderBtn = root.Q<Button>("SupplierOrderBtn");
-        if (supplierOrderBtn != null)
-            supplierOrderBtn.clicked += () => supplierPanelUI?.Open();
     }
 
     void OnDisable()
@@ -75,10 +47,26 @@ public class DeliveryManager : MonoBehaviour
             fleetManager.OnFleetStatusChanged -= UpdateFleetUI;
     }
 
-    void Update()
+    private void InitUI()
     {
-        if (activeOrders.Count > 0)
-            ProcessDeliveries();
+        // FIX #1: Previne dubla înregistrare a clicked pe _upgradeFleetBtn
+        if (_uiInitialized) return;
+
+        if (uiDocument == null) uiDocument = GetComponent<UIDocument>();
+        if (uiDocument == null) return;
+
+        var root = uiDocument.rootVisualElement;
+
+        _activeDeliveryList = root.Q<ScrollView>("ActiveDeliveryList");
+        _activeDeliveryList?.Clear();
+
+        _fleetCapacityLabel = root.Q<Label>("FleetCapacityLabel");
+        _upgradeFleetBtn = root.Q<Button>("UpgradeFleetBtn");
+
+        if (_upgradeFleetBtn != null)
+            _upgradeFleetBtn.clicked += () => fleetManager?.TryUpgradeFleet();
+
+        _uiInitialized = true;
     }
 
     // =========================================================================
@@ -87,151 +75,74 @@ public class DeliveryManager : MonoBehaviour
 
     private void UpdateFleetUI()
     {
-        if (fleetCapacityLabel != null)
+        if (_fleetCapacityLabel != null)
         {
-            fleetCapacityLabel.text = $"{fleetManager.ActiveTrucks}/{fleetManager.CurrentMaxTrucks} Camioane";
-            fleetCapacityLabel.style.color = (fleetManager.ActiveTrucks >= fleetManager.CurrentMaxTrucks)
-                ? Color.red
-                : Color.white;
+            _fleetCapacityLabel.text = $"{fleetManager.ActiveTrucks}/{fleetManager.CurrentMaxTrucks} Camioane";
+            _fleetCapacityLabel.style.color = fleetManager.ActiveTrucks >= fleetManager.CurrentMaxTrucks
+                ? Color.red : Color.white;
         }
 
-        if (upgradeFleetBtn != null)
+        if (_upgradeFleetBtn != null)
         {
-            if (fleetManager.CanUpgrade())
-                upgradeFleetBtn.text = $"Upgrade Flotă\n({fleetManager.GetNextUpgradeCost()} RON)";
-            else
-                upgradeFleetBtn.text = "Flotă Maximă";
-
-            upgradeFleetBtn.SetEnabled(fleetManager.CanUpgrade());
+            _upgradeFleetBtn.text = fleetManager.CanUpgrade()
+                ? $"Upgrade Flotă\n({fleetManager.GetNextUpgradeCost()} RON)"
+                : "Flotă Maximă";
+            _upgradeFleetBtn.SetEnabled(fleetManager.CanUpgrade());
         }
     }
 
     // =========================================================================
-    // LIVRĂRI — API PUBLIC (apelat de SupplierOrderSystem după confirmare)
+    // API PUBLIC — apelat de SupplierOrderSystem după plasarea comenzii
     // =========================================================================
 
-    /// <summary>
-    /// Creează o livrare nouă. Apelat din SupplierOrderSystem.TryPlaceOrder().
-    /// </summary>
-    public void CreateNewDelivery(Dictionary<ProductType, int> items, float duration, bool isNight)
+    public void RegisterSupplierOrder(SupplierDeliveryOrder order)
     {
-        if (!fleetManager.HasAvailableTrucks(1))
+        // Lazy init cu protecție împotriva dublei înregistrări
+        if (!_uiInitialized) InitUI();
+
+        if (_activeDeliveryList == null)
         {
-            Debug.LogWarning("[DeliveryManager] Niciun camion disponibil!");
+            Debug.LogError("[DeliveryManager] 'ActiveDeliveryList' ScrollView nu a fost găsit în UXML!");
+            return;
+        }
+        if (deliveryItemTemplate == null)
+        {
+            Debug.LogError("[DeliveryManager] deliveryItemTemplate nu e asignat în Inspector!");
             return;
         }
 
-        fleetManager.RentTruck();
+        VisualElement item = deliveryItemTemplate.Instantiate();
 
-        DeliveryOrder newOrder = new DeliveryOrder(items, duration, isNight);
-        activeOrders.Add(newOrder);
-        CreateVisualEntry(newOrder);
-    }
-
-    // =========================================================================
-    // LIVRĂRI — INTERN
-    // =========================================================================
-
-    private void ProcessDeliveries()
-    {
-        for (int i = activeOrders.Count - 1; i >= 0; i--)
-        {
-            DeliveryOrder order = activeOrders[i];
-
-            if (order.isNightOrder)
-            {
-                // Livrare de noapte — sosește instant la ora 07:00
-                if (TimeManager.Instance != null
-                    && TimeManager.Instance.CurrentHour >= 7f
-                    && TimeManager.Instance.CurrentHour < TimeManager.Instance.closeHour)
-                {
-                    order.timeRemaining = 0f;
-                }
-            }
-            else
-            {
-                order.timeRemaining -= Time.deltaTime;
-            }
-
-            if (orderToVisualMap.TryGetValue(order, out var visual))
-                UpdateVisualItem(order, visual);
-
-            if (order.IsCompleted)
-                CompleteOrder(order);
-        }
-    }
-
-    private void CreateVisualEntry(DeliveryOrder order)
-    {
-        if (deliveryItemTemplate == null || activeDeliveryList == null) return;
-
-        VisualElement itemInstance = deliveryItemTemplate.Instantiate();
-
-        Label nameLabel = itemInstance.Q<Label>("OrderName");
+        var nameLabel = item.Q<Label>("OrderName");
         if (nameLabel != null)
+            nameLabel.text = $"{order.Product} ({order.Quantity} buc) — {order.Supplier.supplierName}";
+
+        var etaLabel = item.Q<Label>("ETA");
+        if (etaLabel != null)
         {
-            int totalAmount = order.products.Values.Sum();
-            nameLabel.text = order.products.Count == 1
-                ? $"{order.products.Keys.First()} ({totalAmount} buc)"
-                : $"Comandă Mixtă ({totalAmount} buc)";
+            etaLabel.text = order.Supplier.deliveryDays == 0
+                ? "Livrare instant"
+                : $"Ziua {order.DeliveryDay}";
+            etaLabel.style.color = new Color(0.3f, 0.7f, 1f);
         }
 
-        Button urgentBtn = itemInstance.Q<Button>("UrgentBtn");
+        var urgentBtn = item.Q<Button>("UrgentBtn");
         if (urgentBtn != null)
-        {
-            if (order.isNightOrder)
-                urgentBtn.style.display = DisplayStyle.None;
-            else
-                urgentBtn.clicked += () => SpeedUpDelivery(order);
-        }
+            urgentBtn.style.display = DisplayStyle.None;
 
-        activeDeliveryList.Add(itemInstance);
-        orderToVisualMap[order] = itemInstance;
+        _activeDeliveryList.Add(item);
+
+        Debug.Log($"[DeliveryManager] Vizual adăugat: {order.Product} x{order.Quantity} " +
+                  $"de la {order.Supplier.supplierName} — ziua {order.DeliveryDay}");
+
+        StartCoroutine(RemoveWhenDelivered(order, item));
     }
 
-    private void UpdateVisualItem(DeliveryOrder order, VisualElement visual)
+    private IEnumerator RemoveWhenDelivered(SupplierDeliveryOrder order, VisualElement visual)
     {
-        Label timerLabel = visual.Q<Label>("ETA");
-        if (timerLabel == null) return;
+        while (order.Status == OrderStatus.Pending)
+            yield return new WaitForSeconds(1f);
 
-        if (order.isNightOrder)
-        {
-            timerLabel.text = "Sosește la 07:00";
-            timerLabel.style.color = new Color(0.3f, 0.7f, 1f);
-        }
-        else
-        {
-            int minutes = Mathf.FloorToInt(order.timeRemaining / 60);
-            int seconds = Mathf.FloorToInt(order.timeRemaining % 60);
-            timerLabel.text = $"ETA: {minutes:00}:{seconds:00}";
-            timerLabel.style.color = order.timeRemaining < 10f ? Color.green : new Color(1f, 0.75f, 0f);
-        }
-    }
-
-    private void CompleteOrder(DeliveryOrder order)
-    {
-        fleetManager.ReturnTruck();
-
-        // Adaugă stocul în inventar
-        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IInventoryService inventory))
-        {
-            foreach (var item in order.products)
-                inventory.AddStock(item.Key, item.Value);
-        }
-
-        // Curăță vizualul
-        if (orderToVisualMap.TryGetValue(order, out var visual))
-        {
-            activeDeliveryList?.Remove(visual);
-            orderToVisualMap.Remove(order);
-        }
-
-        activeOrders.Remove(order);
-    }
-
-    private void SpeedUpDelivery(DeliveryOrder order)
-    {
-        if (GameManager.Instance.TrySpendMoney(50))
-            order.timeRemaining -= 30f;
+        _activeDeliveryList?.Remove(visual);
     }
 }

@@ -763,4 +763,15 @@ public class CustomerAI : MonoBehaviour
 
         return false;
     }
+    /// <summary>
+    /// Forțează clientul să iasă imediat.
+    /// Apelat de CustomerSpawner când clientul e blocat după ora de închidere.
+    /// </summary>
+    public void ForceExit()
+    {
+        StopAllCoroutines();
+        // Refolosim LeaveStore() care știe deja cum să scoată clientul din coadă și să-l trimită la exit
+        LeaveStore();
+    }
+
 }

@@ -40,6 +40,7 @@ public class BuildMenuUIManager : MonoBehaviour
     private Button _hudFurnitureButton;
 
     private ObjectData _selectedFurniture;
+    private bool _buildMenuOpenedOnce = false;
 
     private void Start()
     {
@@ -148,6 +149,13 @@ public class BuildMenuUIManager : MonoBehaviour
         // 3. Dacă era închis, îl deschidem noi curat pe tot ecranul!
         _buildPanel.style.display = DisplayStyle.Flex;
         if (_infoPanel != null) _infoPanel.style.display = DisplayStyle.None;
+
+        // Notificăm Fane la primul open
+        if (!_buildMenuOpenedOnce)
+        {
+            _buildMenuOpenedOnce = true;
+            MentorSystem.Instance?.NotifyBuildMenuOpened();
+        }
 
         _currentCategory = startCategory;
         PopulateFurnitureList();

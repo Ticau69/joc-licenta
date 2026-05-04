@@ -101,6 +101,12 @@ public class PlacementState : IBuldingState
             {
                 ws.shelfVariant = dataBase.objectsData[selectedObjectIndex].ShelfVariant;
                 ws.stationType = dataBase.objectsData[selectedObjectIndex].StationType;
+
+                // Notificăm obiectivele în funcție de tipul plasat
+                if (ws.stationType == StationType.CashRegister)
+                    ContextualObjectiveSystem.Instance?.NotifyCashRegisterPlaced();
+                else if (ws.stationType == StationType.Shelf)
+                    ContextualObjectiveSystem.Instance?.NotifyShelfPlaced();
             }
         }
 

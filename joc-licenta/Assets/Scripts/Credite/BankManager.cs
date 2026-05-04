@@ -144,6 +144,11 @@ public class BankManager : MonoBehaviour
 
         Debug.Log($"[BankManager] Credit luat: {loan}");
         OnLoanTaken?.Invoke(loan);
+
+        // Notificăm Fane dacă jucătorul are 3+ credite active simultan
+        if (_activeLoans.Count >= 3)
+            MentorSystem.Instance?.NotifyMultipleLoans();
+
         return true;
     }
 

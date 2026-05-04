@@ -126,12 +126,6 @@ public class InflationManager : MonoBehaviour
         return Round(raw, priceDecimals);
     }
 
-    public float GetSellPrice(float basePrice, float sellMultiplier = 0.6f)
-    {
-        float raw = basePrice * currentInflation * sellMultiplier;
-        return Round(raw, priceDecimals);
-    }
-
     private float Round(float value, int decimals)
     {
         decimals = Mathf.Clamp(decimals, 0, 6);

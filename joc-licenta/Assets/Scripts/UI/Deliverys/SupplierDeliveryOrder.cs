@@ -1,8 +1,8 @@
+// FIX #5: Scos `using System.Collections.Generic` — List<> nu e folosit în acest fișier
 using UnityEngine;
-using System.Collections.Generic;
 
 /// <summary>
-/// Comandă plasată la un furnizor specific — diferit de DeliveryOrder (camion simplu).
+/// Comandă plasată la un furnizor specific.
 /// </summary>
 [System.Serializable]
 public class SupplierDeliveryOrder

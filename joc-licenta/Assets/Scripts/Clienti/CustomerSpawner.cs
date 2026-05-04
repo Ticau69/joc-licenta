@@ -42,6 +42,8 @@ public class CustomerSpawner : MonoBehaviour
     private bool _hasCashRegistersCached = false;
     private bool _endOfDayTriggered = false;
     private bool _hasOpenedToday = false;
+    private float _forceEvictTimer = 0f;
+    private const float FORCE_EVICT_AFTER = 15f; // secunde după închidere
 
     private void Start()
     {
@@ -107,9 +109,33 @@ public class CustomerSpawner : MonoBehaviour
                 if (_activeCustomers.Count == 0 && !_endOfDayTriggered)
                 {
                     _endOfDayTriggered = true;
-                    _hasOpenedToday = false; // Așteptăm să se deschidă iar mâine dimineață
+                    _hasOpenedToday = false;
+                    _forceEvictTimer = 0f;
+                    OnStoreCompletelyEmpty?.Invoke();
+                }
+                else if (_activeCustomers.Count > 0 && !_endOfDayTriggered)
+                {
+                    // Clienți blocați — numărăm timeout-ul
+                    _forceEvictTimer += Time.deltaTime;
 
-                    OnStoreCompletelyEmpty?.Invoke(); // Trimite semnalul!
+                    if (_forceEvictTimer >= FORCE_EVICT_AFTER)
+                    {
+                        Debug.LogWarning($"[CustomerSpawner] {_activeCustomers.Count} clienți blocați după închidere — forțăm ieșirea!");
+
+                        // Forțăm toți clienții să iasă
+                        foreach (var c in _activeCustomers)
+                        {
+                            if (c != null && c.gameObject.activeInHierarchy)
+                            {
+                                // Trimitem clientul direct la exit
+                                var ai = c.GetComponent<CustomerAI>();
+                                if (ai != null) ai.ForceExit();
+                                else c.gameObject.SetActive(false);
+                            }
+                        }
+                        _activeCustomers.Clear();
+                        // Trigger-ul va fi detectat în frame-ul următor
+                    }
                 }
             }
         }

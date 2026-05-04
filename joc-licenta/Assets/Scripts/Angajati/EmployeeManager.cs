@@ -106,6 +106,8 @@ public class EmployeeManager : MonoBehaviour
         {
             allEmployees.Add(newEmployee);
             HandleNewEmployeeShift(newEmployee);
+
+
         }
 
         return newEmployee;
@@ -227,8 +229,8 @@ public class EmployeeManager : MonoBehaviour
                 break;
 
             case EmployeeRole.Janitor:
-                // Janitors don't need a specific station
                 Debug.Log($"[EmployeeManager] {employee.employeeName} assigned as Janitor (no station needed)");
+                ContextualObjectiveSystem.Instance?.NotifyEmployeeHired();
                 break;
 
             default:
@@ -269,6 +271,9 @@ public class EmployeeManager : MonoBehaviour
         freeRegister.AssignCashier(employee);
 
         Debug.Log($"[EmployeeManager] {employee.employeeName} asignat la casa {freeRegister.name}");
+
+        // Pas 2 din obiectivul "Casa de Marcat"
+        ContextualObjectiveSystem.Instance?.NotifyCashierHired();
     }
 
     private void AssignRestockerStation(Employee employee)
@@ -276,15 +281,17 @@ public class EmployeeManager : MonoBehaviour
         // Căutăm direct StorageRacks în scenă în loc de WorkStation cu tip Storage
         StorageRacks[] allRacks = Object.FindObjectsByType<StorageRacks>(FindObjectsSortMode.None);
 
+        // Notificăm obiectivul indiferent dacă există rack sau nu
+        // (angajatul a fost angajat, chiar dacă nu are stație momentan)
+        ContextualObjectiveSystem.Instance?.NotifyEmployeeHired();
+
         if (allRacks.Length == 0)
         {
             Debug.LogWarning($"[EmployeeManager] Nu există StorageRacks în scenă pentru {employee.employeeName}!");
             return;
         }
 
-        // Luăm primul rack disponibil
         StorageRacks targetRack = allRacks[0];
-
         employee.myWorkStation = targetRack.transform;
         employee.AssignRole(EmployeeRole.Restocker, targetRack.transform);
         employee.secondaryTarget = null;

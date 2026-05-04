@@ -144,6 +144,9 @@ public class FinanceManager : MonoBehaviour
         Label profitLabel = root.Q<Label>("ProfitLabel");
         if (profitLabel != null) profitLabel.text = $"{profitNet} RON";
 
+        // Notificăm sistemul de obiective cu profitul zilei
+        ContextualObjectiveSystem.Instance?.NotifyDayProfit(profitNet);
+
         endDayReportPanel.rootVisualElement.style.display = DisplayStyle.Flex;
     }
 
@@ -161,6 +164,18 @@ public class FinanceManager : MonoBehaviour
             TransactionCategory.Facturi_Utilitati => new Color(0.8f, 0.8f, 0.2f), // Galben
             _ => Color.gray
         };
+    }
+
+    /// <summary>Returnează profitul net al zilei curente (venituri - cheltuieli).</summary>
+    public int GetTodayProfit()
+    {
+        int venituri = 0, cheltuieli = 0;
+        foreach (var t in dailyLedger)
+        {
+            if (t.Key == TransactionCategory.Venituri_Vanzari) venituri += t.Value;
+            else cheltuieli += t.Value;
+        }
+        return venituri - cheltuieli;
     }
 
     // Resetăm tot registrul a doua zi
