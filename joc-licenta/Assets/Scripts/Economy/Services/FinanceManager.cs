@@ -21,8 +21,6 @@ public class FinanceManager : MonoBehaviour
     private FinancePieChart myPieChart;
     private Label noActivityLabel;
 
-    // --- NOU: REGISTRUL DINAMIC ---
-    // Aici ținem minte toți banii, sortați pe categorii!
     private Dictionary<TransactionCategory, int> dailyLedger = new Dictionary<TransactionCategory, int>();
 
     private void Awake()

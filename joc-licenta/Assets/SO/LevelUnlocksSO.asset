@@ -17,7 +17,7 @@ MonoBehaviour:
     expandPlacementArea: 1
     newPlaneScaleXZ: {x: 1, y: 1}
     maxEmployees: 2
-    maxCustomers: 3
+    maxCustomers: 7
     maxStorageCapacity: 50
     unlockId: 
   - levelRequired: 2

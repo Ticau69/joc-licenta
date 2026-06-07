@@ -139,10 +139,9 @@ public class RemovingState : IBuldingState
 
                 if (wallKey.StartsWith("wall_"))
                 {
-                    if (segmentData.RemoveWallPartByKey(hitName, wallData))
+                    // 1. Eliberăm "terenul" din wallData ca să ne lase să punem un perete nou
+                    if (wallData != null)
                     {
-                        // Ștergem din wallData ÎNTOTDEAUNA, nu doar la ultimul part
-                        // Altfel CanPlaceWall va bloca plasarea de pereți noi
                         var allWalls = wallData.GetAllWalls();
                         foreach (var wall in allWalls)
                         {
@@ -153,9 +152,15 @@ public class RemovingState : IBuldingState
                                 break;
                             }
                         }
-
-                        return;
                     }
+
+                    // 2. Ștergem fizic obiectele 3D și le scoatem din memorie definitiv
+                    if (segmentData != null)
+                    {
+                        segmentData.RemoveAllPartsFor(wallKey);
+                    }
+
+                    return;
                 }
             }
 

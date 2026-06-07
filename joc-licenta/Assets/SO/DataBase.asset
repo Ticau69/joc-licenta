@@ -40,7 +40,7 @@ MonoBehaviour:
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 1
-  - <Name>k__BackingField: Wall
+  - <Name>k__BackingField: Perete
     <ObjDescription>k__BackingField: 
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 1
@@ -53,7 +53,7 @@ MonoBehaviour:
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 0
-  - <Name>k__BackingField: Usa Simpla
+  - <Name>k__BackingField: Usa
     <ObjDescription>k__BackingField: 
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 2
@@ -144,12 +144,12 @@ MonoBehaviour:
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 3
-  - <Name>k__BackingField: Usa Automata
-    <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
+  - <Name>k__BackingField: Usa Glisanta
+    <ObjDescription>k__BackingField: 
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 11
     <Category>k__BackingField: 1
-    <Prefab>k__BackingField: {fileID: 8181120869591467040, guid: 5bc1cf293c45fe2489bb5759c4227106, type: 3}
+    <Prefab>k__BackingField: {fileID: 8028191805760723315, guid: a5151ddbe66cd2c4cbe88841d83b6a21, type: 3}
     <Size>k__BackingField: {x: 2, y: 2}
     <IsDoor>k__BackingField: 1
     <Cost>k__BackingField: 200

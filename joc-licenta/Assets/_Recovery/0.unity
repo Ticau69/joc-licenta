@@ -12080,6 +12080,51 @@ Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e2706084d366884459e5a5da5a0bbd96, type: 3}
   m_PrefabInstance: {fileID: 1306458161}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1305192964
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1305192966}
+  - component: {fileID: 1305192965}
+  m_Layer: 0
+  m_Name: GlossaryController
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1305192965
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1305192964}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d945f8293c743d44a8c142df02674587, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GlossaryController
+  uiDocument: {fileID: 784697281}
+--- !u!4 &1305192966
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1305192964}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 2.18337, y: 0.155, z: -0.1106}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1306071507 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: e2706084d366884459e5a5da5a0bbd96, type: 3}
@@ -13806,6 +13851,8 @@ MonoBehaviour:
   minFine: 500
   maxFine: 2000
   minHoursBetweenInspections: 3
+  minimumDayForInspection: 3
+  minimumOpenHoursBeforeInspection: 2
 --- !u!1001 &1476235456
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -14189,7 +14236,7 @@ MonoBehaviour:
   - {fileID: 1522268933}
   exitPoint: {fileID: 1522268933}
   spawnInterval: 6
-  maxAliveCustomers: 3
+  maxAliveCustomers: 6
   spawnOnStart: 0
   minCustomerBudget: 50
   maxCustomerBudget: 250
@@ -19274,3 +19321,4 @@ SceneRoots:
   - {fileID: 1474821451}
   - {fileID: 1380194646}
   - {fileID: 1080752081}
+  - {fileID: 1305192966}

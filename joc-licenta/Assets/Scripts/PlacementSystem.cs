@@ -153,14 +153,14 @@ public class PlacementSystem : MonoBehaviour
 
             playerInput.OnClick += PlaceStructure;
         }
-        else if (ID == 1) // Perete - MULTI-SEGMENT MODE
+        else if (ID == 1) // Perete
         {
             isWallMode = true;
             buildingState = new WallPlacementState(
                 ID, grid, previewSystem, database,
                 objectPlacer, gameManager, playerInput,
                 wallData, segmentData,
-                wallPreviewMaterial, toolTipController, floorData, cameraController); // în loc de wallPreviewShader
+                wallPreviewMaterial, toolTipController, floorData, cameraController);
 
             playerInput.OnClick += PlaceStructure;
             playerInput.OnRightClick += UndoWallSegment;
@@ -168,14 +168,14 @@ public class PlacementSystem : MonoBehaviour
         }
         else if (database.objectsData.FindIndex(data => data.ID == ID) is int doorIdx
          && doorIdx >= 0
-         && database.objectsData[doorIdx].IsDoor) // Ușă - WALL SNAP MODE
+         && database.objectsData[doorIdx].IsDoor) // Ușă
         {
             isWallMode = false;
             buildingState = new DoorPlacementState(
                 ID, grid, previewSystem, database,
                 objectPlacer, gameManager,
                 wallData, segmentData, doorData,
-                doorPreviewMaterial, playerInput); // material nou
+                doorPreviewMaterial, playerInput);
 
             playerInput.OnClick += PlaceStructure;
         }

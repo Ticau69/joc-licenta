@@ -21,8 +21,15 @@ public class SanitaryInspection : MonoBehaviour
     [Tooltip("Cooldown minim între inspecții (ore de joc).")]
     public int minHoursBetweenInspections = 3;
 
+    [Tooltip("Ziua minimă de joc de la care pot apărea inspecții.")]
+    public int minimumDayForInspection = 3;
+
+    [Tooltip("Ore minime de program scurse în ziua curentă înainte de prima inspecție.")]
+    public int minimumOpenHoursBeforeInspection = 2;
+
     // ── Runtime ───────────────────────────────────────────────────────────────
     private int _lastInspectionHour = -99;
+    private int _lastInspectionDay  = -99;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -51,20 +58,56 @@ public class SanitaryInspection : MonoBehaviour
         if (TimeManager.Instance == null) return;
 
         int currentHour = TimeManager.Instance.CurrentHour;
+        int currentDay  = TimeManager.Instance.CurrentDay;
 
-        // Verificăm dacă suntem în intervalul de program
+        // 1. Magazinul trebuie să fie deschis
         bool isOpen = currentHour >= TimeManager.Instance.openHour &&
                       currentHour < TimeManager.Instance.closeHour;
-
         if (!isOpen) return;
 
-        // Cooldown între inspecții
-        if (currentHour - _lastInspectionHour < minHoursBetweenInspections) return;
+        // 2. Ziua minimă — magazinul trebuie să fie funcțional de cel puțin N zile
+        if (currentDay < minimumDayForInspection) return;
 
-        // Roll pentru inspecție
+        // 3. Ore minime scurse de la deschidere în ziua curentă
+        int hoursOpenToday = currentHour - TimeManager.Instance.openHour;
+        if (hoursOpenToday < minimumOpenHoursBeforeInspection) return;
+
+        // 4. Cooldown între inspecții (ore în aceeași zi sau zile diferite)
+        bool sameDayCooldown = currentDay == _lastInspectionDay &&
+                               currentHour - _lastInspectionHour < minHoursBetweenInspections;
+        if (sameDayCooldown) return;
+
+        // 5. Magazinul trebuie să aibă cel puțin un raft și o casă de marcat
+        //    (nu inspecționăm un magazin complet gol)
+        if (!HasMinimumStoreSetup()) return;
+
+        // 6. Roll pentru inspecție
         if (Random.value > inspectionChancePerHour) return;
 
         TriggerInspection();
+    }
+
+    private bool HasMinimumStoreSetup()
+    {
+        // Trebuie să existe cel puțin un raft
+        var shelves = FindObjectsByType<WorkStation>(FindObjectsSortMode.None);
+        bool hasShelf = false;
+        bool hasCashRegister = false;
+
+        foreach (var ws in shelves)
+        {
+            if (ws.stationType == StationType.Shelf)        hasShelf = true;
+            if (ws.stationType == StationType.CashRegister) hasCashRegister = true;
+            if (hasShelf && hasCashRegister) break;
+        }
+
+        if (!hasShelf || !hasCashRegister)
+        {
+            Debug.Log("[Inspectie] Skipped — magazin incomplet (fără raft sau casă de marcat).");
+            return false;
+        }
+
+        return true;
     }
 
     private void TriggerInspection()
@@ -72,6 +115,7 @@ public class SanitaryInspection : MonoBehaviour
         if (CleanlinessManager.Instance == null) return;
 
         _lastInspectionHour = TimeManager.Instance.CurrentHour;
+        _lastInspectionDay  = TimeManager.Instance.CurrentDay;
 
         float dirtPercent = CleanlinessManager.Instance.DirtPercent;
         bool isDirty = CleanlinessManager.Instance.IsOverThreshold;
