@@ -716,53 +716,6 @@ public class CustomerAI : MonoBehaviour
         return total;
     }
 
-    // =========================================================================
-    //  METODA VECHE (kept for backwards compat, nu mai e folosită intern)
-    // =========================================================================
-
-    private bool TryGetUnitPriceRON(ProductType product, IEconomyService economyService, out int price)
-    {
-        price = 0;
-        if (economyService == null) return false;
-
-        var mdProp = economyService.GetType().GetProperty("MarketData",
-            BindingFlags.Public | BindingFlags.Instance);
-        if (mdProp == null) return false;
-
-        object marketDataObj = mdProp.GetValue(economyService);
-        if (marketDataObj == null) return false;
-
-        var idx = marketDataObj.GetType().GetProperty("Item");
-        if (idx == null) return false;
-
-        object econ = null;
-        try { econ = idx.GetValue(marketDataObj, new object[] { product }); }
-        catch { return false; }
-
-        if (econ == null) return false;
-
-        string[] candidates = { "sellPrice", "SellPrice", "price", "Price", "basePrice", "BasePrice" };
-        foreach (var candidateName in candidates)
-        {
-            var pProp = econ.GetType().GetProperty(candidateName,
-                BindingFlags.Public | BindingFlags.Instance);
-            if (pProp != null && pProp.PropertyType == typeof(int))
-            {
-                price = (int)pProp.GetValue(econ);
-                return price > 0;
-            }
-
-            var fField = econ.GetType().GetField(candidateName,
-                BindingFlags.Public | BindingFlags.Instance);
-            if (fField != null && fField.FieldType == typeof(int))
-            {
-                price = (int)fField.GetValue(econ);
-                return price > 0;
-            }
-        }
-
-        return false;
-    }
     /// <summary>
     /// Forțează clientul să iasă imediat.
     /// Apelat de CustomerSpawner când clientul e blocat după ora de închidere.

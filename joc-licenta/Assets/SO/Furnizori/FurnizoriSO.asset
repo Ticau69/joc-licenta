@@ -17,10 +17,10 @@ MonoBehaviour:
   description: Vindem banane
   products:
   - productType: 12
-    basePricePerUnit: 2
+    basePricePerUnit: 6
     stockOverride: 0
   - productType: 2
-    basePricePerUnit: 2
+    basePricePerUnit: 5
     stockOverride: 0
   deliveryDays: 1
   maxStockPerDay: 200

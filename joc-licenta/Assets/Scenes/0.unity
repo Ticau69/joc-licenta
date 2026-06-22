@@ -18613,6 +18613,8 @@ MonoBehaviour:
   allSuppliers:
   - {fileID: 11400000, guid: f7b5ce54d74fe8345accaf9624dc4229, type: 2}
   - {fileID: 11400000, guid: f5a8b3d6c44236d48ae1ca4d413ba0ad, type: 2}
+  - {fileID: 11400000, guid: 1125ee38c26a92e4bbe3ae8c1617757d, type: 2}
+  - {fileID: 11400000, guid: 3a430b2ace371df489e8a9efb0faaa0d, type: 2}
   angryThreshold: 30
   friendlyThreshold: 70
   friendlyDiscount: 0.1

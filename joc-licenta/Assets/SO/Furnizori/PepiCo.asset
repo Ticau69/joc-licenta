@@ -17,10 +17,10 @@ MonoBehaviour:
   description: 
   products:
   - productType: 6
-    basePricePerUnit: 2
+    basePricePerUnit: 3
     stockOverride: 0
   - productType: 5
-    basePricePerUnit: 2
+    basePricePerUnit: 3
     stockOverride: 0
   deliveryDays: 1
   maxStockPerDay: 200

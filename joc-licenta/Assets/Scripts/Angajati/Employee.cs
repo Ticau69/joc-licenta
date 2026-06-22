@@ -682,8 +682,15 @@ public class RestockerStateMachine
 
     private void ExecuteWorkAction(Transform workStation, Transform secondaryTarget, GameObject boxVisual)
     {
+        if (secondaryTarget == null)
+        {
+            ReportProblem("Raftul la care lucram a fost demolat!");
+            currentState = State.Idle;
+            return;
+        }
+
         // Raftul de magazin e WorkStation
-        WorkStation shelfScript = secondaryTarget?.GetComponentInParent<WorkStation>();
+        WorkStation shelfScript = secondaryTarget.GetComponentInParent<WorkStation>();
 
         // NOU: Nu mai forțăm depozitul să fie WorkStation, îl transmitem ca Transform
         if (currentTask == TaskType.Restocking)
@@ -700,8 +707,15 @@ public class RestockerStateMachine
     {
         if (productsInHand == 0)
         {
+            if (storageTransform == null)
+            {
+                ReportProblem("Depozitul la care mă duceam a fost distrus!");
+                currentState = State.Idle;
+                return;
+            }
+
             // Căutăm componenta StorageRack pe obiectul de depozit!
-            StorageRacks rack = storageTransform?.GetComponentInParent<StorageRacks>();
+            StorageRacks rack = storageTransform.GetComponentInParent<StorageRacks>();
 
             if (shelf != null && rack != null)
             {
@@ -784,8 +798,14 @@ public class RestockerStateMachine
         }
         else
         {
+            if (storageTransform == null)
+            {
+                ReportProblem("Depozitul meu a dispărut!");
+                currentState = State.Idle;
+                return;
+            }
             // Suntem în depozit, punem marfa pe noul raft
-            StorageRacks rack = storageTransform?.GetComponentInParent<StorageRacks>();
+            StorageRacks rack = storageTransform.GetComponentInParent<StorageRacks>();
             if (rack != null)
             {
                 rack.AddProduct(productInHandType, productsInHand);
