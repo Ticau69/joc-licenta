@@ -15,7 +15,13 @@ MonoBehaviour:
   supplierName: Furnizor Nou
   supplierIcon: {fileID: 0}
   description: 
-  products: []
+  products:
+  - productType: 9
+    basePricePerUnit: 0
+    stockOverride: 0
+  - productType: 1
+    basePricePerUnit: 0
+    stockOverride: 0
   deliveryDays: 1
   maxStockPerDay: 200
   startingRelationship: 50

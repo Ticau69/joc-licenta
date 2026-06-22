@@ -50,6 +50,27 @@ public class PlayerXPManager : MonoBehaviour
         OnXpChanged?.Invoke(oldXp, xpInLevel, XpToNext);
 
         if (level != oldLevel)
+        {
             OnLevelChanged?.Invoke(oldLevel, level);
+            // Trimitem semnalul către ScoreManager
+            if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+            {
+                eventBus.Publish(new ScoreGainedEvent { Amount = 15, Source = "Player Level Up" });
+            }
+        }
+    }
+
+    public void SetLevel(int newLevel)
+    {
+        if (newLevel < 1) newLevel = 1;
+
+        int oldLevel = level;
+        level = newLevel;
+        xpInLevel = 0; // resetăm XP-ul când setezi nivelul direct
+
+        if (level != oldLevel)
+            OnLevelChanged?.Invoke(oldLevel, level);
+
+        OnXpChanged?.Invoke(0, xpInLevel, XpToNext);
     }
 }

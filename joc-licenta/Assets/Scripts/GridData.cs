@@ -53,6 +53,17 @@ public class GridData
         return null;
     }
 
+    // METODĂ NOUĂ: Returnează obiectele unice pentru sistemul de salvare
+    public List<PlacementData> GetAllUniqueObjects()
+    {
+        HashSet<PlacementData> uniqueObjects = new HashSet<PlacementData>();
+        foreach (var kvp in placedObjects)
+        {
+            uniqueObjects.Add(kvp.Value);
+        }
+        return new List<PlacementData>(uniqueObjects);
+    }
+
     // METODĂ NOUĂ: Șterge obiect
     internal void RemoveObjectAt(Vector3Int gridPosition)
     {

@@ -127,6 +127,11 @@ public class CashRegisterQueue : MonoBehaviour
             if (PlayerXPManager.Instance != null)
                 PlayerXPManager.Instance.AddXP(Mathf.Max(1, total / 10));
 
+            if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+            {
+                eventBus.Publish(new ScoreGainedEvent { Amount = 3, Source = "Client Servit" });
+            }
+
             first.OnCheckoutComplete();
         }
 

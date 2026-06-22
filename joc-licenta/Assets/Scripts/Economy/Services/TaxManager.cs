@@ -104,7 +104,16 @@ public class TaxManager : MonoBehaviour
 
         return playerRevenue;
     }
-
+    /// <summary>
+    /// Returnează doar suma TVA extrasă dintr-un preț de vânzare (pentru afișare în UI).
+    /// </summary>
+    public int GetSalesTaxAmount(int salePrice)
+    {
+        if (salesTaxIncludedInPrice)
+            return Mathf.RoundToInt(salePrice * salesTaxRate / (1f + salesTaxRate));
+        else
+            return Mathf.RoundToInt(salePrice * salesTaxRate);
+    }
     /// <summary>Procentaj TVA formatat pentru UI.</summary>
     public string GetSalesTaxDisplay() => $"{salesTaxRate * 100f:F0}%";
     public string GetPurchaseTaxDisplay() => $"{purchaseTaxRate * 100f:F0}%";

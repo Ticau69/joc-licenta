@@ -218,6 +218,78 @@ public class BankManager : MonoBehaviour
     }
 
     // =========================================================================
+    // SALVARE ȘI ÎNCĂRCARE
+    // =========================================================================
+
+    public string GenerateSaveJson()
+    {
+        BankSaveState saveState = new BankSaveState();
+
+        foreach (var loan in _activeLoans)
+        {
+            saveState.ActiveLoans.Add(new LoanSaveData
+            {
+                BankName = loan.bank.bankName, // Salvăm numele pentru a găsi referința
+                Principal = loan.principal,
+                WeeklyPayment = loan.weeklyPayment,
+                AnnualRateSnapshot = loan.annualRateSnapshot,
+                TotalOwed = loan.totalOwed,
+                TotalPaid = loan.totalPaid,
+                TermDays = loan.termDays,
+                DayTaken = loan.dayTaken,
+                NextPaymentDay = loan.nextPaymentDay,
+                WeeksRemaining = loan.weeksRemaining
+            });
+        }
+
+        return JsonUtility.ToJson(saveState);
+    }
+
+    public void RestoreFromSave(string json)
+    {
+        if (string.IsNullOrEmpty(json) || json == "{}") return;
+
+        try
+        {
+            BankSaveState saveState = JsonUtility.FromJson<BankSaveState>(json);
+            _activeLoans.Clear();
+
+            foreach (var data in saveState.ActiveLoans)
+            {
+                // 1. Căutăm SO-ul băncii după nume
+                BankSO foundBank = System.Array.Find(availableBanks, b => b.bankName == data.BankName);
+                if (foundBank == null)
+                {
+                    Debug.LogWarning($"[BankManager] Banca {data.BankName} nu a fost găsită în availableBanks! Creditul a fost pierdut.");
+                    continue;
+                }
+
+                // 2. Creăm un contract nou (folosim constructorul doar pentru a aloca obiectul)
+                BankLoan restoredLoan = new BankLoan(foundBank, data.Principal, data.TermDays, 0f, data.DayTaken);
+
+                // 3. VITAL: Suprascriem valorile calculate de constructor cu cele din salvare
+                // Asta asigură că dobânda și ratele rămân IDENTICE cu momentul în care a fost luat creditul
+                restoredLoan.weeklyPayment = data.WeeklyPayment;
+                restoredLoan.annualRateSnapshot = data.AnnualRateSnapshot;
+                restoredLoan.totalOwed = data.TotalOwed;
+                restoredLoan.totalPaid = data.TotalPaid;
+                restoredLoan.nextPaymentDay = data.NextPaymentDay;
+                restoredLoan.weeksRemaining = data.WeeksRemaining;
+
+                _activeLoans.Add(restoredLoan);
+
+                OnLoanTaken?.Invoke(restoredLoan);
+            }
+
+            Debug.Log($"[BankManager] Credite restaurate: {_activeLoans.Count}");
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[BankManager] Eroare la citirea creditelor: {ex.Message}");
+        }
+    }
+
+    // =========================================================================
     // UTILITAR
     // =========================================================================
 

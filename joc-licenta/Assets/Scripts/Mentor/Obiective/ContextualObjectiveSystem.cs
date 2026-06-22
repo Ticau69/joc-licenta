@@ -29,6 +29,8 @@ public class ContextualObjectiveSystem : MonoBehaviour
     public IReadOnlyList<Objective> ActiveObjectives => _activeObjectives;
     public IReadOnlyList<Objective> CompletedObjectives => _completedObjectives;
 
+    private IEventBus _eventBus;
+
     // Tracking intern
     private int _consecutiveProfitDays = 0;
     private bool _lastDayWasProfitable = false;
@@ -191,6 +193,90 @@ public class ContextualObjectiveSystem : MonoBehaviour
     }
 
     // =========================================================================
+    // NOU: SISTEM DE SALVARE / ÎNCĂRCARE
+    // =========================================================================
+
+    public string GenerateSaveJson()
+    {
+        ObjectivesSaveState saveState = new ObjectivesSaveState();
+
+        foreach (var obj in _allObjectives)
+        {
+            saveState.SavedObjectives.Add(new ObjectiveSaveData
+            {
+                Id = obj.Id,
+                CurrentProgress = obj.CurrentProgress,
+                IsUnlocked = obj.IsUnlocked,
+                IsCompleted = obj.IsCompleted
+            });
+        }
+
+        return JsonUtility.ToJson(saveState);
+    }
+
+    public void RestoreFromSave(string json)
+    {
+        Debug.Log($"--- [LOAD OBJECTIVES 1] Se începe restaurarea. JSON primit: {json} ---");
+
+        // 1. Verificăm dacă primim date valide
+        if (string.IsNullOrEmpty(json) || json == "{}" || json == "null")
+        {
+            Debug.LogWarning("[LOAD OBJECTIVES] Abort: JSON-ul primit este gol! Verifică CloudSaveManager dacă citește corect câmpul 'objectives_json'.");
+            return;
+        }
+
+        try
+        {
+            // 2. Deserializarea
+            ObjectivesSaveState saveState = JsonUtility.FromJson<ObjectivesSaveState>(json);
+            Debug.Log($"[LOAD OBJECTIVES 2] Deserializare perfectă! Am găsit {saveState.SavedObjectives.Count} obiective în memoria salvată.");
+
+            // Curățăm listele interne actuale pentru a face loc celor din cloud
+            _activeObjectives.Clear();
+            _completedObjectives.Clear();
+
+            // 3. Procesarea fiecărui obiectiv
+            foreach (var savedData in saveState.SavedObjectives)
+            {
+                Objective realObj = GetObjective(savedData.Id);
+                if (realObj != null)
+                {
+                    // Suprascriem starea
+                    realObj.CurrentProgress = savedData.CurrentProgress;
+                    realObj.IsUnlocked = savedData.IsUnlocked;
+                    realObj.IsCompleted = savedData.IsCompleted;
+
+                    // Repartizăm în liste și FORȚĂM actualizarea interfeței (UI)
+                    if (realObj.IsCompleted)
+                    {
+                        _completedObjectives.Add(realObj);
+
+                        // Dacă UI-ul avea obiectivul pe ecran, îi dăm semnal să îl bifeze/șteargă
+                        OnObjectiveCompleted?.Invoke(realObj);
+                    }
+                    else if (realObj.IsUnlocked)
+                    {
+                        _activeObjectives.Add(realObj);
+
+                        // Forțăm UI-ul să deseneze obiectivul și să aplice bara de progres descărcată
+                        OnObjectiveUnlocked?.Invoke(realObj);
+                        OnObjectiveProgressChanged?.Invoke(realObj);
+                    }
+                }
+            }
+
+            // 4. Verificăm dacă, prin completarea celor vechi, am deblocat spațiu pentru altele noi
+            TryActivateNextObjectives();
+
+            Debug.Log($"--- [LOAD OBJECTIVES 3] SUCCES TOTAL! Memoria restaurată. Active: {_activeObjectives.Count}, Completate: {_completedObjectives.Count} ---");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[LOAD OBJECTIVES EROARE CRITICĂ] Textul JSON nu a putut fi transformat: {ex.Message}");
+        }
+    }
+
+    // =========================================================================
     // HANDLERS
     // =========================================================================
 
@@ -347,6 +433,11 @@ public class ContextualObjectiveSystem : MonoBehaviour
         _completedObjectives.Add(obj);
 
         OnObjectiveCompleted?.Invoke(obj);
+
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Publish(new ScoreGainedEvent { Amount = 50, Source = "Obiectiv Completat" });
+        }
 
         Debug.Log($"[Objectives] ✅ Completat: {obj.Title}");
 

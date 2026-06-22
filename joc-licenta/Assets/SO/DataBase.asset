@@ -157,3 +157,16 @@ MonoBehaviour:
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
     <ShelfVariant>k__BackingField: 3
+  - <Name>k__BackingField: Raft
+    <ObjDescription>k__BackingField: 
+    <Icon>k__BackingField: {fileID: 0}
+    <ID>k__BackingField: 11
+    <Category>k__BackingField: 0
+    <Prefab>k__BackingField: {fileID: 1492550886394690779, guid: e327200018b74c543af2db64298bf19a, type: 3}
+    <Size>k__BackingField: {x: 1, y: 1}
+    <IsDoor>k__BackingField: 0
+    <Cost>k__BackingField: 200
+    <PowerConsumption>k__BackingField: 0
+    <UnlockLevel>k__BackingField: 1
+    <StationType>k__BackingField: 2
+    <ShelfVariant>k__BackingField: 0

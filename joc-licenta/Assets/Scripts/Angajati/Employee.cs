@@ -53,6 +53,7 @@ public class Employee : MonoBehaviour
 
     public int level => _level;
     public int currentXP => _currentXP;
+    public EmployeeGender gender;
 
     public int currentSalary
     {
@@ -159,6 +160,11 @@ public class Employee : MonoBehaviour
         {
             _currentXP -= XPForNextLevel; // Păstrăm restul de XP pentru nivelul următor
             _level++;
+
+            if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+            {
+                eventBus.Publish(new ScoreGainedEvent { Amount = 5, Source = "Angajat level up" });
+            }
 
             // Când face level up, se simte mândru, deci îi dăm un mic bonus la mood
             _mood = Mathf.Clamp(_mood + 20f, 0f, 100f);

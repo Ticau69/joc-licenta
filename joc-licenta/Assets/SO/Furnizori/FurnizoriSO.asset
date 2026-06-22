@@ -19,6 +19,9 @@ MonoBehaviour:
   - productType: 12
     basePricePerUnit: 2
     stockOverride: 0
+  - productType: 2
+    basePricePerUnit: 2
+    stockOverride: 0
   deliveryDays: 1
   maxStockPerDay: 200
   startingRelationship: 50

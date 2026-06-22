@@ -84,7 +84,12 @@ public class SupplierOrderSystem : MonoBehaviour
         }
 
         float pricePerUnit = SupplierRelationshipManager.Instance.GetFinalPrice(supplier, product);
-        int totalCost = Mathf.RoundToInt(pricePerUnit * quantity);
+
+        int finalPriceUnit = TaxManager.Instance != null
+        ? TaxManager.Instance.ApplyPurchaseTax(Mathf.RoundToInt(pricePerUnit))
+        : Mathf.RoundToInt(pricePerUnit);
+
+        int totalCost = finalPriceUnit * quantity;
 
         if (paymentType == PaymentType.Immediate)
         {

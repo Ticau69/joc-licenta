@@ -1,0 +1,16 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" editor-extension-mode="False">
+    <ui:VisualElement name="BackgroundOverlay" style="flex-grow: 1; background-color: rgba(0, 0, 0, 0.7); justify-content: center; align-items: center;">
+        <ui:VisualElement name="MenuPanel" style="background-color: rgb(24, 21, 21); width: 300px; padding: 20px; border-width: 2px; border-color: rgb(255, 255, 255); border-radius: 10px;">
+            <ui:Label text="PAUZĂ" style="color: white; font-size: 24px; -unity-font-style: bold; -unity-text-align: middle-center; margin-bottom: 20px;"/>
+            <ui:Button text="CONTINUĂ" name="ResumeButton" style="height: 40px; margin-bottom: 10px; font-size: 14px; -unity-font-style: bold;"/>
+            <ui:Button text="SALVEAZĂ JOCUL" name="SaveButton" style="height: 40px; margin-bottom: 10px; font-size: 14px; -unity-font-style: bold; background-color: rgb(28, 128, 172); color: white;"/>
+            <ui:Button text="TOP GLOBAL" name="LeaderboardButton" style="height: 40px; margin-bottom: 10px; font-size: 14px; -unity-font-style: bold; background-color: rgb(46, 160, 80); color: white;"/>
+            <ui:Button text="IEȘIRE LA MENIU" name="ExitButton" style="height: 40px; font-size: 14px; -unity-font-style: bold; background-color: rgb(150, 0, 0); color: white;"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+    <ui:VisualElement name="LeaderboardSection" tabindex="0" style="margin-top: 0; border-top-width: 6px; border-color: rgba(255, 255, 255, 0.1); padding-top: 15px; display: none; position: absolute; left: 33%; align-self: auto; align-items: auto; justify-content: flex-start; width: 34%; height: 59%; top: 25%; aspect-ratio: 1.777778; background-color: rgb(0, 0, 0); border-right-width: 6px; border-bottom-width: 6px; border-left-width: 6px; border-top-left-radius: 32px; border-top-right-radius: 32px; border-bottom-right-radius: 32px; border-bottom-left-radius: 32px;">
+        <ui:Button text="X" name="ExitButtonLeaderBoard" style="right: auto; position: relative; left: 0; border-top-left-radius: 47px; border-top-right-radius: 47px; border-bottom-right-radius: 47px; border-bottom-left-radius: 47px; width: 8%; height: 8%; color: rgb(255, 255, 255); font-size: 21px; background-color: rgb(255, 0, 0); border-left-color: rgb(255, 255, 255); border-right-color: rgb(255, 255, 255); border-top-color: rgb(255, 255, 255); border-bottom-color: rgb(255, 255, 255); border-top-width: 2px; border-right-width: 2px; border-bottom-width: 2px; border-left-width: 2px;"/>
+        <ui:Label text="TOP MANAGER GLOBAL" style="color: rgb(222, 255, 154); font-size: 16px; -unity-font-style: bold; -unity-text-align: middle-center; margin-bottom: 10px; align-self: center; top: -30px;"/>
+        <ui:ScrollView name="LeaderboardList" style="height: 353px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px; padding: 5px; align-self: center; width: 100%;"/>
+    </ui:VisualElement>
+</ui:UXML>

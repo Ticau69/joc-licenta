@@ -25,49 +25,49 @@ using UnityEngine.InputSystem.Utilities;
 /// <code>
 /// using namespace UnityEngine;
 /// using UnityEngine.InputSystem;
-///
+/// 
 /// // Example of using an InputActionMap named "Player" from a UnityEngine.MonoBehaviour implementing callback interface.
 /// public class Example : MonoBehaviour, MyActions.IPlayerActions
 /// {
 ///     private MyActions_Actions m_Actions;                  // Source code representation of asset.
 ///     private MyActions_Actions.PlayerActions m_Player;     // Source code representation of action map.
-///
+/// 
 ///     void Awake()
 ///     {
 ///         m_Actions = new MyActions_Actions();              // Create asset object.
 ///         m_Player = m_Actions.Player;                      // Extract action map object.
 ///         m_Player.AddCallbacks(this);                      // Register callback interface IPlayerActions.
 ///     }
-///
+/// 
 ///     void OnDestroy()
 ///     {
 ///         m_Actions.Dispose();                              // Destroy asset object.
 ///     }
-///
+/// 
 ///     void OnEnable()
 ///     {
 ///         m_Player.Enable();                                // Enable all actions within map.
 ///     }
-///
+/// 
 ///     void OnDisable()
 ///     {
 ///         m_Player.Disable();                               // Disable all actions within map.
 ///     }
-///
+/// 
 ///     #region Interface implementation of MyActions.IPlayerActions
-///
+/// 
 ///     // Invoked when "Move" action is either started, performed or canceled.
 ///     public void OnMove(InputAction.CallbackContext context)
 ///     {
 ///         Debug.Log($"OnMove: {context.ReadValue&lt;Vector2&gt;()}");
 ///     }
-///
+/// 
 ///     // Invoked when "Attack" action is either started, performed or canceled.
 ///     public void OnAttack(InputAction.CallbackContext context)
 ///     {
 ///         Debug.Log($"OnAttack: {context.ReadValue&lt;float&gt;()}");
 ///     }
-///
+/// 
 ///     #endregion
 /// }
 /// </code>
@@ -392,6 +392,15 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""OpenPauseMenu"",
+                    ""type"": ""Button"",
+                    ""id"": ""91c0d719-00c6-450b-b1df-5351a0bda10a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -403,6 +412,61 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": "";Keyboard&Mouse"",
                     ""action"": ""OpenMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""913bfe49-184f-4f5b-bc59-03c01960c424"",
+                    ""path"": """",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OpenPauseMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""1D Axis"",
+                    ""id"": ""542683ad-0aeb-408b-a76c-79d6fcb55568"",
+                    ""path"": ""1DAxis"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OpenPauseMenu"",
+                    ""isComposite"": true,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": ""negative"",
+                    ""id"": ""c14adb8d-0d33-4131-8ed3-14d0cc600195"",
+                    ""path"": """",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OpenPauseMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": ""positive"",
+                    ""id"": ""8425ac54-f73d-49e1-ae25-a5a0de4c4209"",
+                    ""path"": """",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": """",
+                    ""action"": ""OpenPauseMenu"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""7641a1c8-7c62-4a8f-adf5-12082f24b8c1"",
+                    ""path"": ""<Keyboard>/escape"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": "";Keyboard&Mouse"",
+                    ""action"": ""OpenPauseMenu"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -490,6 +554,7 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         // MenuControlls
         m_MenuControlls = asset.FindActionMap("MenuControlls", throwIfNotFound: true);
         m_MenuControlls_OpenMenu = m_MenuControlls.FindAction("OpenMenu", throwIfNotFound: true);
+        m_MenuControlls_OpenPauseMenu = m_MenuControlls.FindAction("OpenPauseMenu", throwIfNotFound: true);
     }
 
     ~@InputSystem()
@@ -928,6 +993,7 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
     private readonly InputActionMap m_MenuControlls;
     private List<IMenuControllsActions> m_MenuControllsActionsCallbackInterfaces = new List<IMenuControllsActions>();
     private readonly InputAction m_MenuControlls_OpenMenu;
+    private readonly InputAction m_MenuControlls_OpenPauseMenu;
     /// <summary>
     /// Provides access to input actions defined in input action map "MenuControlls".
     /// </summary>
@@ -943,6 +1009,10 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "MenuControlls/OpenMenu".
         /// </summary>
         public InputAction @OpenMenu => m_Wrapper.m_MenuControlls_OpenMenu;
+        /// <summary>
+        /// Provides access to the underlying input action "MenuControlls/OpenPauseMenu".
+        /// </summary>
+        public InputAction @OpenPauseMenu => m_Wrapper.m_MenuControlls_OpenPauseMenu;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -972,6 +1042,9 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @OpenMenu.started += instance.OnOpenMenu;
             @OpenMenu.performed += instance.OnOpenMenu;
             @OpenMenu.canceled += instance.OnOpenMenu;
+            @OpenPauseMenu.started += instance.OnOpenPauseMenu;
+            @OpenPauseMenu.performed += instance.OnOpenPauseMenu;
+            @OpenPauseMenu.canceled += instance.OnOpenPauseMenu;
         }
 
         /// <summary>
@@ -986,6 +1059,9 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
             @OpenMenu.started -= instance.OnOpenMenu;
             @OpenMenu.performed -= instance.OnOpenMenu;
             @OpenMenu.canceled -= instance.OnOpenMenu;
+            @OpenPauseMenu.started -= instance.OnOpenPauseMenu;
+            @OpenPauseMenu.performed -= instance.OnOpenPauseMenu;
+            @OpenPauseMenu.canceled -= instance.OnOpenPauseMenu;
         }
 
         /// <summary>
@@ -1185,5 +1261,12 @@ public partial class @InputSystem: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnOpenMenu(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "OpenPauseMenu" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnOpenPauseMenu(InputAction.CallbackContext context);
     }
 }

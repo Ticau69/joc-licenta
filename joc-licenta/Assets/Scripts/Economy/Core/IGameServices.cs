@@ -24,6 +24,7 @@ public interface IMoneyService
     int CurrentAmount { get; }
     bool TrySpend(int amount);
     void Add(int amount);
+    void SetMoney(int amount);
     bool CanAfford(int amount);
     event Action<int, int> OnMoneyChanged; // (oldAmount, newAmount)
 }
@@ -90,6 +91,15 @@ public struct MoneyChangedEvent
     public int Delta;
 }
 
+public struct DayEndedEvent
+{
+    public int DayNumber;
+    public float TotalRevenue;
+    public float FixedCosts;
+    public float Fines;
+    public float NetProfit;
+}
+
 public struct ProductPriceChangedEvent
 {
     public ProductType Product;
@@ -116,4 +126,61 @@ public struct SupplyPurchasedEvent
     public int Quantity;
     public int Cost;
     public bool Success;
+}
+
+/// <summary>
+/// Eveniment declanșat în momentul autentificării cu succes a unui utilizator.
+/// </summary>
+public struct UserAuthenticatedEvent
+{
+    public string UserId;
+    public string Username;
+    public string Email; // Adăugat pentru a putea extrage un displayName dacă username nu e setat
+}
+
+/// <summary>
+/// Eveniment declanșat atunci când operațiunea de login sau register eșuează.
+/// </summary>
+public struct AuthFailedEvent
+{
+    public string ErrorMessage;
+}
+
+public struct GameSaveDataEvent
+{
+    public int CurrentDay;
+    public int PlayerLevel;
+    public int CurrentMoney;
+    public string ShopLayoutJson; // Pozițiile obiectelor, stocurilor și pereților transformate în text JSON
+    public string ObjectivesJson;
+    public string InventoryJson;
+    public string EmployeesJson;
+    public string BankLoansJson;
+    public string ShelvesJson;
+}
+
+/// <summary>
+/// Eveniment declanșat atunci când datele au fost descărcate cu succes din Cloud.
+/// Transmite informațiile brute către managerii din joc pentru reconstituire.
+/// </summary>
+public struct GameDataLoadedEvent
+{
+    public int CurrentDay;
+    public int CurrentMoney;
+    public int PlayerLevel;
+    public string ShopLayoutJson;
+    public string ObjectivesJson;
+    public string InventoryJson;
+    public string EmployeesJson;
+    public string BankLoansJson;
+    public string ShelvesJson;
+}
+
+/// <summary>
+/// Declanșat ori de câte ori jucătorul face o acțiune care îi crește scorul în Leaderboard.
+/// </summary>
+public struct ScoreGainedEvent
+{
+    public int Amount;      // Câte puncte a primit
+    public string Source;   // De unde le-a primit (ex: "Obiectiv Completat", "Angajat Level Up")
 }

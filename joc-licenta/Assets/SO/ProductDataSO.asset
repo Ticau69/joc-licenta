@@ -34,3 +34,24 @@ MonoBehaviour:
     displayPrefab: {fileID: 6550749035565425458, guid: 9135479199ba3694d822376934e863ed, type: 3}
     baseCost: 2
     baseSellPrice: 2
+  - productName: Cola
+    type: 5
+    compatibleShelfTypes: 0000000001000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 919132149155446097, guid: 2127e40da108b1a4faa56829f188ae7d, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Chipsuri
+    type: 2
+    compatibleShelfTypes: 00000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 5517189433630635573, guid: ae06db85b0f96a84dba9be660fe61209, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Inghetata
+    type: 9
+    compatibleShelfTypes: 02000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 0}
+    baseCost: 2
+    baseSellPrice: 2

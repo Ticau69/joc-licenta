@@ -123,6 +123,25 @@ public class MoneyManager : IMoneyService
         }
     }
 
+    public void SetMoney(int newAmount)
+    {
+        if (newAmount < 0)
+        {
+            Debug.LogWarning($"[MoneyManager] Cannot set money to negative amount: {newAmount}. Setting to 0 instead.");
+            newAmount = 0;
+        }
+
+        int oldAmount = _currentAmount;
+        _currentAmount = newAmount;
+
+        NotifyMoneyChange(oldAmount, _currentAmount);
+
+        if (_config.verboseLogging)
+        {
+            Debug.Log($"[MoneyManager] Money set to {_currentAmount} RON");
+        }
+    }
+
     public bool CanAfford(int amount)
     {
         return amount >= 0 && amount <= _currentAmount;

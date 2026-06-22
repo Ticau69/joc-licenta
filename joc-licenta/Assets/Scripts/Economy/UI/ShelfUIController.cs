@@ -75,6 +75,7 @@ public class ShelfUIController : MonoBehaviour
 
         _eventBus.Subscribe<StockChangedEvent>(OnStockChanged);
         _eventBus.Subscribe<SupplyPurchasedEvent>(OnSupplyPurchased);
+        _eventBus.Subscribe<GameUIRefreshEvent>(OnGameLoadedRefresh);
     }
 
     // -----------------------------------------------------------------------
@@ -88,6 +89,14 @@ public class ShelfUIController : MonoBehaviour
     {
         if (evt.Success)
             RefreshUI();
+    }
+
+    private void OnGameLoadedRefresh(GameUIRefreshEvent evt)
+    {
+        // Când se încarcă o salvare, TOATE rafturile vechi sunt distruse de PlacementSystem.
+        // Închidem forțat panoul pentru a evita referințele Null (zombie references).
+        ClosePanel();
+        Debug.Log("[ShelfUIController] Am curățat selecția veche după Load.");
     }
 
     // -----------------------------------------------------------------------
@@ -229,5 +238,6 @@ public class ShelfUIController : MonoBehaviour
     {
         _eventBus?.Unsubscribe<StockChangedEvent>(OnStockChanged);
         _eventBus?.Unsubscribe<SupplyPurchasedEvent>(OnSupplyPurchased);
+        _eventBus?.Unsubscribe<GameUIRefreshEvent>(OnGameLoadedRefresh);
     }
 }

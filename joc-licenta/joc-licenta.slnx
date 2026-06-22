@@ -1,5 +1,6 @@
 ﻿<Solution>
   <Project Path="Unity.InputSystem.csproj" />
+  <Project Path="Firebase.App.Internal.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="Unity.InputSystem.ForUI.csproj" />
   <Project Path="Unity.InputSystem.TestFramework.csproj" />

@@ -50,6 +50,18 @@
             </ui:VisualElement>
         </ui:VisualElement>
     </ui:VisualElement>
+    <ui:VisualElement name="PlayerProfileCard" style="position: absolute; top: 60px; left: 15px; background-color: rgba(30, 30, 35, 0.95); border-radius: 12px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); padding: 8px 15px; flex-direction: row; align-items: center; display: flex;">
+        <ui:VisualElement style="width: 35px; height: 35px; background-color: rgb(60, 60, 70); border-radius: 50%; justify-content: center; align-items: center; margin-right: 12px;">
+            <ui:Label text="👤" style="font-size: 20px; color: white; -unity-text-align: middle-center; margin: 0; padding: 0;"/>
+        </ui:VisualElement>
+        <ui:VisualElement style="flex-direction: column; justify-content: center;">
+            <ui:Label name="PlayerNameText" text="Jucător..." style="color: white; font-size: 14px; -unity-font-style: bold; margin: 0; padding: 0; margin-bottom: 2px;"/>
+            <ui:VisualElement style="flex-direction: row; align-items: center;">
+                <ui:VisualElement style="width: 8px; height: 8px; background-color: rgb(76, 175, 80); border-radius: 50%; margin-right: 5px;"/>
+                <ui:Label text="Online" style="color: rgb(150, 150, 150); font-size: 11px; margin: 0; padding: 0;"/>
+            </ui:VisualElement>
+        </ui:VisualElement>
+    </ui:VisualElement>
     <ui:ScrollView horizontal-page-size="0" vertical-page-size="3" horizontal-scroller-visibility="Hidden" vertical-scroller-visibility="AlwaysVisible" focusable="false" mode="Vertical" name="BuildView" style="left: 0; top: 14%; position: absolute; width: 12%; height: 60%; background-color: rgba(0, 0, 0, 0.57); align-content: stretch; justify-content: space-evenly; align-self: flex-start; align-items: flex-start; flex-direction: column; -unity-text-align: upper-left; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0; flex-wrap: nowrap; display: none;">
         <ui:Button text="Button" name="FloorButton" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto;"/>
         <ui:Button text="Button" name="WallButton" style="width: 120px; height: 100px; position: absolute; align-self: center; align-items: stretch; justify-content: space-evenly; -unity-text-align: middle-center; min-height: auto; top: 130px;"/>
@@ -92,7 +104,6 @@
                 <BarChart name="ProfitChart" style="flex-grow: 1; margin-top: 5px;"/>
             </ui:VisualElement>
         </ui:Tab>
-        <ui:Tab label="ELECTRICITATE" name="Power"/>
         <ui:Tab label="INFLATIE" name="Inflation">
             <ui:VisualElement name="InflationCard" style="width: 100%; height: 867px; background-color: rgba(30, 30, 35, 0.95); border-radius: 16px; border-width: 1px; border-color: rgba(255, 255, 255, 0.1); margin: 10px; border-top-left-radius: 0; border-top-right-radius: 16px; border-bottom-right-radius: 16px; border-bottom-left-radius: 16px; border-top-width: 0; border-right-width: 0; border-bottom-width: 0; border-left-width: 0; align-self: center; flex-grow: 1; margin-top: 0; margin-right: 0; margin-bottom: 0; margin-left: 0; padding-top: 0; padding-right: 0; padding-bottom: 0; padding-left: 0;">
                 <ui:VisualElement name="Header" style="flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 6px; border-bottom-width: 1px; border-bottom-color: rgba(255, 255, 255, 0.1); padding-bottom: 6px; padding-left: 12px; padding-right: 12px; padding-top: 10px;">
@@ -200,6 +211,14 @@
                                             <ui:Label text="Relatie" style="width: 90px; color: rgba(255, 255, 255, 0.5); font-size: 12px;"/>
                                             <ui:Label name="ConfirmRelation" text="-" style="font-size: 13px; flex-grow: 1;"/>
                                         </ui:VisualElement>
+                                        <ui:VisualElement style="flex-direction: row; margin-bottom: 6px; align-items: center; border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.08); padding-top: 6px; margin-top: 2px;">
+                                            <ui:Label text="TVA acq." style="width: 90px; color: rgba(255, 255, 255, 0.5); font-size: 12px;"/>
+                                            <ui:Label name="ConfirmPurchaseTax" text="-" style="color: rgb(255, 160, 50); font-size: 13px; flex-grow: 1;"/>
+                                        </ui:VisualElement>
+                                        <ui:VisualElement style="flex-direction: row; margin-bottom: 10px; align-items: center;">
+                                            <ui:Label text="Cost final" style="width: 90px; color: rgba(255, 255, 255, 0.5); font-size: 12px;"/>
+                                            <ui:Label name="ConfirmPriceWithTax" text="-" style="color: rgb(255, 100, 100); font-size: 14px; -unity-font-style: bold; flex-grow: 1;"/>
+                                        </ui:VisualElement>
                                         <ui:Label name="ConfirmDiscount" text="" style="font-size: 12px; margin-bottom: 4px; display: none;"/>
                                         <ui:VisualElement style="flex-direction: row; margin-bottom: 10px; align-items: center;">
                                             <ui:Label text="Livrare" style="width: 90px; color: rgba(255, 255, 255, 0.5); font-size: 12px;"/>
@@ -228,6 +247,7 @@
                                     <ui:VisualElement style="background-color: rgba(255, 255, 255, 0.05); border-top-left-radius: 10px; border-top-right-radius: 10px; border-bottom-left-radius: 10px; border-bottom-right-radius: 10px; padding: 14px; margin-bottom: 10px; align-items: center;">
                                         <ui:Label text="TOTAL" style="color: rgba(255, 255, 255, 0.4); font-size: 10px; -unity-font-style: bold; margin-bottom: 6px;"/>
                                         <ui:Label name="ConfirmTotal" text="-" style="color: white; font-size: 24px; -unity-font-style: bold;"/>
+                                        <ui:Label name="ConfirmTaxTotal" text="" style="color: rgb(255, 160, 50); font-size: 12px; margin-top: 4px;"/>
                                     </ui:VisualElement>
                                     <ui:Label name="SupplierErrorLabel" text="" style="color: rgb(255, 100, 100); font-size: 11px; margin-bottom: 8px; white-space: normal; display: none; text-overflow: clip;"/>
                                     <ui:VisualElement style="flex-grow: 1;"/>
@@ -264,6 +284,21 @@
                         <ui:Label name="MarketStatusLabel" text="" style="font-size: 11px; -unity-font-style: bold; align-self: center;"/>
                     </ui:VisualElement>
                     <ui:Label name="ProfitDisplay" text="Profit: 0 RON" style="color: green; font-size: 13px; align-self: center; margin-bottom: 4px;"/>
+                    <ui:VisualElement name="TaxBreakdownBox" style="width: 100%; padding: 8px 10px; margin-bottom: 6px; background-color: rgba(255, 200, 50, 0.07); border-radius: 6px; border-left-width: 3px; border-left-color: rgb(255, 180, 30);">
+                        <ui:Label text="TVA VÂNZARE" style="color: rgba(255, 200, 50, 0.7); font-size: 10px; -unity-font-style: bold; margin-bottom: 5px;"/>
+                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 3px;">
+                            <ui:Label name="SalesTaxRateLabel" text="Cotă TVA:" style="color: rgb(180, 180, 180); font-size: 11px;"/>
+                            <ui:Label name="SalesTaxRateValue" text="19%" style="color: white; font-size: 11px; -unity-font-style: bold;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; justify-content: space-between; margin-bottom: 3px;">
+                            <ui:Label text="TVA inclus:" style="color: rgb(180, 180, 180); font-size: 11px;"/>
+                            <ui:Label name="SalesTaxAmountLabel" text="0 RON" style="color: rgb(255, 160, 50); font-size: 11px; -unity-font-style: bold;"/>
+                        </ui:VisualElement>
+                        <ui:VisualElement style="flex-direction: row; justify-content: space-between;">
+                            <ui:Label text="Net jucător:" style="color: rgb(180, 180, 180); font-size: 11px;"/>
+                            <ui:Label name="NetRevenueLabel" text="0 RON" style="color: rgb(100, 220, 100); font-size: 11px; -unity-font-style: bold;"/>
+                        </ui:VisualElement>
+                    </ui:VisualElement>
                     <ui:Label name="PriceWarningLabel" text="⚠️ Clienții refuză să cumpere la acest preț!" style="color: rgb(255, 65, 65); font-size: 12px; -unity-font-style: bold; align-self: center; white-space: normal; -unity-text-align: middle-center; display: none;"/>
                     <ui:VisualElement style="flex-grow: 1;"/>
                     <ui:VisualElement style="width: 100%; flex-direction: row; justify-content: space-between; align-items: center; padding-top: 8px; border-top-width: 1px; border-top-color: rgba(255, 255, 255, 0.1);">

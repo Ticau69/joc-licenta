@@ -89,6 +89,82 @@ public class EmployeeManager : MonoBehaviour
             }
         }
     }
+
+    // =========================================================================
+    // SALVARE ȘI ÎNCĂRCARE ANGAJAȚI
+    // =========================================================================
+
+    public string GenerateSaveJson()
+    {
+        EmployeesSaveState saveState = new EmployeesSaveState();
+
+        foreach (var emp in allEmployees)
+        {
+            saveState.HiredEmployees.Add(new EmployeeSaveData
+            {
+                Name = emp.employeeName,
+                Role = emp.role,
+                // Notă: Dacă în scriptul Employee.cs ai adăugat public EmployeeGender gender,
+                // poți pune aici emp.gender. Momentan, salvăm un default pentru a preveni erorile.
+                Gender = emp.gender
+            });
+        }
+
+        return JsonUtility.ToJson(saveState);
+    }
+    public void RestoreFromSave(string json)
+    {
+        Debug.Log($"--- [LOAD EMPLOYEES 1] Începem restaurarea. JSON: {json} ---");
+        if (string.IsNullOrEmpty(json) || json == "{}") return;
+
+        try
+        {
+            EmployeesSaveState saveState = JsonUtility.FromJson<EmployeesSaveState>(json);
+            Debug.Log($"[LOAD EMPLOYEES 2] Deserializare reușită! Găsiți {saveState.HiredEmployees.Count} angajați în memorie.");
+
+            // Curățenie
+            for (int i = allEmployees.Count - 1; i >= 0; i--)
+            {
+                if (allEmployees[i] != null) { Destroy(allEmployees[i].gameObject); }
+            }
+            allEmployees.Clear();
+
+            // Angajare
+            foreach (var savedEmp in saveState.HiredEmployees)
+            {
+                Debug.Log($"[LOAD EMPLOYEES 3] Încercăm angajarea: {savedEmp.Name} (Rol: {savedEmp.Role})...");
+
+                int currentMax = maxEmployees;
+                if (allEmployees.Count >= maxEmployees) maxEmployees = allEmployees.Count + 1;
+
+                Employee newEmp = HireEmployee(savedEmp.Name, savedEmp.Gender);
+
+                if (newEmp != null)
+                {
+                    Debug.Log($"[LOAD EMPLOYEES 4] {savedEmp.Name} instanțiat. Asignăm rolul...");
+                    ChangeEmployeeRole(newEmp, savedEmp.Role);
+
+                    // NOU: Forțăm refacerea statisticilor salvate
+                    // (dacă le ai setate public în scriptul Employee)
+                    // newEmp.CurrentMood = savedEmp.CurrentMood; 
+                }
+                else
+                {
+                    Debug.LogError($"[LOAD EMPLOYEES EROARE] HireEmployee a returnat NULL pentru {savedEmp.Name}!");
+                }
+
+                maxEmployees = currentMax;
+            }
+
+            Debug.Log($"--- [LOAD EMPLOYEES 5] SUCCES! Echipa a fost reîncărcată fizic! ---");
+            RefreshStations();
+        }
+        catch (System.Exception ex)
+        {
+            // Prindem absolut orice eroare de conversie
+            Debug.LogError($"[LOAD EMPLOYEES EROARE CRITICĂ] {ex.Message} \n {ex.StackTrace}");
+        }
+    }
     #endregion
 
     #region Public Methods - Employee Management
@@ -106,8 +182,11 @@ public class EmployeeManager : MonoBehaviour
         {
             allEmployees.Add(newEmployee);
             HandleNewEmployeeShift(newEmployee);
+        }
 
-
+        if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
+        {
+            eventBus.Publish(new ScoreGainedEvent { Amount = 20, Source = "Angajat Nou" });
         }
 
         return newEmployee;
@@ -177,7 +256,7 @@ public class EmployeeManager : MonoBehaviour
             script.employeeName = name;
             script.role = EmployeeRole.None;
             // Opțional, poți salva și genul în scriptul Employee dacă vrei să-l folosești mai târziu
-            // script.gender = gender; 
+            script.gender = gender;
         }
         else
         {

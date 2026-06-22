@@ -84,6 +84,13 @@ public class TimeManager : MonoBehaviour
         CalculateGameTime();
     }
 
+    public void SetDay(int day)
+    {
+        CurrentDay = day;
+        // Anunțăm pe toată lumea că ziua s-a schimbat
+        OnDayChanged?.Invoke();
+    }
+
     private void AdvanceToNextDayNatural()
     {
         CurrentDay++;

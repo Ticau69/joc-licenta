@@ -3,42 +3,49 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Event Bus - sistem complet decuplat pentru comunicare între componente
-/// Performance optimizat cu caching și pooling
+/// EventBus — comunicare decuplată între sisteme.
+///
+/// Fix-uri față de versiunea anterioară:
+///   1. Lock-ul NU mai este ținut în timpul invocării handler-elor
+///      → elimină deadlock-ul când un handler apela Subscribe/Publish
+///   2. Coada stochează Action (closure tipizat) în loc de object+DynamicInvoke
+///      → elimină alocările și penalizarea de ~10x la DynamicInvoke
+///   3. Re-intrarea gestionată cu un contor (_depth) în loc de bool
+///      → Publish-ul din interiorul unui handler se pune corect în coadă
+///
+/// Notă: EventBus este single-threaded (Unity main thread).
+/// Lock-ul există doar pentru Subscribe/Unsubscribe din coroutine-uri sau Task-uri.
 /// </summary>
 public class EventBus : IEventBus
 {
-    private readonly Dictionary<Type, List<Delegate>> _subscriptions = new Dictionary<Type, List<Delegate>>();
-    private readonly object _lock = new object();
-    private readonly Queue<EventInvocation> _eventQueue = new Queue<EventInvocation>();
-    private bool _isProcessing = false;
+    private readonly Dictionary<Type, List<Delegate>> _subscriptions = new();
+    private readonly Queue<Action> _pending = new();
+    private readonly object _lock = new();
+    private int _depth;
 
-    private struct EventInvocation
-    {
-        public Type EventType;
-        public object EventData;
-    }
+    private readonly Dictionary<Type, object> _lastEventStates = new();
+
+    // ─── Subscribe / Unsubscribe ──────────────────────────────────────────────
 
     public void Subscribe<T>(Action<T> handler) where T : struct
     {
-        if (handler == null)
-        {
-            Debug.LogWarning("[EventBus] Attempted to subscribe null handler");
-            return;
-        }
+        if (handler == null) return;
 
         lock (_lock)
         {
-            Type eventType = typeof(T);
-
-            if (!_subscriptions.ContainsKey(eventType))
+            var type = typeof(T);
+            if (!_subscriptions.TryGetValue(type, out var list))
             {
-                _subscriptions[eventType] = new List<Delegate>();
+                list = new List<Delegate>();
+                _subscriptions[type] = list;
             }
+            if (!list.Contains(handler))
+                list.Add(handler);
 
-            if (!_subscriptions[eventType].Contains(handler))
+            // Dacă cineva se abonează și avem deja datele în memorie, trimite-le imediat!
+            if (_lastEventStates.TryGetValue(type, out var lastData))
             {
-                _subscriptions[eventType].Add(handler);
+                handler((T)lastData);
             }
         }
     }
@@ -49,112 +56,96 @@ public class EventBus : IEventBus
 
         lock (_lock)
         {
-            Type eventType = typeof(T);
+            var type = typeof(T);
+            if (!_subscriptions.TryGetValue(type, out var list)) return;
 
-            if (_subscriptions.TryGetValue(eventType, out List<Delegate> handlers))
-            {
-                handlers.Remove(handler);
-
-                if (handlers.Count == 0)
-                {
-                    _subscriptions.Remove(eventType);
-                }
-            }
+            list.Remove(handler);
+            if (list.Count == 0)
+                _subscriptions.Remove(type);
         }
     }
+
+    // ─── Publish ──────────────────────────────────────────────────────────────
 
     public void Publish<T>(T eventData) where T : struct
     {
-        Type eventType = typeof(T);
+        var type = typeof(T);
 
+        // NOU: Salvăm ultima stare dacă este un eveniment de tip Load
+        if (type == typeof(GameDataLoadedEvent))
+        {
+            lock (_lock) { _lastEventStates[type] = eventData; }
+        }
+
+        List<Delegate> snapshot;
         lock (_lock)
         {
-            if (!_subscriptions.TryGetValue(eventType, out List<Delegate> handlers))
-            {
-                return; // No subscribers
-            }
-
-            // Clone the list to avoid modification during iteration
-            List<Delegate> handlersCopy = new List<Delegate>(handlers);
-
-            // Invoke immediately if not already processing
-            if (!_isProcessing)
-            {
-                _isProcessing = true;
-
-                foreach (var handler in handlersCopy)
-                {
-                    try
-                    {
-                        (handler as Action<T>)?.Invoke(eventData);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError($"[EventBus] Error invoking handler for {eventType.Name}: {ex.Message}");
-                    }
-                }
-
-                _isProcessing = false;
-
-                // Process queued events
-                ProcessQueue();
-            }
-            else
-            {
-                // Queue event if already processing to avoid recursion
-                _eventQueue.Enqueue(new EventInvocation
-                {
-                    EventType = eventType,
-                    EventData = eventData
-                });
-            }
+            if (!_subscriptions.TryGetValue(type, out var list)) return;
+            snapshot = new List<Delegate>(list);
         }
-    }
 
-    private void ProcessQueue()
-    {
-        while (_eventQueue.Count > 0)
+        if (_depth > 0)
         {
-            EventInvocation invocation = _eventQueue.Dequeue();
+            _pending.Enqueue(() => InvokeAll<T>(snapshot, eventData));
+            return;
+        }
 
-            if (_subscriptions.TryGetValue(invocation.EventType, out List<Delegate> handlers))
+        _depth++;
+        InvokeAll<T>(snapshot, eventData);
+        _depth--;
+
+        Flush();
+    }
+
+    // ─── Internals ────────────────────────────────────────────────────────────
+
+    private static void InvokeAll<T>(List<Delegate> handlers, T data) where T : struct
+    {
+        foreach (var d in handlers)
+        {
+            try
             {
-                foreach (var handler in handlers)
-                {
-                    try
-                    {
-                        handler.DynamicInvoke(invocation.EventData);
-                    }
-                    catch (Exception ex)
-                    {
-                        Debug.LogError($"[EventBus] Error processing queued event {invocation.EventType.Name}: {ex.Message}");
-                    }
-                }
+                ((Action<T>)d)(data);
+            }
+            catch (Exception ex)
+            {
+                Debug.LogError($"[EventBus] Eroare în handler pentru {typeof(T).Name}: {ex.Message}\n{ex.StackTrace}");
             }
         }
     }
+
+    /// <summary>Procesează evenimentele publicate din interiorul unui handler.</summary>
+    private void Flush()
+    {
+        while (_pending.Count > 0)
+        {
+            var action = _pending.Dequeue();
+            _depth++;
+            action();
+            _depth--;
+        }
+    }
+
+    // ─── Utilitare ────────────────────────────────────────────────────────────
 
     public void Clear()
     {
         lock (_lock)
         {
             _subscriptions.Clear();
-            _eventQueue.Clear();
-            _isProcessing = false;
-            Debug.Log("[EventBus] All subscriptions cleared");
+            _pending.Clear();
+            _depth = 0;
         }
+        Debug.Log("[EventBus] Toate abonamentele au fost șterse.");
     }
 
-    // Debugging helper
     public void LogSubscriptions()
     {
         lock (_lock)
         {
-            Debug.Log($"[EventBus] Active subscriptions ({_subscriptions.Count}):");
+            Debug.Log($"[EventBus] Abonamente active ({_subscriptions.Count}):");
             foreach (var kvp in _subscriptions)
-            {
-                Debug.Log($"  - {kvp.Key.Name}: {kvp.Value.Count} handlers");
-            }
+                Debug.Log($"  • {kvp.Key.Name}: {kvp.Value.Count} handler(e)");
         }
     }
 }
