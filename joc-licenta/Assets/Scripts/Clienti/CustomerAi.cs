@@ -306,7 +306,7 @@ public class CustomerAI : MonoBehaviour
         {
             return Mathf.RoundToInt(basePrice * currentInflation);
         }
-        return 10; // Super-fallback
+        return 10; // fallback
     }
 
 

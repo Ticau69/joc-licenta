@@ -55,6 +55,7 @@ public class CustomerSpawner : MonoBehaviour
         if (employeeManager != null)
             _registry = employeeManager.StationRegistry;
 
+        _registry = WorkStationRegistry.Instance;
         if (_registry == null)
         {
             Debug.LogError("[CustomerSpawner] Registry missing. Spawner disabled.");
@@ -64,7 +65,6 @@ public class CustomerSpawner : MonoBehaviour
 
         RefreshRegistryAndCache();
         _refreshTimer = registryRefreshInterval;
-
         _spawnTimer = spawnOnStart ? 0f : spawnInterval;
     }
 
@@ -164,7 +164,7 @@ public class CustomerSpawner : MonoBehaviour
         _registry.RefreshAllStations();
 
         // Căutăm casele de marcat o singură dată la refresh, nu la fiecare spawn încercat
-        _hasCashRegistersCached = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None).Length > 0;
+        _hasCashRegistersCached = _registry.GetAnyCashRegister() != null;
     }
 
     private bool CanSpawnCustomers()

@@ -4,6 +4,21 @@ using System.Linq;
 
 public class WorkStationRegistry
 {
+    private static WorkStationRegistry _instance;
+    public static WorkStationRegistry Instance
+    {
+        get
+        {
+            if (_instance == null)
+            {
+                _instance = new WorkStationRegistry();
+                // NOU: Își populează automat listele la prima utilizare!
+                _instance.RefreshAllStations();
+            }
+            return _instance;
+        }
+    }
+
     private List<WorkStation> cashRegisters = new();
     private List<CashRegisterQueue> cashRegisterQueues = new();
     private List<WorkStation> storages = new();
@@ -11,7 +26,8 @@ public class WorkStationRegistry
 
     public void RefreshAllStations()
     {
-        var allStations = Object.FindObjectsByType<WorkStation>(FindObjectsSortMode.None);
+        // NOU: Forțăm Unity să găsească stațiile chiar dacă sunt temporar dezactivate!
+        var allStations = Object.FindObjectsByType<WorkStation>(FindObjectsInactive.Include, FindObjectsSortMode.None);
 
         cashRegisters = allStations
             .Where(x => x != null && x.stationType == StationType.CashRegister)
@@ -26,7 +42,9 @@ public class WorkStationRegistry
             .ToList();
 
         LogStationCounts();
-        cashRegisterQueues = Object.FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None).ToList();
+
+        // NOU: Și cozile trebuie găsite chiar dacă sunt inactive!
+        cashRegisterQueues = Object.FindObjectsByType<CashRegisterQueue>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
     }
 
     public WorkStation GetAnyCashRegister()

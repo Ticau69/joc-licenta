@@ -64,4 +64,11 @@ public class BankSO : ScriptableObject
         int weeks = Mathf.Max(1, termDays / 7);
         return totalOwed / weeks;
     }
+
+    public float CalculateTotalOwed(float principal, int termDays, float currentInflationPercent)
+    {
+        float annualRate = GetCurrentAnnualRate(currentInflationPercent);
+        float years = termDays / 365f;
+        return principal * (1f + annualRate * years);
+    }
 }

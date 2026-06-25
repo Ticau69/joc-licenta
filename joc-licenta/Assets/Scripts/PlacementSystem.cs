@@ -16,6 +16,7 @@ public class PlacementSystem : MonoBehaviour
     [Header("Preview Materials")]
     [SerializeField] private Material wallPreviewMaterial;
     [SerializeField] private Material doorPreviewMaterial;
+    [SerializeField] private Material boxPreviewMaterial;
 
     [SerializeField] private ToolTipController toolTipController;
 
@@ -175,7 +176,7 @@ public class PlacementSystem : MonoBehaviour
                 ID, grid, previewSystem, database,
                 objectPlacer, gameManager,
                 wallData, segmentData, doorData,
-                doorPreviewMaterial, playerInput);
+                doorPreviewMaterial, boxPreviewMaterial, playerInput);
 
             playerInput.OnClick += PlaceStructure;
         }

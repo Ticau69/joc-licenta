@@ -2891,6 +2891,7 @@ GameObject:
   - component: {fileID: 335373456}
   - component: {fileID: 335373455}
   - component: {fileID: 335373454}
+  - component: {fileID: 335373458}
   m_Layer: 2
   m_Name: Plane
   m_TagString: Untagged
@@ -2990,8 +2991,40 @@ Transform:
   m_LocalScale: {x: 3.1, y: 1.47258, z: 3.1}
   m_ConstrainProportionsScale: 0
   m_Children: []
-  m_Father: {fileID: 1339128432}
+  m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &335373458
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 335373453}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a5ac11cc976e418e8d13136b07e1f52, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
+  m_SerializedVersion: 0
+  m_AgentTypeID: 0
+  m_CollectObjects: 0
+  m_Size: {x: 10, y: 10, z: 10}
+  m_Center: {x: 0, y: 2, z: 0}
+  m_LayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_UseGeometry: 0
+  m_DefaultArea: 0
+  m_GenerateLinks: 1
+  m_IgnoreNavMeshAgent: 1
+  m_IgnoreNavMeshObstacle: 1
+  m_OverrideTileSize: 0
+  m_TileSize: 256
+  m_OverrideVoxelSize: 0
+  m_VoxelSize: 0.05
+  m_MinRegionArea: 2
+  m_NavMeshData: {fileID: 23800000, guid: e55cec243e96a484cab07edc078a3dc0, type: 2}
+  m_BuildHeightMesh: 0
 --- !u!1001 &341357859
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -10283,6 +10316,7 @@ MonoBehaviour:
   gameManager: {fileID: 1644672768}
   wallPreviewMaterial: {fileID: 2100000, guid: 046c972c30975db458d578507bdbaee9, type: 2}
   doorPreviewMaterial: {fileID: 2100000, guid: 046c972c30975db458d578507bdbaee9, type: 2}
+  boxPreviewMaterial: {fileID: 2100000, guid: 07e5cd4ddde159442be0051656c7890b, type: 2}
   toolTipController: {fileID: 1714719642}
 --- !u!1001 &1093750059
 PrefabInstance:
@@ -11130,6 +11164,60 @@ MonoBehaviour:
     m_PostInfinity: 2
     m_RotationOrder: 4
   maxSunIntensity: 1.2
+  sunColorGradient:
+    serializedVersion: 2
+    key0: {r: 1, g: 0.2509804, b: 0.5058824, a: 1}
+    key1: {r: 1, g: 0.59607846, b: 0, a: 1}
+    key2: {r: 1, g: 0.8352941, b: 0.30980393, a: 0}
+    key3: {r: 1, g: 0.9764706, b: 0.76862746, a: 0}
+    key4: {r: 1, g: 0.7019608, b: 0, a: 0}
+    key5: {r: 0.95686275, g: 0.31764707, b: 0.11764706, a: 0}
+    key6: {r: 0.24705882, g: 0.31764707, b: 0.70980394, a: 0}
+    key7: {r: 0.101960786, g: 0.101960786, b: 0.22745098, a: 0}
+    ctime0: 15073
+    ctime1: 18350
+    ctime2: 23516
+    ctime3: 32768
+    ctime4: 45875
+    ctime5: 51117
+    ctime6: 55705
+    ctime7: 65535
+    atime0: 0
+    atime1: 65535
+    atime2: 0
+    atime3: 0
+    atime4: 0
+    atime5: 0
+    atime6: 0
+    atime7: 0
+    m_Mode: 0
+    m_ColorSpace: -1
+    m_NumColorKeys: 8
+    m_NumAlphaKeys: 2
+  shadowStrengthCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0.3
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
   sunriseAngle: -90
   sunsetAngle: 270
   ambientColorGradient:
@@ -11164,11 +11252,13 @@ MonoBehaviour:
     m_NumAlphaKeys: 2
   nightAmbientIntensity: 0.05
   dayAmbientIntensity: 1
+  enableDynamicFog: 1
   skyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
   nightSkyExposure: 0
   daySkyExposure: 1.3
   moon: {fileID: 1136955479}
   maxMoonIntensity: 0.15
+  moonColor: {r: 0.6, g: 0.7, b: 1, a: 1}
 --- !u!4 &1177469039
 Transform:
   m_ObjectHideFlags: 0
@@ -12847,7 +12937,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Unity.AI.Navigation::Unity.AI.Navigation.NavMeshSurface
   m_SerializedVersion: 0
   m_AgentTypeID: 0
-  m_CollectObjects: 0
+  m_CollectObjects: 2
   m_Size: {x: 10, y: 10, z: 10}
   m_Center: {x: 0, y: 2, z: 0}
   m_LayerMask:
@@ -13023,7 +13113,6 @@ Transform:
   - {fileID: 468640170}
   - {fileID: 829976347}
   - {fileID: 105242881}
-  - {fileID: 335373457}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1340071700 stripped
@@ -15462,7 +15551,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3d58a5a5a9a0103419c0dc1976833243, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TimeManager
-  dayDurationInSeconds: 35
+  dayDurationInSeconds: 120
   startHour: 6
   startMinute: 0
   openHour: 8
@@ -19097,7 +19186,7 @@ MonoBehaviour:
   uiDocument: {fileID: 2069198250}
   mainUIDocument: {fileID: 784697281}
   bankCardTemplate: {fileID: 9197481963319205126, guid: aa5eef47d8ad163408cc2ffc04bacc88, type: 3}
-  _activeLoanRowTemplate: {fileID: 9197481963319205126, guid: 7b17fa84ed742d748baeab5052a7a1ca, type: 3}
+  activeLoanRowTemplate: {fileID: 9197481963319205126, guid: 7b17fa84ed742d748baeab5052a7a1ca, type: 3}
   bankManager: {fileID: 409641222}
   inflationManager: {fileID: 697389809}
 --- !u!114 &2069198250
@@ -19651,6 +19740,7 @@ SceneRoots:
   - {fileID: 739067290}
   - {fileID: 1339128432}
   - {fileID: 1177469039}
+  - {fileID: 335373457}
   - {fileID: 1474821451}
   - {fileID: 1380194646}
   - {fileID: 1080752081}

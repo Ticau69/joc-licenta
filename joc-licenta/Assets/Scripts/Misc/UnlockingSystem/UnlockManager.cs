@@ -57,9 +57,6 @@ public class UnlockManager : MonoBehaviour
 
         if (u.expandPlacementArea && placementExpander != null)
         {
-            placementExpander.SetPlaneScaleXZ(u.newPlaneScaleXZ);
-            Debug.Log($"[UnlockManager] Expanded placement plane to XZ={u.newPlaneScaleXZ}");
-
             // --- NOU: Găsim camera și îi spunem să își refacă limitele! ---
             CameraController cam = Object.FindFirstObjectByType<CameraController>();
             if (cam != null)

@@ -18,7 +18,9 @@ public class DoorPlacementState : IBuldingState
     private readonly int doorSizeInSegments; // Size.x din database
 
     private GameObject _previewObj;
+    private GameObject _boundingBox;
     private Material _previewMat;
+    private Material _boxMat;
     private List<WallSegment> _hoveredGroup; // grupul de segmente selectat
     private bool _lastValid = false;
 
@@ -29,7 +31,7 @@ public class DoorPlacementState : IBuldingState
         ObjectDataBase database, ObjectPlacer objectPlacer,
         GameManager gameManager, WallGridData wallData,
         WallSegmentData segmentData, DoorData doorData,
-        Material previewMaterial, PlayerInput playerInput)
+        Material previewMaterial, Material boxMaterial, PlayerInput playerInput)
     {
         ID = iD;
         this.grid = grid;
@@ -50,6 +52,7 @@ public class DoorPlacementState : IBuldingState
         doorSizeInSegments = database.objectsData[selectedObjectIndex].Size.x;
 
         _previewMat = new Material(previewMaterial);
+        _boxMat = new Material(boxMaterial);
         previewSystem.ToggleCursorVisibility(false);
         CreatePreview();
     }
@@ -61,6 +64,7 @@ public class DoorPlacementState : IBuldingState
         DestroyPreview();
         previewSystem.ToggleCursorVisibility(false);
         if (_previewMat != null) GameObject.Destroy(_previewMat);
+        if (_boxMat != null) GameObject.Destroy(_boxMat);
     }
 
     public void OnAction(Vector3Int gridPosition)
@@ -259,11 +263,34 @@ public class DoorPlacementState : IBuldingState
     private void CreatePreview()
     {
         if (doorPrefab == null) return;
+
         _previewObj = GameObject.Instantiate(doorPrefab);
         _previewObj.name = "DoorPreview";
+
         foreach (Collider col in _previewObj.GetComponentsInChildren<Collider>())
             col.enabled = false;
+
         ApplyPreviewMaterial(_previewObj);
+
+        Vector2Int doorSize = dataBase.objectsData[selectedObjectIndex].Size;
+
+        Vector3 cellSize = grid.cellSize;
+
+        float worldWidth = doorSize.x * cellSize.x;
+        float worldDepth = 0.5f;
+        float worldHeight = 1.55f;
+
+        _boundingBox = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        _boundingBox.name = "DoorBoundingBox";
+        GameObject.Destroy(_boundingBox.GetComponent<Collider>());
+
+        _boundingBox.transform.SetParent(_previewObj.transform, false);
+        _boundingBox.transform.localPosition = new Vector3(0f, worldHeight / 2f, 0f);
+        _boundingBox.transform.rotation = Quaternion.identity;
+        _boundingBox.transform.localScale = new Vector3(worldWidth, worldHeight, worldDepth);
+
+        _boundingBox.GetComponent<Renderer>().material = _boxMat;
+
         _previewObj.SetActive(false);
     }
 
@@ -279,9 +306,28 @@ public class DoorPlacementState : IBuldingState
     {
         if (valid == _lastValid) return;
         _lastValid = valid;
+
         Color c = valid ? Color.white : Color.red;
         c.a = 0.5f;
         _previewMat.color = c;
+
+        // Color boxColor = valid ? Color.white : Color.red;
+        // boxColor.a = 0.5f;
+        // _boxMat.color = boxColor;
+
+        if (_boxMat != null)
+        {
+            if (valid)
+            {
+                _boxMat.SetColor("_BoxColor", new Color(0f, 1f, 0f, 0.2f)); // verde transparent
+                _boxMat.SetFloat("_WireThickness", 0.02f);
+            }
+            else
+            {
+                _boxMat.SetColor("_BoxColor", new Color(1f, 0f, 0f, 0.2f)); // roșu transparent
+                _boxMat.SetFloat("_WireThickness", 0.02f);
+            }
+        }
     }
 
     private void ApplyPreviewMaterial(GameObject obj)

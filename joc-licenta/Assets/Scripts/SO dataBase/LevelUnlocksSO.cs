@@ -15,8 +15,6 @@ public class LevelUnlock
 
     [Header("Placement Area")]
     public bool expandPlacementArea = false;
-    [Tooltip("Scale target pentru plane (localScale.x/z). Ex: 2 înseamnă dublu.")]
-    public Vector2 newPlaneScaleXZ = new Vector2(1f, 1f);
 
     [Header("Manager Limits")]
     [Tooltip("Dacă valoarea e > 0, va seta limita maximă de angajați (ex: 2 la nivelul 1)")]

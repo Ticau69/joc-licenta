@@ -15,14 +15,12 @@ MonoBehaviour:
   unlocks:
   - levelRequired: 1
     expandPlacementArea: 1
-    newPlaneScaleXZ: {x: 1, y: 1}
     maxEmployees: 2
     maxCustomers: 7
     maxStorageCapacity: 50
     unlockId: 
   - levelRequired: 2
     expandPlacementArea: 1
-    newPlaneScaleXZ: {x: 2, y: 2}
     maxEmployees: 4
     maxCustomers: 4
     maxStorageCapacity: 70

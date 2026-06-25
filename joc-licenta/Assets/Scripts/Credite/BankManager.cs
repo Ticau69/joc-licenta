@@ -301,4 +301,9 @@ public class BankManager : MonoBehaviour
             total += loan.weeklyPayment;
         return total;
     }
+    //Get active loans
+    public List<BankLoan> GetActiveLoans()
+    {
+        return new List<BankLoan>(_activeLoans);
+    }
 }

@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using UnityEngine;
 using Firebase;
 using Firebase.Auth;
+using Firebase.Extensions;
 
 public class AuthManager : MonoBehaviour
 {
@@ -15,7 +16,7 @@ public class AuthManager : MonoBehaviour
         _eventBus = eventBus;
 
         // Verificăm și reparăm dependențele Firebase pe device
-        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWith(task =>
+        FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
         {
             var dependencyStatus = task.Result;
             if (dependencyStatus == DependencyStatus.Available)

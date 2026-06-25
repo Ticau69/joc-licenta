@@ -37,12 +37,16 @@ public class InventoryService : IInventoryService
 
     private void RefreshStorageCache()
     {
-        _cachedRacks = new List<StorageRacks>(UnityEngine.Object.FindObjectsByType<StorageRacks>(FindObjectsSortMode.None));
+        // NOU: Adăugăm FindObjectsInactive.Include pentru a prinde și rafturile care poate se află într-un container momentan dezactivat.
+        _cachedRacks = new List<StorageRacks>(UnityEngine.Object.FindObjectsByType<StorageRacks>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None));
+
         _lastCacheUpdate = Time.time;
-        _cacheValid = true;   // marcat valid chiar și cu 0 rafturi — evităm re-scan per-frame
+        _cacheValid = true;
 
         if (_cachedRacks.Count == 0 && _config.showPerformanceWarnings)
-            Debug.LogWarning("[InventoryService] Niciun StorageRack în scenă.");
+            Debug.LogWarning("[InventoryService] Niciun StorageRack găsit. Aștept spawnarea sau construirea primului raft de depozit.");
     }
 
     public void ForceRefreshCache()
