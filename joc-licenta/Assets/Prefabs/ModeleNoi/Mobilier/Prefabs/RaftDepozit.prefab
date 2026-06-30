@@ -14,7 +14,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &8183301683189294759
 Transform:
@@ -45,7 +45,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &6468381476996236634
 Transform:
@@ -76,7 +76,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &2755890986572398450
 Transform:
@@ -107,7 +107,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &3346688592015849258
 Transform:
@@ -188,6 +188,14 @@ PrefabInstance:
       propertyPath: m_ConstrainProportionsScale
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: -7640558969779515294, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: -7146521406498821007, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: -6093592463355912122, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -196,6 +204,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 053ca749d88f33740b433ef94b52421c, type: 2}
+    - target: {fileID: -1599826595754709761, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: -1461304994638716399, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -208,14 +220,30 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 053ca749d88f33740b433ef94b52421c, type: 2}
+    - target: {fileID: -516098083770646512, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
+    - target: {fileID: -466329591000292508, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
       propertyPath: m_Name
       value: RaftDepozit
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
       objectReference: {fileID: 0}
     - target: {fileID: 6745302439343835087, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 053ca749d88f33740b433ef94b52421c, type: 2}
+    - target: {fileID: 8416272007918961125, guid: e3fa93acd773c9a4c8eac13dac7708b1, type: 3}
+      propertyPath: m_StaticEditorFlags
+      value: 2147483647
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:

@@ -164,7 +164,7 @@ public class TimeManager : MonoBehaviour
             OnShopOpen?.Invoke();
 
             if (SoundFXManager.Instance != null)
-                SoundFXManager.Instance.PlaySound(SoundType.ShopOpen, transform);
+                SoundFXManager.Instance.PlaySound(SoundType.ShopOpen);
 
             Debug.Log("Magazin Deschis!");
         }
@@ -175,8 +175,8 @@ public class TimeManager : MonoBehaviour
 
             if (SoundFXManager.Instance != null)
             {
-                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Register, transform);
-                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Jingle, transform);
+                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Register);
+                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Jingle);
             }
 
             Debug.Log("Magazin Închis!");
@@ -193,8 +193,8 @@ public class TimeManager : MonoBehaviour
 
             if (SoundFXManager.Instance != null)
             {
-                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Register, transform);
-                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Jingle, transform);
+                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Register);
+                SoundFXManager.Instance.PlaySound(SoundType.ShopClose_Jingle);
             }
         }
 

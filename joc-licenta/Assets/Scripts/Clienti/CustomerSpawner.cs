@@ -6,6 +6,7 @@ public class CustomerSpawner : MonoBehaviour
     [Header("Customer Prefabs")]
     [Tooltip("Adaugă aici toate modelele 3D de clienți (băieți, fete, diferiți etc.)")]
     [SerializeField] private List<CustomerAI> customerPrefabs = new List<CustomerAI>();
+    private List<CustomerAI> _customerPool = new List<CustomerAI>();
 
     [Header("Spawn/Exit Points")]
     [SerializeField] private Transform[] spawnPoints;
@@ -39,7 +40,7 @@ public class CustomerSpawner : MonoBehaviour
     private List<CustomerAI> _activeCustomers = new List<CustomerAI>();
 
     // OPTIMIZARE: Ținem minte dacă avem case de marcat pentru a nu căuta constant prin scenă
-    private bool _hasCashRegistersCached = false;
+    private bool _isStoreReady = false;
     private bool _endOfDayTriggered = false;
     private bool _hasOpenedToday = false;
     private float _forceEvictTimer = 0f;
@@ -80,11 +81,11 @@ public class CustomerSpawner : MonoBehaviour
         if (_refreshTimer <= 0f)
         {
             RefreshRegistryAndCache();
+
+
+
             _refreshTimer = registryRefreshInterval;
         }
-
-        // 2. Curățăm lista de clienți MEREU (chiar dacă magazinul e închis)
-        _activeCustomers.RemoveAll(c => c == null || !c.gameObject.activeInHierarchy);
 
         // 3. --- LOGICA DE ÎNCHIDERE (Mutată deasupra acelui 'return' fatal) ---
         if (TimeManager.Instance != null)
@@ -163,8 +164,26 @@ public class CustomerSpawner : MonoBehaviour
     {
         _registry.RefreshAllStations();
 
-        // Căutăm casele de marcat o singură dată la refresh, nu la fiecare spawn încercat
-        _hasCashRegistersCached = _registry.GetAnyCashRegister() != null;
+        // 1. Aflăm ce avem efectiv în magazin
+        bool hasRegisters = _registry.GetAnyCashRegister() != null;
+
+        var shelves = _registry.GetAllShelves();
+        bool hasShelves = shelves != null && shelves.Count > 0;
+
+        // 2. Trecem prin "filtrele" din Inspector
+        bool registerOk = !requireAtLeastOneCashRegister || hasRegisters;
+        bool shelfOk = !requireAtLeastOneShelf || hasShelves;
+
+        // 3. Salvăm verdictul final! Magazinul e gata DOAR dacă ambele condiții sunt îndeplinite.
+        _isStoreReady = registerOk && shelfOk;
+
+        for (int i = _activeCustomers.Count - 1; i >= 0; i--)
+        {
+            if (_activeCustomers[i] == null || !_activeCustomers[i].gameObject.activeInHierarchy)
+            {
+                _activeCustomers.RemoveAt(i);
+            }
+        }
     }
 
     private bool CanSpawnCustomers()
@@ -185,7 +204,7 @@ public class CustomerSpawner : MonoBehaviour
                 return false;
         }
 
-        if (requireAtLeastOneCashRegister && !_hasCashRegistersCached)
+        if (requireAtLeastOneCashRegister && !_isStoreReady)
         {
             return false;
         }
@@ -216,7 +235,7 @@ public class CustomerSpawner : MonoBehaviour
                 reason += "no shelves; ";
         }
 
-        if (requireAtLeastOneCashRegister && !_hasCashRegistersCached)
+        if (requireAtLeastOneCashRegister && !_isStoreReady)
         {
             reason += "no cash registers; ";
         }
@@ -229,21 +248,55 @@ public class CustomerSpawner : MonoBehaviour
 
     private void SpawnOne()
     {
-        // Alegem un model random din lista de prefabs
-        CustomerAI selectedPrefab = customerPrefabs[Random.Range(0, customerPrefabs.Count)];
-
         Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        GameObject go = Instantiate(selectedPrefab.gameObject, sp.position, sp.rotation);
+        CustomerAI customerToSpawn = null;
 
-        var customer = go.GetComponent<CustomerAI>();
-
-        if (customer != null)
+        // 1. CĂUTĂM UN CLIENT RECICLABIL
+        // Verificăm dacă avem vreun client invizibil/dezactivat în pool
+        foreach (var c in _customerPool)
         {
-            int randomBudget = Random.Range(minCustomerBudget, maxCustomerBudget + 1);
-            customer.Initialize(_registry, exitPoint, randomBudget);
+            if (c != null && !c.gameObject.activeInHierarchy)
+            {
+                customerToSpawn = c;
+                break;
+            }
+        }
 
-            // Îl adăugăm în lista locală ca să îl contorizăm eficient
-            _activeCustomers.Add(customer);
+        // 2. CREĂM UNUL NOU (Doar dacă e absolut necesar)
+        if (customerToSpawn == null)
+        {
+            CustomerAI selectedPrefab = customerPrefabs[Random.Range(0, customerPrefabs.Count)];
+            GameObject go = Instantiate(selectedPrefab.gameObject, sp.position, sp.rotation);
+            customerToSpawn = go.GetComponent<CustomerAI>();
+
+            // Îl adăugăm în lista generală ca să îl putem recicla mai târziu
+            _customerPool.Add(customerToSpawn);
+        }
+
+        // 3. PREGĂTIM CLIENTUL PENTRU NOUA ZI DE CUMPĂRĂTURI
+        if (customerToSpawn != null)
+        {
+            // Dacă folosești NavMeshAgent, trebuie dezactivat înainte de teleportare, 
+            // altfel agentul îl va trage înapoi la vechea poziție!
+            UnityEngine.AI.NavMeshAgent agent = customerToSpawn.GetComponent<UnityEngine.AI.NavMeshAgent>();
+            if (agent != null) agent.enabled = false;
+
+            customerToSpawn.transform.position = sp.position;
+            customerToSpawn.transform.rotation = sp.rotation;
+            customerToSpawn.gameObject.SetActive(true);
+
+            if (agent != null) agent.enabled = true;
+
+            int randomBudget = Random.Range(minCustomerBudget, maxCustomerBudget + 1);
+
+            // Initialize va "curăța" mintea AI-ului exact cum ai programat tu
+            customerToSpawn.Initialize(_registry, exitPoint, randomBudget);
+
+            // Îl trecem la lista de clienți activi (care sunt în magazin)
+            if (!_activeCustomers.Contains(customerToSpawn))
+            {
+                _activeCustomers.Add(customerToSpawn);
+            }
         }
     }
 }

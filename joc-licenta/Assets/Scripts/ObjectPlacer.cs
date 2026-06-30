@@ -41,11 +41,8 @@ public class ObjectPlacer : MonoBehaviour
         // Opțional: Dacă vrei să păstrezi Y-ul original (să nu intre în pământ dacă pivotul e jos)
         // Comentează linia de mai sus și folosește:
         // newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);
+        _ = StartCoroutine(AnimatePlacement(newObject.transform));
 
-        if (isFurniture && SoundFXManager.Instance != null)
-        {
-            SoundFXManager.Instance.PlaySound(SoundType.PlaceObject, newObject.transform);
-        }
 
         placedGameObjects.Add(root);
 
@@ -69,16 +66,62 @@ public class ObjectPlacer : MonoBehaviour
     // Funcție ajutătoare pentru a găsi centrul vizual real
     private Bounds CalculateBounds(GameObject obj)
     {
-        Renderer[] renderers = obj.GetComponentsInChildren<Renderer>();
-        if (renderers.Length == 0)
+        List<Renderer> validRenderers = new List<Renderer>();
+        Renderer[] allRenderers = obj.GetComponentsInChildren<Renderer>();
+
+        foreach (Renderer r in allRenderers)
+        {
+            // NOU: Dacă renderer-ul ESTE un sistem de particule, îl ignorăm complet!
+            if (r.enabled && !(r is ParticleSystemRenderer))
+            {
+                validRenderers.Add(r);
+            }
+        }
+
+        if (validRenderers.Count == 0)
             return new Bounds(obj.transform.position, Vector3.zero);
 
-        Bounds bounds = renderers[0].bounds;
-        for (int i = 1; i < renderers.Length; i++)
+        Bounds bounds = validRenderers[0].bounds;
+        for (int i = 1; i < validRenderers.Count; i++)
         {
-            bounds.Encapsulate(renderers[i].bounds);
+            bounds.Encapsulate(validRenderers[i].bounds);
         }
         return bounds;
+    }
+
+    // --- NOU: Efectul vizual de "Pop" la plasare ---
+    private async Awaitable AnimatePlacement(Transform targetTransform)
+    {
+        float duration = 0.25f; // Cât de repede apare (0.25 secunde)
+        float elapsed = 0f;
+        Vector3 finalScale = targetTransform.localScale;
+
+        // Începe de la mărimea 0 (invizibil)
+        targetTransform.localScale = Vector3.zero;
+
+        while (elapsed < duration)
+        {
+            if (targetTransform == null) return;
+
+            elapsed += Time.deltaTime;
+            float t = elapsed / duration;
+
+            // Formulă matematică pentru "Ease Out Back" (sare un pic peste 100% și revine la normal)
+            float c1 = 1.70158f;
+            float c3 = c1 + 1f;
+            float easedT = 1f + c3 * Mathf.Pow(t - 1f, 3f) + c1 * Mathf.Pow(t - 1f, 2f);
+
+            // Prevenim valori negative accidentale
+            if (easedT < 0) easedT = 0;
+
+            targetTransform.localScale = finalScale * easedT;
+            await Awaitable.NextFrameAsync();
+        }
+
+        if (targetTransform != null)
+        {
+            targetTransform.localScale = finalScale;
+        }
     }
 
     public GameObject GetPlacedObject(int index)

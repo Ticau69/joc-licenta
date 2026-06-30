@@ -133,7 +133,7 @@ public class EmployeeNotification : MonoBehaviour
 
     private void OnNotificationClicked(ClickEvent evt)
     {
-        SoundFXManager.Instance.PlaySound(SoundType.UiClick, transform); // Redăm sunetul de click  
+        SoundFXManager.Instance.PlaySound(SoundType.UiClick); // Redăm sunetul de click
 
         Debug.Log($"[EmployeeNotification] ★★★ CLICK DETECTED ★★★ on {employee?.employeeName}");
 

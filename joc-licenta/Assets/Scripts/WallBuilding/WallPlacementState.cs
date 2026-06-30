@@ -109,6 +109,11 @@ public class WallPlacementState : IBuldingState
 
             PlaceWall(start, end);
 
+            if (SoundFXManager.Instance != null)
+            {
+                SoundFXManager.Instance.PlaySound(SoundType.PlaceStructure);
+            }
+
             // Reset — gata pentru un perete nou
             _startPoint = null;
             DestroyPreview();
@@ -164,9 +169,6 @@ public class WallPlacementState : IBuldingState
         Material wallMat = GetWallMaterial();
         _segmentData.AddWall(start, end, _id, _wallPrefab, wallMat);
         _wallData.AddWall(start, end, _id, null);
-
-        int power = _database.objectsData[_selectedIndex].PowerConsumption;
-        if (power > 0) PowerManager.Instance?.RegisterConsumer(power);
 
         Debug.Log($"[Wall] Plasat: {start} → {end} | Cost: {cost} RON");
     }

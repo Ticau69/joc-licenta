@@ -1,5 +1,6 @@
 using UnityEngine;
 using System.Collections.Generic;
+using System;
 
 public class PlacementSystem : MonoBehaviour
 {
@@ -66,15 +67,23 @@ public class PlacementSystem : MonoBehaviour
         Vector3 mousePosition = playerInput.GetSelectedMapPostion();
         Vector3Int gridPosition = grid.WorldToCell(mousePosition);
 
-        // --- NOU: Verificăm dacă suntem în modul de ștergere ---
-        bool isRemoving = buildingState is RemovingState;
+        bool positionChanged = lastDetectedPosition != gridPosition;
 
-        // Dacă suntem pe un grid nou SAU e modul de perete SAU e modul de ștergere, dăm update!
-        if (lastDetectedPosition != gridPosition || isWallMode || isRemoving)
+        if (positionChanged || isWallMode || buildingState is RemovingState)
         {
             buildingState.UpdateState(gridPosition);
             lastDetectedPosition = gridPosition;
         }
+
+        // --- NOU: Verificăm dacă suntem în modul de ștergere ---
+        // bool isRemoving = buildingState is RemovingState;
+
+        // // Dacă suntem pe un grid nou SAU e modul de perete SAU e modul de ștergere, dăm update!
+        // if (lastDetectedPosition != gridPosition || isWallMode || isRemoving)
+        // {
+        //     buildingState.UpdateState(gridPosition);
+        //     lastDetectedPosition = gridPosition;
+        // }
     }
 
     private void OnExpansionModeToggled(ToggleExpansionModeEvent e)
@@ -153,6 +162,7 @@ public class PlacementSystem : MonoBehaviour
                 floorData, objectPlacer, gameManager, toolTipController);
 
             playerInput.OnClick += PlaceStructure;
+
         }
         else if (ID == 1) // Perete
         {
@@ -166,6 +176,7 @@ public class PlacementSystem : MonoBehaviour
             playerInput.OnClick += PlaceStructure;
             playerInput.OnRightClick += UndoWallSegment;
             playerInput.OnConfirm += FinalizeWall;
+
         }
         else if (database.objectsData.FindIndex(data => data.ID == ID) is int doorIdx
          && doorIdx >= 0
@@ -179,6 +190,7 @@ public class PlacementSystem : MonoBehaviour
                 doorPreviewMaterial, boxPreviewMaterial, playerInput);
 
             playerInput.OnClick += PlaceStructure;
+
         }
         else // Mobilă
         {
@@ -188,6 +200,7 @@ public class PlacementSystem : MonoBehaviour
                 floorData, furnitureData, objectPlacer, gameManager);
 
             playerInput.OnClick += PlaceStructure;
+
         }
 
         playerInput.OnExit += StopPlacement;
@@ -419,17 +432,6 @@ public class PlacementSystem : MonoBehaviour
                 Debug.Log("[GRID] Event de 10 puncte a fost trimis!");
             }
         }
-    }
-
-    // Pentru anularea segmentului curent de perete
-    private void CancelWallSegment()
-    {
-        if (!isWallMode) return;
-
-        // Trimitem un mesaj special pentru anulare
-        // Putem folosi o poziție specială sau o metodă dedicată
-        StopPlacement();
-        StartPlacement(1); // Restart wall mode
     }
 
     private void RotateStructure()

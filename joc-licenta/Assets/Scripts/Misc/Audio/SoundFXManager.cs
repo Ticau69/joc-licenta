@@ -5,25 +5,27 @@ public enum SoundType
 {
     ShopOpen,
     UiClick,
-    ShopClose_Register, // Sunetul mecanic (mereu același)
+    ShopClose_Register,
     ShopClose_Jingle,
-    PlaceObject
+    PlaceFurniture,
+    PlaceStructure,
 }
 
 [System.Serializable]
 public class SoundItem
 {
-    [HideInInspector] public string name; // Doar ca să apară numele în listă automat
-    public SoundType type;       // Aici selectezi tu din meniu (Open/Close)
-    public AudioClip clip;       // Aici tragi fișierul audio
-    [Range(0f, 1f)] public float volume = 1f; // Volum individual per sunet
+    [HideInInspector] public string name;
+    public SoundType type;
+    public AudioClip clip;
+    [Range(0f, 1f)] public float volume = 1f;
 }
 
 public class SoundFXManager : MonoBehaviour
 {
     public static SoundFXManager Instance;
+
     [Header("Referințe")]
-    [SerializeField] private AudioSource soundFXObject; // Prefab-ul AudioSource
+    [SerializeField] private AudioSource soundFXObject;
     [SerializeField] private AudioDataBase audioDatabase;
 
     void Awake()
@@ -34,7 +36,8 @@ public class SoundFXManager : MonoBehaviour
         }
     }
 
-    public void PlaySound(SoundType type, Transform spawnTransform)
+    // Am adăugat '= null' pentru a nu da eroare la sunetele generale (fără locație)
+    public void PlaySound(SoundType type, Transform spawnTransform = null)
     {
         if (audioDatabase == null)
         {
@@ -42,10 +45,8 @@ public class SoundFXManager : MonoBehaviour
             return;
         }
 
-        // 1. Cerem SO-ului clipul și volumul asociat
         AudioClip clip = audioDatabase.GetClip(type, out float volumeFromSO);
 
-        // 2. Dacă există, îl redăm folosind metoda ta de bază
         if (clip != null)
         {
             PlaySoundFXClip(clip, spawnTransform, volumeFromSO);
@@ -56,29 +57,29 @@ public class SoundFXManager : MonoBehaviour
     {
         if (clip == null) return;
 
-        // Verificare încărcare (bună practică)
         if (clip.loadState != AudioDataLoadState.Loaded)
         {
             clip.LoadAudioData();
         }
 
-        // Safety check: dacă spawnTransform e null, redăm la poziția managerului
-        Vector3 spawnPos = spawnTransform != null ? spawnTransform.position : transform.position;
+        // NOU: Nu mai depindem de Cameră! Folosim poziția acestui Manager ca bază.
+        Vector3 spawnPos = transform.position;
 
-        // Instanțiem sursa
+        if (spawnTransform != null)
+        {
+            spawnPos = spawnTransform.position; // Folosim locația mobilei, dacă există
+        }
+
         AudioSource audioSource = Instantiate(soundFXObject, spawnPos, Quaternion.identity);
 
         audioSource.clip = clip;
-        audioSource.volume = volume; // Aici se aplică volumul setat în SO
+        audioSource.volume = volume;
 
-        // Asigură-te că spatialBlend e setat corect pe prefab (0 = 2D, 1 = 3D)
-        // audioSource.spatialBlend = 1f; 
+        // SOLUȚIA SUPREMĂ: Forțăm sunetul să fie 2D direct din cod!
+        // Ignoră complet distanța și se va auzi la fel de tare oriunde.
+        audioSource.spatialBlend = 0f;
 
         audioSource.Play();
-
-        float clipLength = audioSource.clip.length;
-
-        // Distrugem obiectul după ce termină de cântat
-        Destroy(audioSource.gameObject, clipLength);
+        Destroy(audioSource.gameObject, clip.length);
     }
 }

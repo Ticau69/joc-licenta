@@ -5,6 +5,20 @@ using UnityEngine.InputSystem;
 public class TimeControlManager : MonoBehaviour
 {
     [SerializeField] private InputActionReference pauseAction;
+
+    [Header("Sprite-uri Stare Timp")]
+    [SerializeField] private Sprite pauseSprite;
+    [SerializeField] private Sprite normalSprite;
+    [SerializeField] private Sprite fastSprite;
+    [SerializeField] private Sprite superFastSprite;
+
+    [Header("Mărimi Buton (Lățime x Înălțime)")]
+    [Tooltip("Ajustează aici dimensiunile dorite pentru fiecare pictogramă.")]
+    [SerializeField] private Vector2 pauseSize = new Vector2(40, 40);
+    [SerializeField] private Vector2 normalSize = new Vector2(40, 40);
+    [SerializeField] private Vector2 fastSize = new Vector2(50, 40);
+    [SerializeField] private Vector2 superFastSize = new Vector2(60, 40);
+
     private Button timeSpeedButton;
     private VisualElement pauseBorder;
 
@@ -22,8 +36,11 @@ public class TimeControlManager : MonoBehaviour
 
         if (timeSpeedButton != null)
         {
+            // Ștergem textul ca să lăsăm loc doar pentru Sprite
+            timeSpeedButton.text = "";
+
             timeSpeedButton.clicked += CycleTimeSpeed;
-            UpdateTimeUI(); // Setăm textul și culorile la start
+            UpdateTimeUI(); // Setăm imaginea și culorile la start
         }
 
         if (pauseAction != null)
@@ -53,6 +70,7 @@ public class TimeControlManager : MonoBehaviour
 
         UpdateTimeUI();
     }
+
     private void CycleTimeSpeed()
     {
         currentState++;
@@ -68,43 +86,48 @@ public class TimeControlManager : MonoBehaviour
         {
             case 0: // PAUZĂ
                 Time.timeScale = 0f;
-                timeSpeedButton.text = "⏸";
-                // Îi dăm o nuanță roșiatică să atragă atenția că e pe pauză
-                timeSpeedButton.style.backgroundColor = new StyleColor(new Color(0.7f, 0.2f, 0.2f));
-
-                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.Flex; // Afișăm bordura de pauză
+                SetButtonVisuals(pauseSprite, pauseSize, new Color(0.7f, 0.2f, 0.2f)); // Roșiatic
+                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.Flex;
                 break;
 
             case 1: // NORMAL
                 Time.timeScale = 1f;
-                timeSpeedButton.text = "▶";
-                timeSpeedButton.style.backgroundColor = new StyleColor(new Color(0.23f, 0.23f, 0.23f)); // Gri
-
-                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None; // Ascundem bordura de pauză
+                SetButtonVisuals(normalSprite, normalSize, new Color(0.23f, 0.23f, 0.23f)); // Gri
+                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None;
                 break;
 
             case 2: // RAPID
                 Time.timeScale = 1.5f;
-                timeSpeedButton.text = "⏩";
-                timeSpeedButton.style.backgroundColor = new StyleColor(new Color(0.2f, 0.6f, 0.2f)); // Verde
-
-                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None; // Ascundem bordura de pauză
+                SetButtonVisuals(fastSprite, fastSize, new Color(0.2f, 0.6f, 0.2f)); // Verde
+                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None;
                 break;
 
             case 3: // SUPER RAPID
                 Time.timeScale = 2f;
-                timeSpeedButton.text = "⏭";
-                timeSpeedButton.style.backgroundColor = new StyleColor(new Color(0.2f, 0.5f, 0.8f)); // Albastru
-
-                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None; // Ascundem bordura de pauză
+                SetButtonVisuals(superFastSprite, superFastSize, new Color(0.2f, 0.5f, 0.8f)); // Albastru
+                if (pauseBorder != null) pauseBorder.style.display = DisplayStyle.None;
                 break;
         }
     }
 
+    // Funcție nouă care face exact ce ai cerut: modifică DOAR imaginea de fundal!
+    private void SetButtonVisuals(Sprite bgSprite, Vector2 bgSize, Color bgColor)
+    {
+        // 1. Schimbăm imaginea
+        timeSpeedButton.style.backgroundImage = new StyleBackground(bgSprite);
+
+        // 2. Modificăm proprietatea 'Size' a background-ului (folosind % exact ca în UI Builder)
+        timeSpeedButton.style.backgroundSize = new StyleBackgroundSize(new BackgroundSize(
+            new Length(bgSize.x, LengthUnit.Percent),
+            new Length(bgSize.y, LengthUnit.Percent)
+        ));
+
+        // 3. Schimbăm culoarea de fundal a butonului
+        timeSpeedButton.style.backgroundColor = new StyleColor(bgColor);
+    }
+
     private void OnDisable()
     {
-        // Sistem de siguranță: Când se închide HUD-ul sau jucătorul iese în Main Menu,
-        // ne asigurăm că timpul revine la normal, altfel restul jocului va rămâne blocat!
         Time.timeScale = 1f;
     }
 }

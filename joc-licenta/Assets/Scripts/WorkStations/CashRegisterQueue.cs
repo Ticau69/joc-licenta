@@ -26,6 +26,8 @@ public class CashRegisterQueue : MonoBehaviour
     private Employee _currentCashier;
     public Employee AssignedCashier { get; private set; }
 
+    [SerializeField] private ParticleSystem checkoutParticleSystem; // optional, pentru efect vizual la checkout
+
     public int QueueCount => _queue.Count;
 
     // ── NOU: expus pentru CustomerAI să poată verifica dacă coada e plină ──
@@ -90,13 +92,12 @@ public class CashRegisterQueue : MonoBehaviour
         }
 
         if (!IsCashierPresent()) return;
-        if (!first.IsAtDestination()) return;
+        if (!first.GetComponent<CustomerNavigationHelper>().IsAtDestination()) return;
 
-        // NOU: În loc să îi luăm banii instant, începem procesul care durează 2 secunde
-        StartCoroutine(ProcessCheckoutRoutine(first));
+        _ = ProcessCheckoutRoutine(first); // folosim metoda async pentru a nu bloca frame-ul
     }
 
-    private IEnumerator ProcessCheckoutRoutine(CustomerAI first)
+    private async Awaitable ProcessCheckoutRoutine(CustomerAI first)
     {
         _isProcessing = true;
 
@@ -104,11 +105,11 @@ public class CashRegisterQueue : MonoBehaviour
         // De exemplu, dacă _currentCashier.mood > 80, timpul scade la 1.5 secunde.
         float actualDuration = checkoutDuration * (_currentCashier != null ? _currentCashier.GetWorkDurationMultiplier() : 1f);
 
-        yield return new WaitForSeconds(actualDuration);
+        await Awaitable.WaitForSecondsAsync(actualDuration);
 
         if (first != null)
         {
-            int total = first.CalculateTotalPriceRON();
+            int total = first.GetComponent<CustomerShoppingBehavior>().CalculateTotalPriceRON();
             int netRevenue = TaxManager.Instance != null
                 ? TaxManager.Instance.ProcessSale(total)
                 : total;
@@ -130,6 +131,11 @@ public class CashRegisterQueue : MonoBehaviour
             if (ServiceLocator.Instance != null && ServiceLocator.Instance.TryGet(out IEventBus eventBus))
             {
                 eventBus.Publish(new ScoreGainedEvent { Amount = 3, Source = "Client Servit" });
+            }
+
+            if (checkoutParticleSystem != null)
+            {
+                checkoutParticleSystem.Stop();
             }
 
             first.OnCheckoutComplete();

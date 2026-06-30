@@ -9,6 +9,7 @@ public class PreviewSystem : MonoBehaviour
     private GameObject previewRoot; // ROOT pentru rotaÈ›ie
 
     [SerializeField] private Material previewMaterialPrefab;
+    private MaterialPropertyBlock _feedbackPropBlock;
     private Material previewMaterialInstance;
 
     private Renderer cellIndicatorRenderer;
@@ -18,6 +19,7 @@ public class PreviewSystem : MonoBehaviour
     private void Start()
     {
         previewMaterialInstance = new Material(previewMaterialPrefab);
+        _feedbackPropBlock = new MaterialPropertyBlock();
         cellIndicator.SetActive(false);
         cellIndicatorRenderer = cellIndicator.GetComponentInChildren<Renderer>();
     }
@@ -195,11 +197,10 @@ public class PreviewSystem : MonoBehaviour
         {
             // Materialele au fost deja înlocuite cu previewMaterialInstance în PrepareAsPreview
             // Deci putem folosi MaterialPropertyBlock fără să creăm materiale noi
-            MaterialPropertyBlock block = new MaterialPropertyBlock();
-            r.GetPropertyBlock(block);
-            block.SetColor("_BaseColor", c);
-            block.SetColor("_Color", c);
-            r.SetPropertyBlock(block);
+            r.GetPropertyBlock(_feedbackPropBlock);
+            _feedbackPropBlock.SetColor("_BaseColor", c);
+            _feedbackPropBlock.SetColor("_Color", c);
+            r.SetPropertyBlock(_feedbackPropBlock);
         }
     }
 

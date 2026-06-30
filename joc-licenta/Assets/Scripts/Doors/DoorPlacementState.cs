@@ -76,6 +76,11 @@ public class DoorPlacementState : IBuldingState
         }
         if (!IsPlacementValid()) return;
         PlaceDoor(_hoveredGroup);
+
+        if (SoundFXManager.Instance != null)
+        {
+            SoundFXManager.Instance.PlaySound(SoundType.PlaceStructure);
+        }
     }
 
     public void UpdateState(Vector3Int gridPosition)
@@ -250,10 +255,6 @@ public class DoorPlacementState : IBuldingState
             float radius = seg.Length * 0.4f;
             segmentData.RemoveSegmentsInRange(seg.GetCenter(), radius, out _);
         }
-
-        int power = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
-        if (power > 0 && PowerManager.Instance != null)
-            PowerManager.Instance.RegisterConsumer(power);
 
         Debug.Log($"[DoorPlacement] Usa plasata la {pos}, {group.Count} segmente sterse.");
     }

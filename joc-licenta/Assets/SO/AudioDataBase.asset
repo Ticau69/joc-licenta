@@ -43,11 +43,17 @@ MonoBehaviour:
     - {fileID: 8300000, guid: b4b2b7ce7d52a224b8103dd023d2697d, type: 3}
     rareChance: 0.1
     volume: 1
-  - name: PlaceObject
+  - name: PlaceFurniture
     type: 4
     commonClips:
     - {fileID: 8300000, guid: e7ab238e4ed239a469791fce0cf29a92, type: 3}
-    rareClips:
-    - {fileID: 8300000, guid: b4b2b7ce7d52a224b8103dd023d2697d, type: 3}
+    rareClips: []
+    rareChance: 0
+    volume: 1
+  - name: PlaceStructure
+    type: 5
+    commonClips:
+    - {fileID: 8300000, guid: dd41a676bc211344ba0be32d84e5e237, type: 3}
+    rareClips: []
     rareChance: 0
     volume: 1

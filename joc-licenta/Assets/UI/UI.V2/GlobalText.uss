@@ -1,0 +1,4 @@
+:root {
+    -unity-font-definition: url('project://database/Assets/UI/Jersey15-Regular.ttf');
+    font-size: 24px;
+}

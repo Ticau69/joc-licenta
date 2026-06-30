@@ -366,10 +366,7 @@ public class RemovingState : IBuldingState
         var objectSettings = dataBase.objectsData.Find(x => x.ID == objectID);
         if (objectSettings != null)
         {
-            if (objectSettings.PowerConsumption > 0 && PowerManager.Instance != null)
-            {
-                PowerManager.Instance.UnregisterConsumer(objectSettings.PowerConsumption);
-            }
+
         }
     }
 }

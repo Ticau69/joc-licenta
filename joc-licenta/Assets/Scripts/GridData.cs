@@ -6,6 +6,8 @@ public class GridData
 {
     Dictionary<Vector3Int, PlacementData> placedObjects = new();
 
+    private static readonly List<Vector3Int> _positionBuffer = new(16);
+
     // ACTUALIZAT: Acum primește și rotația
     public void AddObjectAt(Vector3Int gridPosition, Vector2Int objectSize, int ID, int placedObjectIndex, Quaternion rotation)
     {
@@ -22,26 +24,41 @@ public class GridData
 
     private List<Vector3Int> CalculatePositions(Vector3Int gridPosition, Vector2Int objectSize)
     {
-        List<Vector3Int> returnValues = new();
+        List<Vector3Int> returnValues = new(objectSize.x * objectSize.y);
         for (int x = 0; x < objectSize.x; x++)
-        {
             for (int y = 0; y < objectSize.y; y++)
-            {
                 returnValues.Add(gridPosition + new Vector3Int(x, 0, y));
-            }
-        }
         return returnValues;
+        // List<Vector3Int> returnValues = new();
+        // for (int x = 0; x < objectSize.x; x++)
+        // {
+        //     for (int y = 0; y < objectSize.y; y++)
+        //     {
+        //         returnValues.Add(gridPosition + new Vector3Int(x, 0, y));
+        //     }
+        // }
+        // return returnValues;
     }
 
     public bool canPlaceObjectAt(Vector3Int gridPosition, Vector2Int objectSize)
     {
-        List<Vector3Int> positionToOccupy = CalculatePositions(gridPosition, objectSize);
-        foreach (var pos in positionToOccupy)
+        for (int x = 0; x < objectSize.x; x++)
         {
-            if (placedObjects.ContainsKey(pos))
-                return false;
+            for (int y = 0; y < objectSize.y; y++)
+            {
+                Vector3Int pos = new Vector3Int(gridPosition.x + x, gridPosition.y, gridPosition.z + y);
+                if (placedObjects.ContainsKey(pos))
+                    return false;
+            }
         }
         return true;
+        // List<Vector3Int> positionToOccupy = CalculatePositions(gridPosition, objectSize);
+        // foreach (var pos in positionToOccupy)
+        // {
+        //     if (placedObjects.ContainsKey(pos))
+        //         return false;
+        // }
+        // return true;
     }
 
     public PlacementData GetPlacementDataAt(Vector3Int gridPosition)

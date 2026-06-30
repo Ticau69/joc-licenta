@@ -96,6 +96,12 @@ public class PlacementState : IBuldingState
         GameObject placedObj = objectPlacer.GetPlacedObject(index);
         if (placedObj != null)
         {
+            if (SoundFXManager.Instance != null)
+            {
+                SoundType sType = isFloor ? SoundType.PlaceStructure : SoundType.PlaceFurniture;
+                SoundFXManager.Instance.PlaySound(sType, placedObj.transform);
+            }
+
             WorkStation ws = placedObj.GetComponentInChildren<WorkStation>();
             if (ws != null)
             {
@@ -108,12 +114,6 @@ public class PlacementState : IBuldingState
                 else if (ws.stationType == StationType.Shelf)
                     ContextualObjectiveSystem.Instance?.NotifyShelfPlaced();
             }
-        }
-
-        int consumption = dataBase.objectsData[selectedObjectIndex].PowerConsumption;
-        if (consumption > 0 && PowerManager.Instance != null)
-        {
-            PowerManager.Instance.RegisterConsumer(consumption);
         }
 
         GridData selectedData = isFloor ? floorData : furnitureData;

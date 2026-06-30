@@ -15,8 +15,8 @@ MonoBehaviour:
   unlocks:
   - levelRequired: 1
     expandPlacementArea: 1
-    maxEmployees: 2
-    maxCustomers: 7
+    maxEmployees: 6
+    maxCustomers: 10
     maxStorageCapacity: 50
     unlockId: 
   - levelRequired: 2
