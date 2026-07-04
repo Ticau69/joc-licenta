@@ -23,6 +23,7 @@ public class WorkStationRegistry
     private List<CashRegisterQueue> cashRegisterQueues = new();
     private List<WorkStation> storages = new();
     private List<WorkStation> shelves = new();
+    private readonly List<WorkStation> _queryBuffer = new(16);
 
     public void RefreshAllStations()
     {
@@ -53,16 +54,16 @@ public class WorkStationRegistry
         return cashRegisters.Count > 0 ? cashRegisters[0] : null;
     }
 
-    public List<WorkStation> GetAllShelves()
+    public IReadOnlyList<WorkStation> GetAllShelves()
     {
         CleanNullStations(shelves);
-        return new List<WorkStation>(shelves);
+        return shelves;
     }
 
-    public List<WorkStation> GetAllStorages()
+    public IReadOnlyList<WorkStation> GetAllStorages()
     {
         CleanNullStations(storages);
-        return new List<WorkStation>(storages);
+        return storages;
     }
 
     /// <summary>
@@ -72,13 +73,16 @@ public class WorkStationRegistry
     public List<WorkStation> GetShelvesForProduct(ProductType product)
     {
         CleanNullStations(shelves);
+        _queryBuffer.Clear();
 
-        return shelves
-            .Where(s =>
-                s != null &&
-                s.stationType == StationType.Shelf &&
-                s.slotProduct == product)
-            .ToList();
+        for (int i = 0; i < shelves.Count; i++)
+        {
+            var s = shelves[i];
+            if (s != null && s.stationType == StationType.Shelf && s.slotProduct == product)
+                _queryBuffer.Add(s);
+        }
+
+        return _queryBuffer;
     }
 
     /// <summary>
@@ -88,20 +92,22 @@ public class WorkStationRegistry
     public List<WorkStation> GetShelvesWithProductInStock(ProductType product)
     {
         CleanNullStations(shelves);
+        _queryBuffer.Clear();
 
-        return shelves
-            .Where(s =>
-                s != null &&
-                s.stationType == StationType.Shelf &&
-                s.slotProduct == product &&
-                s.slotStock > 0)
-            .ToList();
+        for (int i = 0; i < shelves.Count; i++)
+        {
+            var s = shelves[i];
+            if (s != null && s.stationType == StationType.Shelf && s.slotProduct == product && s.slotStock > 0)
+                _queryBuffer.Add(s);
+        }
+
+        return _queryBuffer;
     }
 
-    public List<CashRegisterQueue> GetAllCashRegisterQueues()
+    public IReadOnlyList<CashRegisterQueue> GetAllCashRegisterQueues()
     {
         cashRegisterQueues.RemoveAll(x => x == null);
-        return new List<CashRegisterQueue>(cashRegisterQueues);
+        return cashRegisterQueues;
     }
 
     private void CleanNullStations(List<WorkStation> stationList)

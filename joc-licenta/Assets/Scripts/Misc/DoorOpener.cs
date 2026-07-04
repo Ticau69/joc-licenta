@@ -31,17 +31,17 @@ public class SimpleDoorController : MonoBehaviour
     {
         if (doorTransform == null) return;
         if (runningCoroutine != null) StopCoroutine(runningCoroutine);
-        runningCoroutine = StartCoroutine(AnimateDoor(openPosition));
+        _ = AnimateDoor(openPosition);
     }
 
     public void Close()
     {
         if (doorTransform == null) return;
         if (runningCoroutine != null) StopCoroutine(runningCoroutine);
-        runningCoroutine = StartCoroutine(AnimateDoor(closedPosition));
+        _ = AnimateDoor(closedPosition);
     }
 
-    private IEnumerator AnimateDoor(Vector3 targetPos)
+    private async Awaitable AnimateDoor(Vector3 targetPos)
     {
         // Mișcăm ușa până ajunge la destinație
         while (Vector3.Distance(doorTransform.localPosition, targetPos) > 0.001f)
@@ -51,7 +51,7 @@ public class SimpleDoorController : MonoBehaviour
                 targetPos,
                 Time.deltaTime * speed
             );
-            yield return null;
+            await Awaitable.NextFrameAsync();
         }
         doorTransform.localPosition = targetPos; // Fixăm poziția finală perfect
     }

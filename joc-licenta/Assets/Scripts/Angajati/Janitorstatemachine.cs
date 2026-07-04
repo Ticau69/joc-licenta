@@ -29,6 +29,8 @@ public class JanitorStateMachine
     private const float DIRT_CHECK_INTERVAL = 0.5f;
     private const float CLEAN_RADIUS = 0.8f;
 
+    private Vector3 _lastDirtPosition;
+
     // Constructorul primește acum și elementele vizuale
     public JanitorStateMachine(Employee owner, Animator animator, GameObject broomVisual)
     {
@@ -98,9 +100,14 @@ public class JanitorStateMachine
             return;
         }
 
-        agent.SetDestination(_targetDirt.transform.position);
+        Vector3 dirtPos = _targetDirt.transform.position;
+        if (Vector3.SqrMagnitude(dirtPos - _lastDirtPosition) > 0.01f)
+        {
+            agent.SetDestination(dirtPos);
+            _lastDirtPosition = dirtPos;
+        }
 
-        float distToDirt = Vector3.Distance(agent.transform.position, _targetDirt.transform.position);
+        float distToDirt = Vector3.Distance(agent.transform.position, dirtPos);
 
         if (distToDirt <= CLEAN_RADIUS)
         {

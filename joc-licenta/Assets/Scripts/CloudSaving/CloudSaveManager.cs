@@ -61,7 +61,15 @@ public class CloudSaveManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        _db = FirebaseFirestore.DefaultInstance;
+        try
+        {
+            _db = FirebaseFirestore.DefaultInstance;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"[CloudSaveManager] Nu s-a putut inițializa Firestore: {ex.Message}");
+            _db = null; // IsReady() va bloca operațiile în siguranță, fără crash
+        }
     }
 
     void OnDestroy()

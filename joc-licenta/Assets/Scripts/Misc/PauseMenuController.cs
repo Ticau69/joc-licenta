@@ -197,6 +197,9 @@ public class PauseMenuController : MonoBehaviour
 
     private void OnExitClicked()
     {
-        Debug.Log("[PauseMenu] Ieșire apăsată.");
+        Application.Quit();
+#if UNITY_EDITOR
+        UnityEditor.EditorApplication.isPlaying = false;
+#endif
     }
 }

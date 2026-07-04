@@ -40,11 +40,27 @@ public class TrafficCar : MonoBehaviour
     private bool _lightsOn = false;
     private bool _isBraking = false;
 
+    // OPTIMIZARE (pooling): referințe către bandă/spawner, ca la finalul
+    // traseului mașina să se întoarcă în pool în loc să se distrugă.
+    private TrafficLane _lane;
+    private System.Collections.Generic.List<TrafficCar> _laneList;
+
+    // OPTIMIZARE: ne abonăm o singură dată la evenimentul orei, indiferent
+    // de câte ori e reciclat obiectul (Start rulează o singură dată per
+    // instanță, chiar dacă e dezactivat/reactivat de multe ori de pool).
+    private bool _subscribedToClock = false;
+
     private static readonly int EmissionColorID = Shader.PropertyToID("_EmissionColor");
+
+    // OPTIMIZARE: MaterialPropertyBlock în loc de accesarea r.material,
+    // care ar instanția un material unic per renderer (leak de memorie și
+    // break de batching). Folosim un singur block reutilizabil per array.
+    private MaterialPropertyBlock _propBlock;
 
     // ── Public API ────────────────────────────────────────────────────────────
 
-    public void Initialize(Vector3 start, Vector3 destination, float speed)
+    public void Initialize(Vector3 start, Vector3 destination, float speed,
+                            TrafficLane lane, System.Collections.Generic.List<TrafficCar> laneList)
     {
         transform.position = start;
         _destination = destination;
@@ -52,29 +68,52 @@ public class TrafficCar : MonoBehaviour
         _currentSpeed = speed;
         _isInitialized = true;
 
+        _lane = lane;
+        _laneList = laneList;
+
+        // Resetăm starea reziduală rămasă de la o eventuală utilizare
+        // anterioară a acestui obiect din pool.
+        _isBraking = false;
+
         Vector3 dir = (destination - start).normalized;
         if (dir != Vector3.zero)
             transform.rotation = Quaternion.LookRotation(dir);
 
-        SyncLightsWithTime();
+        SyncLightsWithTime(forceApply: true);
     }
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
     void Start()
     {
-        if (TimeManager.Instance != null)
-            TimeManager.Instance.OnHourChanged += SyncLightsWithTime;
+        _propBlock ??= new MaterialPropertyBlock();
+
+        if (!_subscribedToClock && TimeManager.Instance != null)
+        {
+            TimeManager.Instance.OnHourChanged += OnHourChangedHandler;
+            _subscribedToClock = true;
+        }
 
         if (!_isInitialized)
-            SyncLightsWithTime();
+            SyncLightsWithTime(forceApply: true);
     }
 
     void OnDestroy()
     {
+        // Rămâne ca plasă de siguranță: dacă vreodată obiectul chiar e
+        // distrus (nu doar dezactivat de pool), ne dezabonăm corect.
         if (TimeManager.Instance != null)
-            TimeManager.Instance.OnHourChanged -= SyncLightsWithTime;
+            TimeManager.Instance.OnHourChanged -= OnHourChangedHandler;
     }
+
+    /// <summary>
+    /// Wrapper fără parametri, compatibil cu semnătura Action a lui
+    /// TimeManager.OnHourChanged. La schimbarea orei nu forțăm reaplicarea
+    /// (forceApply: false) — early-return-ul normal din SyncLightsWithTime
+    /// e corect aici, doar la Initialize (reciclare din pool) avem nevoie
+    /// de forceApply: true.
+    /// </summary>
+    private void OnHourChangedHandler() => SyncLightsWithTime(forceApply: false);
 
     void Update()
     {
@@ -113,7 +152,14 @@ public class TrafficCar : MonoBehaviour
         );
 
         if (distanceToEnd < 0.2f)
-            Destroy(gameObject);
+        {
+            _isInitialized = false;
+
+            if (_lane != null && _laneList != null)
+                _lane.ReturnToPool(this, _laneList);
+            else
+                Destroy(gameObject); // fallback dacă nu a fost spawnat prin pool
+        }
     }
 
     // ── Car Following (Raycast) ───────────────────────────────────────────────
@@ -152,14 +198,20 @@ public class TrafficCar : MonoBehaviour
 
     // ── Lights ────────────────────────────────────────────────────────────────
 
-    private void SyncLightsWithTime()
+    /// <param name="forceApply">
+    /// La reciclarea din pool, ora poate fi aceeași ca înainte de a fi
+    /// dezactivată mașina, deci early-return-ul normal (nightTime == _lightsOn)
+    /// ar păstra greșit stopurile de frânare aprinse. forceApply=true sare
+    /// peste acel early-return și reaplică luminile corect la fiecare Initialize.
+    /// </param>
+    private void SyncLightsWithTime(bool forceApply = false)
     {
         if (TimeManager.Instance == null) return;
 
         int hour = TimeManager.Instance.CurrentHour;
         bool nightTime = hour >= 21 || hour < 8;
 
-        if (nightTime == _lightsOn) return;
+        if (!forceApply && nightTime == _lightsOn) return;
         _lightsOn = nightTime;
 
         SetHeadlights(nightTime);
@@ -173,9 +225,7 @@ public class TrafficCar : MonoBehaviour
         foreach (Renderer r in headlightRenderers)
         {
             if (r == null) continue;
-            r.material.SetColor(EmissionColorID, emission);
-            if (on) r.material.EnableKeyword("_EMISSION");
-            else r.material.DisableKeyword("_EMISSION");
+            ApplyEmission(r, emission, on);
         }
 
         foreach (Light l in headlightLights)
@@ -194,9 +244,7 @@ public class TrafficCar : MonoBehaviour
         foreach (Renderer r in taillightRenderers)
         {
             if (r == null) continue;
-            r.material.SetColor(EmissionColorID, emission);
-            if (on || braking) r.material.EnableKeyword("_EMISSION");
-            else r.material.DisableKeyword("_EMISSION");
+            ApplyEmission(r, emission, on || braking);
         }
 
         foreach (Light l in taillightLights)
@@ -206,6 +254,29 @@ public class TrafficCar : MonoBehaviour
             l.color = braking ? Color.red : new Color(1f, 0.3f, 0.3f);
             l.intensity = braking ? 1.5f : 0.8f;
         }
+    }
+
+    /// <summary>
+    /// Setează culoarea de emisie printr-un MaterialPropertyBlock, în loc de
+    /// r.material (care clonează materialul într-o instanță unică per renderer,
+    /// blocând SRP batching / static batching și crescând memoria pentru
+    /// fiecare mașină din pool). Keyword-ul _EMISSION rămâne pe shared material
+    /// și trebuie activat o singură dată acolo (vezi notă mai jos).
+    /// </summary>
+    private void ApplyEmission(Renderer r, Color emission, bool enabled)
+    {
+        _propBlock ??= new MaterialPropertyBlock();
+
+        r.GetPropertyBlock(_propBlock);
+        _propBlock.SetColor(EmissionColorID, emission);
+        r.SetPropertyBlock(_propBlock);
+
+        // NOTĂ: EnableKeyword/DisableKeyword tot lucrează pe shared material
+        // (nu instanțiază), deci rămâne sigur să-l păstrăm aici — dar dacă
+        // shader-ul citește emisia mereu (majoritatea URP/HDRP Lit-urilor o fac
+        // dacă _EMISSION e activ), poți lăsa keyword-ul mereu pornit din editor
+        // și controla totul doar prin PropertyBlock, fără branch pe 'enabled'.
+        if (enabled) r.sharedMaterial.EnableKeyword("_EMISSION");
     }
 
     private void UpdateBrakeLight()

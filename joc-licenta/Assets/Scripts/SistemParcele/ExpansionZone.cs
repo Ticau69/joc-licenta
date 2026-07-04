@@ -1,12 +1,11 @@
 using UnityEngine;
 using UnityEngine.UIElements;
-using System.Collections;
-using UnityEngine.ProBuilder.Shapes;
 
 [RequireComponent(typeof(Collider))]
 public class ExpansionZone : MonoBehaviour
 {
     [Header("Setări Parcelă")]
+    public string plotID;
     public int unlockCost = 15000;
     public GameObject floorPlane;
     public GameObject myGridVisual;
@@ -55,6 +54,9 @@ public class ExpansionZone : MonoBehaviour
             eventBus.Subscribe<CloseAllUIEvent>(OnCloseAllUI);
             eventBus.Subscribe<PlotUnlockedEvent>(OnNeighborUnlocked); // Ascultăm dacă un vecin a fost cumpărat
         }
+
+        if (LandExpansionManager.Instance != null)
+            LandExpansionManager.Instance.RegisterZone(this);
     }
 
     private void OnDestroy()
@@ -77,7 +79,7 @@ public class ExpansionZone : MonoBehaviour
         if (_isExpandModeActive)
         {
             // Începem procesul de evaluare în fundal (fără să arătăm cubul încă!)
-            StartCoroutine(EvaluateAndShowRoutine());
+            _ = EvaluateAndShowRoutine();
         }
         else
         {
@@ -93,12 +95,12 @@ public class ExpansionZone : MonoBehaviour
         }
     }
 
-    private IEnumerator EvaluateAndShowRoutine()
+    private async Awaitable EvaluateAndShowRoutine()
     {
         // Așteptăm 2 cadre de fizică (FixedUpdate) pentru a fi 100% siguri 
         // că PlacementSystem a aprins gridul și Unity l-a înregistrat
-        yield return new WaitForFixedUpdate();
-        yield return new WaitForFixedUpdate();
+        await Awaitable.FixedUpdateAsync();
+        await Awaitable.FixedUpdateAsync();
 
         // 1. Facem calculele de proximitate (Asta va seta _isAvailableToBuy și va alege culoarea corectă)
         EvaluateAvailability();
@@ -174,6 +176,10 @@ public class ExpansionZone : MonoBehaviour
     {
         int placementLayer = LayerMask.NameToLayer("Placement");
 
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true;
+        gameObject.layer = placementLayer;
+
         if (cubeVisual != null) cubeVisual.enabled = false;
 
         Transform gridVis = transform.Find("gridVisualization");
@@ -187,6 +193,12 @@ public class ExpansionZone : MonoBehaviour
                 meshRenderer.enabled = true;
                 meshRenderer.material.SetColor("_Color", Color.white);
             }
+        }
+
+        if (LandExpansionManager.Instance != null)
+        {
+            LandExpansionManager.Instance.MarkAsUnlocked(plotID);
+            LandExpansionManager.Instance.UnregisterZone(this);
         }
 
         // FIX: Dezabonare înainte de Publish
@@ -239,6 +251,62 @@ public class ExpansionZone : MonoBehaviour
             costUIDocument.rootVisualElement.style.display = DisplayStyle.None;
 
         if (_buyButton != null) _buyButton.clicked -= TryBuyZone;
+
+        Destroy(this);
+    }
+
+    public void LoadUnlock()
+    {
+        int placementLayer = LayerMask.NameToLayer("Placement");
+
+        // --- NOU: REPORNIM FIZICA ȘI LAYER-UL ---
+        Collider col = GetComponent<Collider>();
+        if (col != null) col.enabled = true; // Permitem mouse-ului să lovească podeaua
+        gameObject.layer = placementLayer;   // Punem parcela pe layer-ul de construire
+
+        if (cubeVisual != null) cubeVisual.enabled = false;
+
+        Transform gridVis = transform.Find("gridVisualization");
+        if (gridVis != null)
+        {
+            gridVis.gameObject.layer = placementLayer;
+
+            MeshRenderer meshRenderer = gridVis.GetComponent<MeshRenderer>();
+            if (meshRenderer != null)
+            {
+                meshRenderer.enabled = true;
+                meshRenderer.material.SetColor("_Color", Color.white);
+            }
+        }
+
+        CameraController cam = UnityEngine.Object.FindFirstObjectByType<CameraController>();
+        if (cam != null)
+        {
+            if (floorPlane != null)
+            {
+                Renderer floorRenderer = floorPlane.GetComponentInChildren<Renderer>();
+                if (floorRenderer != null) cam.AddMapRenderer(floorRenderer);
+            }
+            else
+            {
+                Transform gv = transform.Find("gridVisualization");
+                if (gv != null)
+                {
+                    Renderer gvRenderer = gv.GetComponent<Renderer>();
+                    if (gvRenderer != null) cam.AddMapRenderer(gvRenderer);
+                }
+            }
+        }
+
+        PlacementSystem placementSystem = UnityEngine.Object.FindFirstObjectByType<PlacementSystem>();
+        if (placementSystem != null)
+            placementSystem.AddGridVisual(this.gameObject);
+
+        if (costUIDocument != null)
+            costUIDocument.rootVisualElement.style.display = DisplayStyle.None;
+
+        if (LandExpansionManager.Instance != null)
+            LandExpansionManager.Instance.UnregisterZone(this);
 
         Destroy(this);
     }

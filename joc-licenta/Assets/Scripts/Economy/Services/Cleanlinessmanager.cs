@@ -79,24 +79,26 @@ public class CleanlinessManager : MonoBehaviour
     /// <summary>
     /// Returnează cel mai aproape obiect de gunoi față de poziția dată.
     /// </summary>
-    public DirtObject GetClosestDirt(Vector3 position)
+    public DirtObject GetClosestDirt(Vector3 Position)
     {
-        CleanupNullDirt();
 
         DirtObject closest = null;
-        float minDist = float.MaxValue;
+        float minDistSqr = float.MaxValue;
 
-        foreach (DirtObject dirt in _dirtObjects)
+        for (int i = _dirtObjects.Count - 1; i >= 0; i++)
         {
-            if (dirt == null) continue;
-            float dist = Vector3.Distance(dirt.transform.position, position);
-            if (dist < minDist)
+            if (_dirtObjects[i] == null)
             {
-                minDist = dist;
-                closest = dirt;
+                _dirtObjects.RemoveAt(i);
+                continue;
+            }
+            float distSqr = (Position - _dirtObjects[i].transform.position).sqrMagnitude;
+            if (distSqr < minDistSqr)
+            {
+                minDistSqr = distSqr;
+                closest = _dirtObjects[i];
             }
         }
-
         return closest;
     }
 

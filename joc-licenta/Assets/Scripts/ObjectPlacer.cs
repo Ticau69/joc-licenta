@@ -71,8 +71,8 @@ public class ObjectPlacer : MonoBehaviour
 
         foreach (Renderer r in allRenderers)
         {
-            // NOU: Dacă renderer-ul ESTE un sistem de particule, îl ignorăm complet!
-            if (r.enabled && !(r is ParticleSystemRenderer))
+            // NOU: Ignorăm atât sistemele de particule, cât ȘI Sprite-urile (săgețile)!
+            if (r.enabled && !(r is ParticleSystemRenderer) && !(r is SpriteRenderer))
             {
                 validRenderers.Add(r);
             }

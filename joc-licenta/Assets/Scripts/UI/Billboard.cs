@@ -6,25 +6,24 @@ public class Billboard : MonoBehaviour
 
     private void Start()
     {
-        // Găsim camera principală la începutul jocului
         _mainCamera = Camera.main;
     }
 
-    // Folosim LateUpdate în loc de Update. 
-    // De ce? Camera ta se mișcă în Update. Vrem ca UI-ul să se rotească DUPĂ ce camera s-a oprit din mișcare în frame-ul curent.
-    // Asta previne efectul de "tremurat" (jitter) al UI-ului.
     private void LateUpdate()
     {
         if (_mainCamera == null) return;
 
-        // Metoda 1 (LookAt): Obiectul se uită fix spre centrul camerei.
-        // Problema: La UI Toolkit sau Canvas, textul va apărea inversat (în oglindă) pentru că axa Z (fața) privește spre tine.
-        // transform.LookAt(_mainCamera.transform);
-        // transform.Rotate(0, 180, 0); // Ar trebui să îl întorci manual cu 180 grade.
+        // Luăm direcția în care se uită camera
+        Vector3 lookDirection = _mainCamera.transform.forward;
 
-        // Metoda 2 (Cea Profesională pentru UI):
-        // Copiem exact rotația camerei. Astfel, panoul UI va fi MEREU perfect paralel cu ecranul monitorului, 
-        // indiferent de unghiul din care privești. Este ideal pentru lizibilitatea textului.
-        transform.forward = _mainCamera.transform.forward;
+        // ANULĂM direcția sus/jos pentru a forța rotația DOAR stânga-dreapta
+        lookDirection.y = 0f;
+
+        // Ne asigurăm că vectorul nu a devenit zero (ex: dacă te uiți perfect de sus în jos)
+        if (lookDirection != Vector3.zero)
+        {
+            // Aplicăm direcția
+            transform.forward = lookDirection;
+        }
     }
 }

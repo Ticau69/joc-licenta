@@ -29,6 +29,7 @@ public class PlacementSystem : MonoBehaviour
     private Vector3Int lastDetectedPosition = Vector3Int.zero;
     private IBuldingState buildingState;
 
+
     private bool isWallMode = false;
     private bool _isGridVisible = false;
 
@@ -244,6 +245,7 @@ public class PlacementSystem : MonoBehaviour
     public string GenerateShopLayoutJson()
     {
         ShopSaveState saveState = new ShopSaveState();
+        saveState.UnlockedPlots = LandExpansionManager.Instance.unlockedPlotIDs;
 
         if (floorData != null)
         {
@@ -287,6 +289,19 @@ public class PlacementSystem : MonoBehaviour
             }
         }
 
+        if (doorData != null)
+        {
+            foreach (var door in doorData.GetAllDoors())
+            {
+                saveState.Doors.Add(new DoorSaveData
+                {
+                    ID = door.DoorID,
+                    Position = door.Position,
+                    Rotation = door.Rotation
+                });
+            }
+        }
+
         return JsonUtility.ToJson(saveState);
     }
 
@@ -307,6 +322,12 @@ public class PlacementSystem : MonoBehaviour
         {
             // Convertim textul înapoi în obiect structural C#
             ShopSaveState saveState = JsonUtility.FromJson<ShopSaveState>(json);
+
+
+            if (saveState.UnlockedPlots != null)
+            {
+                LandExpansionManager.Instance.RestoreUnlockedPlots(saveState.UnlockedPlots);
+            }
 
             Debug.Log($"--- [LOAD PASUL 2] Deserializare reușită! Obiecte găsite în salvare -> Podele: {saveState.Floors.Count}, Mobilier: {saveState.Furniture.Count}, Pereți: {saveState.Walls.Count} ---");
 
@@ -403,10 +424,76 @@ public class PlacementSystem : MonoBehaviour
             }
 
             Debug.Log("--- [LOAD FINISHED SUCCESS] Toate elementele salvate au fost procesate! ---");
+
+            if (saveState.Doors != null && doorData != null)
+            {
+                Debug.Log($"[LOAD] Se inițiază plasarea a {saveState.Doors.Count} uși...");
+
+                foreach (DoorSaveData savedDoor in saveState.Doors)
+                {
+                    try
+                    {
+                        int dbIndex = database.objectsData.FindIndex(d => d.ID == savedDoor.ID);
+                        if (dbIndex < 0) continue;
+
+                        // 1. Instanțiem ușa
+                        GameObject prefab = database.objectsData[dbIndex].Prefab;
+                        GameObject newDoor = Instantiate(prefab, savedDoor.Position, savedDoor.Rotation);
+                        newDoor.name = $"Door_{doorData.GetAllDoors().Count}";
+                        doorData.AddDoor(savedDoor.Position, savedDoor.Rotation, savedDoor.ID, newDoor);
+
+                        // 2. Tăiem peretele folosind noua noastră metodă curată!
+                        int doorSize = database.objectsData[dbIndex].Size.x;
+                        CutWallForDoor(savedDoor.Position, savedDoor.Rotation, doorSize);
+                    }
+                    catch (System.Exception ex)
+                    {
+                        Debug.LogError($"[LOAD EROARE UȘĂ] Nu s-a putut plasa ușa ID {savedDoor.ID}. Mesaj: {ex.Message}");
+                    }
+                }
+            }
         }
         catch (System.Exception bigEx)
         {
             Debug.LogError($"[LOAD EROARE CRITICĂ GENERALĂ] Structura funcției a crăpat complet: {bigEx.Message}");
+        }
+    }
+
+    private void CutWallForDoor(Vector3 doorPosition, Quaternion doorRotation, int doorSizeInSegments)
+    {
+        // Calculăm mărimea ușii (în unități de grid)
+        float doorWidth = doorSizeInSegments * grid.cellSize.x;
+        float maxDist = (doorWidth / 2f) + 0.1f; // Marjă de siguranță
+
+        // Aflăm direcția peretelui
+        Vector3 doorForward = doorRotation * Vector3.forward;
+        Vector3 expectedWallDir = Vector3.Cross(Vector3.up, doorForward).normalized;
+
+        List<WallSegment> allSegments = segmentData.GetAllSegments();
+        List<WallSegment> segmentsToRemove = new List<WallSegment>();
+
+        foreach (WallSegment seg in allSegments)
+        {
+            float dist = Vector3.Distance(
+                new Vector3(doorPosition.x, 0, doorPosition.z),
+                new Vector3(seg.GetCenter().x, 0, seg.GetCenter().z)
+            );
+
+            if (dist <= maxDist)
+            {
+                float dot = Mathf.Abs(Vector3.Dot(seg.GetDirection(), expectedWallDir));
+                if (dot > 0.9f)
+                {
+                    segmentsToRemove.Add(seg);
+                }
+            }
+        }
+
+        // Ștergem segmentele găsite
+        foreach (WallSegment seg in segmentsToRemove)
+        {
+            float radius = seg.Length * 0.4f;
+            segmentData.RemoveSegmentsInRange(seg.GetCenter(), radius, out _);
         }
     }
 

@@ -14,7 +14,6 @@ public class Employee : MonoBehaviour
     private const float STORAGE_THRESHOLD_OFFSET = 0.5f;
     private const float HOME_THRESHOLD = 2f;
     private const int TASK_CHECK_FRAME_INTERVAL = 30;
-    private const float ROTATION_SPEED = 5f;
     #endregion
 
     #region Notification Variables
@@ -82,6 +81,7 @@ public class Employee : MonoBehaviour
     // State Machines separate
     private JanitorStateMachine _janitorStateMachine;
     private RestockerStateMachine restockerStateMachine;
+    private CashierStateMachine _cashierStateMachine;
 
     // --- OPTIMIZARE: Hash-uri pentru Animator ---
     private readonly int isWalkingHash = Animator.StringToHash("isWalking");
@@ -103,6 +103,7 @@ public class Employee : MonoBehaviour
         // Injectăm referințele direct în mașinile de stări externe
         _janitorStateMachine = new JanitorStateMachine(this, animator, broomVisual);
         restockerStateMachine = new RestockerStateMachine(this, MAX_CARRY_CAPACITY);
+        _cashierStateMachine = new CashierStateMachine(this);
 
         if (boxVisual != null) boxVisual.SetActive(false);
     }
@@ -269,31 +270,11 @@ public class Employee : MonoBehaviour
                 _janitorStateMachine.Update(agent);
                 break;
             case EmployeeRole.Cashier:
-                DoCashierWork();
+                _cashierStateMachine.Update(agent, _myWorkStation);
                 break;
             case EmployeeRole.Restocker:
                 DoRestockerWork();
                 break;
-        }
-    }
-
-    private void DoCashierWork()
-    {
-        if (_myWorkStation == null) return;
-
-        agent.SetDestination(_myWorkStation.position);
-
-        if (agent.remainingDistance <= agent.stoppingDistance)
-        {
-            // OPTIMIZARE: Se rotește doar dacă unghiul e mai mare de 1 grad
-            if (Quaternion.Angle(transform.rotation, _myWorkStation.rotation) > 1f)
-            {
-                transform.rotation = Quaternion.Slerp(
-                    transform.rotation,
-                    _myWorkStation.rotation,
-                    Time.deltaTime * ROTATION_SPEED
-                );
-            }
         }
     }
 

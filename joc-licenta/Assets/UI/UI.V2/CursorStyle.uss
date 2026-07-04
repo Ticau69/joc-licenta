@@ -1,0 +1,5 @@
+.unity-button:hover {
+    
+    /* NOU: Calea către imaginea noului tău cursor */
+    cursor: url('project://database/Assets/UI/Photos/hand_point.png') 0 0;
+}

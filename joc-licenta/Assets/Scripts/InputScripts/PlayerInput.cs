@@ -101,15 +101,14 @@ public class PlayerInput : MonoBehaviour
 
     private void HandleObjectSelection()
     {
+        if (!canInteract) return;
+
         Vector3 mousePos = Mouse.current.position.ReadValue();
         Ray ray = sceneCamera.ScreenPointToRay(mousePos);
-        RaycastHit hit;
 
         // Tragem raza doar pe layerele de selecție (ex: Default sau Interactive)
-        if (Physics.Raycast(ray, out hit, 100, selectionLayerMask) && canInteract == true)
+        if (Physics.Raycast(ray, out RaycastHit hit, 100, selectionLayerMask))
         {
-            Debug.Log($"[Input] Click pe: {hit.collider.name}");
-
             // Trimitem obiectul lovit către oricine ascultă (ex: UIManager)
             OnObjectClicked?.Invoke(hit.collider.gameObject);
         }

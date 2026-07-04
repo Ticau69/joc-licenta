@@ -1,0 +1,42 @@
+/*
+ * Adaugă acest fișier la StyleSheets-urile UIDocument-ului tău
+ * (sau lipește regulile într-un USS existent).
+ * Înlocuiește toate stilurile setate inline din C# în GlossaryController.
+ */
+
+.glossary-category-header {
+    color: rgb(255, 199, 51);
+    font-size: 9px;
+    -unity-font-style: bold;
+    margin-top: 8px;
+    margin-bottom: 4px;
+    padding-left: 6px;
+}
+
+.glossary-term-button {
+    background-color: rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 12px;
+    -unity-text-align: middle-left;
+    border-top-width: 0;
+    border-right-width: 0;
+    border-bottom-width: 0;
+    border-left-width: 0;
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-bottom-right-radius: 5px;
+    padding-left: 10px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+    margin-bottom: 2px;
+}
+
+.glossary-term-button:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
+.glossary-term-button--selected {
+    background-color: rgba(255, 199, 51, 0.15);
+    color: rgb(255, 199, 51);
+}

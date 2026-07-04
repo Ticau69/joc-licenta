@@ -179,7 +179,8 @@ public class MainMenuController : MonoBehaviour
 
     private void OnAuthFailed(AuthFailedEvent eventData)
     {
-        ShowError(eventData.ErrorMessage);
+        _errorLabel.text = eventData.ErrorMessage;
+        _errorLabel.style.display = DisplayStyle.Flex;
     }
 
     private void OnQuitClicked()

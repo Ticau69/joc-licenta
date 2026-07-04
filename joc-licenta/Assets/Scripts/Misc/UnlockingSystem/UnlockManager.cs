@@ -4,7 +4,6 @@ using UnityEngine;
 public class UnlockManager : MonoBehaviour
 {
     [SerializeField] private LevelUnlocksSO unlocksSO;
-    [SerializeField] private PlacementAreaExpander placementExpander;
 
     private PlayerXPManager _xp;
     private HashSet<int> _appliedLevels = new(); // simplu: aplicăm doar o dată per level prag
@@ -55,16 +54,6 @@ public class UnlockManager : MonoBehaviour
     {
         Debug.Log($"[UnlockManager] Unlock at level {u.levelRequired}");
 
-        if (u.expandPlacementArea && placementExpander != null)
-        {
-            // --- NOU: Găsim camera și îi spunem să își refacă limitele! ---
-            CameraController cam = Object.FindFirstObjectByType<CameraController>();
-            if (cam != null)
-            {
-                cam.RecalculateLimits();
-            }
-        }
-
         // 2. Limita de Angajați
         if (u.maxEmployees > 0 && EmployeeManager.Instance != null)
         {
@@ -78,14 +67,6 @@ public class UnlockManager : MonoBehaviour
             // Aici vei apela funcția din managerul tău de clienți
             // ex: CustomerSpawner.Instance.SetMaxCustomers(u.maxCustomers);
             Debug.Log($"[UnlockManager] Max Customers limit increased to {u.maxCustomers}");
-        }
-
-        // 4. Capacitatea Depozitului
-        if (u.maxStorageCapacity > 0)
-        {
-            // Aici vei apela funcția din sistemul tău de depozit
-            // ex: StorageManager.Instance.SetMaxStorage(u.maxStorageCapacity);
-            Debug.Log($"[UnlockManager] Storage Capacity increased to {u.maxStorageCapacity}");
         }
 
         // aici în viitor: unlock raft tier, unlock produse, etc

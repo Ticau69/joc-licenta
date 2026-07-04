@@ -85,6 +85,8 @@ public class ShopSaveState
     public List<GridObjectSaveData> Furniture = new List<GridObjectSaveData>();
     public List<WallSaveData> Walls = new List<WallSaveData>();
     public List<EmployeeSaveData> Employees = new List<EmployeeSaveData>();
+    public List<DoorSaveData> Doors = new List<DoorSaveData>();
+    public List<string> UnlockedPlots = new List<string>();
 }
 
 [System.Serializable]
@@ -105,7 +107,7 @@ public class LoanSaveData
 [System.Serializable]
 public class BankSaveState
 {
-    public System.Collections.Generic.List<LoanSaveData> ActiveLoans = new();
+    public List<LoanSaveData> ActiveLoans = new();
 }
 
 [System.Serializable]
@@ -125,5 +127,14 @@ public struct GameUIRefreshEvent { }
 [System.Serializable]
 public class ShelvesSaveState
 {
-    public System.Collections.Generic.List<ShelfSaveData> ActiveShelves = new();
+    public List<ShelfSaveData> ActiveShelves = new();
 }
+
+[System.Serializable]
+public class DoorSaveData
+{
+    public int ID;
+    public Vector3 Position;
+    public Quaternion Rotation;
+}
+

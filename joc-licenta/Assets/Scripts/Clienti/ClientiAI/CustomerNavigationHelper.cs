@@ -32,6 +32,7 @@ public class CustomerNavigationHelper : MonoBehaviour
     private bool _destinationSet = false;
     private float _destinationSetTime = 0f;
     private const float DestinationSettleDelay = 0.1f;
+    private Vector3 _lastQueueTargetPos;
 
     // Callback apelat o singură dată când clientul ajunge la destinația curentă.
     // Setat de NavigateTo() și anulat după apelare.
@@ -75,8 +76,15 @@ public class CustomerNavigationHelper : MonoBehaviour
     /// </summary>
     public void TickQueueFollow()
     {
-        if (_queueTarget != null)
+        if (_queueTarget != null) return;
+
+        Vector3 targetPos = _queueTarget.position;
+
+        if (Vector3.SqrMagnitude(targetPos - _lastQueueTargetPos) > 0.09f)
+        {
             _agent.SetDestination(_queueTarget.position);
+            _lastQueueTargetPos = targetPos;
+        }
     }
 
     // =========================================================================
@@ -159,7 +167,7 @@ public class CustomerNavigationHelper : MonoBehaviour
     /// Returnează cel mai apropiat CashRegisterQueue disponibil (coadă neplină),
     /// sau cel mai puțin aglomerat dacă toate sunt pline.
     /// </summary>
-    public CashRegisterQueue GetBestRegister(List<CashRegisterQueue> registers)
+    public CashRegisterQueue GetBestRegister(IReadOnlyList<CashRegisterQueue> registers)
     {
         if (registers == null || registers.Count == 0) return null;
 

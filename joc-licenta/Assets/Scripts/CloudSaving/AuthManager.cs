@@ -15,19 +15,33 @@ public class AuthManager : MonoBehaviour
     {
         _eventBus = eventBus;
 
-        // Verificăm și reparăm dependențele Firebase pe device
         FirebaseApp.CheckAndFixDependenciesAsync().ContinueWithOnMainThread(task =>
         {
-            var dependencyStatus = task.Result;
-            if (dependencyStatus == DependencyStatus.Available)
+            try
             {
-                _auth = FirebaseAuth.DefaultInstance;
-                _isFirebaseReady = true;
-                Debug.Log("[AuthManager] Firebase a fost inițializat cu succes!");
+                var dependencyStatus = task.Result;
+                if (dependencyStatus == DependencyStatus.Available)
+                {
+                    _auth = FirebaseAuth.DefaultInstance;
+                    _isFirebaseReady = true;
+                    Debug.Log("[AuthManager] Firebase a fost inițializat cu succes!");
+                }
+                else
+                {
+                    Debug.LogError($"[AuthManager] Nu s-au putut rezolva dependențele Firebase: {dependencyStatus}");
+                    _eventBus?.Publish(new AuthFailedEvent
+                    {
+                        ErrorMessage = "Serviciile Google Play nu sunt disponibile pe acest dispozitiv."
+                    });
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Debug.LogError($"[AuthManager] Nu s-au putut rezolva dependențele Firebase: {dependencyStatus}");
+                Debug.LogError($"[AuthManager] Excepție la verificarea dependențelor Firebase: {ex.Message}");
+                _eventBus?.Publish(new AuthFailedEvent
+                {
+                    ErrorMessage = "Eroare la inițializarea sistemului de autentificare."
+                });
             }
         });
     }
@@ -35,21 +49,30 @@ public class AuthManager : MonoBehaviour
     // Adăugăm parametrul 'username'
     public async Task RegisterWithEmailAsync(string email, string password, string username)
     {
-        // 1. Creăm contul de bază (cum aveai și până acum)
-        var authResult = await FirebaseAuth.DefaultInstance.CreateUserWithEmailAndPasswordAsync(email, password);
-        Firebase.Auth.FirebaseUser newUser = authResult.User;
-
-        // 2. NOU: Salvăm numele jucătorului direct în contul de Firebase
-        if (newUser != null && !string.IsNullOrEmpty(username))
+        try
         {
-            Firebase.Auth.UserProfile profile = new Firebase.Auth.UserProfile
-            {
-                DisplayName = username
-            };
+            var authResult = await FirebaseAuth.DefaultInstance.CreateUserWithEmailAndPasswordAsync(email, password);
+            Firebase.Auth.FirebaseUser newUser = authResult.User;
 
-            // Așteptăm ca Firebase să salveze noul nume
-            await newUser.UpdateUserProfileAsync(profile);
-            Debug.Log($"[AuthManager] Nume profil setat cu succes: {newUser.DisplayName}");
+            if (newUser != null && !string.IsNullOrEmpty(username))
+            {
+                Firebase.Auth.UserProfile profile = new Firebase.Auth.UserProfile
+                {
+                    DisplayName = username
+                };
+                await newUser.UpdateUserProfileAsync(profile);
+                Debug.Log($"[AuthManager] Nume profil setat cu succes: {newUser.DisplayName}");
+            }
+        }
+        catch (Exception ex)
+        {
+            string mesajPrietenos = ParseFirebaseError(ex.Message);
+            Debug.LogError($"[AuthManager] Înregistrare eșuată: {ex.Message}");
+
+            _eventBus?.Publish(new AuthFailedEvent
+            {
+                ErrorMessage = mesajPrietenos
+            });
         }
     }
 
@@ -91,7 +114,13 @@ public class AuthManager : MonoBehaviour
         }
         catch (Exception ex)
         {
+            string mesajPrietenos = ParseFirebaseError(ex.Message);
             Debug.LogError($"[AUTH TRACE EROARE FIREBASE] Logare eșuată: {ex.Message}");
+
+            _eventBus?.Publish(new AuthFailedEvent
+            {
+                ErrorMessage = mesajPrietenos
+            });
         }
     }
 

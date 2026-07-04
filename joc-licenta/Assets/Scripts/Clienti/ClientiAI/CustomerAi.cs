@@ -145,12 +145,11 @@ public class CustomerAI : MonoBehaviour
 
     private void GoToRegister()
     {
-        List<CashRegisterQueue> registers;
+        IReadOnlyList<CashRegisterQueue> registers;
         if (_registry != null)
             registers = _registry.GetAllCashRegisterQueues();
         else
-            registers = new List<CashRegisterQueue>(
-                FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None));
+            registers = FindObjectsByType<CashRegisterQueue>(FindObjectsSortMode.None);
 
         _targetRegister = _nav.GetBestRegister(registers);
 

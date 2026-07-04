@@ -433,6 +433,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 8
   unlockCost: 15000
   floorPlane: {fileID: 72343074}
   myGridVisual: {fileID: 986077025}
@@ -714,6 +715,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578f0d6ee8202a648b86da51e7151a3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LandExpansionManager
+  unlockedPlotIDs: []
 --- !u!4 &116400481
 Transform:
   m_ObjectHideFlags: 0
@@ -2107,7 +2109,6 @@ GameObject:
   m_Component:
   - component: {fileID: 238232078}
   - component: {fileID: 238232077}
-  - component: {fileID: 238232076}
   m_Layer: 0
   m_Name: UnlockManager
   m_TagString: Untagged
@@ -2115,20 +2116,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &238232076
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 238232075}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 11a534e8b51789f48a4c37e96da0bd82, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlacementAreaExpander
-  placementPlane: {fileID: 1999294340}
-  keepCenterPosition: 1
 --- !u!114 &238232077
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2142,7 +2129,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::UnlockManager
   unlocksSO: {fileID: 11400000, guid: a89bb16c1f9bfa44dadce349e20bcd4c, type: 2}
-  placementExpander: {fileID: 238232076}
 --- !u!4 &238232078
 Transform:
   m_ObjectHideFlags: 0
@@ -4174,6 +4160,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 1
   unlockCost: 15000
   floorPlane: {fileID: 458429013}
   myGridVisual: {fileID: 1019199428}
@@ -4520,6 +4507,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 2
   unlockCost: 15000
   floorPlane: {fileID: 505740741}
   myGridVisual: {fileID: 1315882966}
@@ -4894,7 +4882,6 @@ Transform:
   - {fileID: 1872264895}
   - {fileID: 2015247683}
   - {fileID: 2069198248}
-  - {fileID: 2041668645}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &562570377 stripped
@@ -6814,6 +6801,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 4
   unlockCost: 15000
   floorPlane: {fileID: 719091913}
   myGridVisual: {fileID: 998862485}
@@ -7393,7 +7381,6 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 783284320}
-  - component: {fileID: 783284322}
   - component: {fileID: 783284323}
   m_Layer: 0
   m_Name: OpenBuildMenu
@@ -7417,24 +7404,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 437662384}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &783284322
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 783284319}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8e3acbc4673ae4943b82b3bd70b1a553, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::BuildingUI
-  uiDocument: {fileID: 784697281}
-  placementSystem: {fileID: 1093049220}
-  database: {fileID: 11400000, guid: 82e66b4642bd43249ae31f7522d917ff, type: 2}
-  containerNames:
-  - BuildView
-  - FurnitureView
 --- !u!114 &783284323
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9421,6 +9390,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 6
   unlockCost: 15000
   floorPlane: {fileID: 985830752}
   myGridVisual: {fileID: 1675671693}
@@ -10877,6 +10847,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 7
   unlockCost: 15000
   floorPlane: {fileID: 1116381293}
   myGridVisual: {fileID: 662485660}
@@ -12559,6 +12530,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 5
   unlockCost: 15000
   floorPlane: {fileID: 1246829409}
   myGridVisual: {fileID: 797575336}
@@ -12846,6 +12818,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::GlossaryController
   uiDocument: {fileID: 784697281}
+  database: {fileID: 0}
+  searchDebounceMs: 150
 --- !u!4 &1305192966
 Transform:
   m_ObjectHideFlags: 0
@@ -14374,6 +14348,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 39a4b6bd2a21a1343b489470f77bb801, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ExpansionZone
+  plotID: 3
   unlockCost: 15000
   floorPlane: {fileID: 1459745645}
   myGridVisual: {fileID: 1366070782}
@@ -15080,6 +15055,19 @@ MonoBehaviour:
   - {fileID: 2331904856547926729, guid: 7caf03a9393def646b939315b38872f5, type: 3}
   - {fileID: 7664944082513174517, guid: b139c4c551e26f74cbb0cf545846506a, type: 3}
   - {fileID: 8585155846157063784, guid: 023b5fdd256d7f746a24a78998b9eaf8, type: 3}
+  - {fileID: 1549238938572668136, guid: a7835b621547e7d49a7a0eaabe8e971a, type: 3}
+  - {fileID: 7146736934492883817, guid: 29b893000a9bfff4fb986b77e583b5ad, type: 3}
+  - {fileID: 7061122304233431328, guid: e8130627f192d2e4485be5c2752e048d, type: 3}
+  - {fileID: 3783463697463908864, guid: 50e447888dd10be4db933526a8f6693c, type: 3}
+  - {fileID: 2331904856547926729, guid: 7caf03a9393def646b939315b38872f5, type: 3}
+  - {fileID: 7664944082513174517, guid: b139c4c551e26f74cbb0cf545846506a, type: 3}
+  - {fileID: 8585155846157063784, guid: 023b5fdd256d7f746a24a78998b9eaf8, type: 3}
+  - {fileID: 1549238938572668136, guid: a7835b621547e7d49a7a0eaabe8e971a, type: 3}
+  - {fileID: 7146736934492883817, guid: 29b893000a9bfff4fb986b77e583b5ad, type: 3}
+  - {fileID: 7061122304233431328, guid: e8130627f192d2e4485be5c2752e048d, type: 3}
+  - {fileID: 3783463697463908864, guid: 50e447888dd10be4db933526a8f6693c, type: 3}
+  - {fileID: 2331904856547926729, guid: 7caf03a9393def646b939315b38872f5, type: 3}
+  - {fileID: 7664944082513174517, guid: b139c4c551e26f74cbb0cf545846506a, type: 3}
   spawnPoints:
   - {fileID: 1522268933}
   exitPoint: {fileID: 1522268933}
@@ -18486,6 +18474,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 578f0d6ee8202a648b86da51e7151a3f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::LandExpansionManager
+  unlockedPlotIDs: []
 --- !u!1 &1921635624
 GameObject:
   m_ObjectHideFlags: 0
@@ -19174,6 +19163,7 @@ MonoBehaviour:
   minSpawnDistance: 8
   minSpeed: 6
   maxSpeed: 12
+  prewarmPerPrefab: 2
 --- !u!1 &1999294339
 GameObject:
   m_ObjectHideFlags: 0
@@ -19655,53 +19645,6 @@ Transform:
   - {fileID: 697389810}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &2041668644
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2041668645}
-  - component: {fileID: 2041668646}
-  m_Layer: 0
-  m_Name: CursorChanger
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2041668645
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2041668644}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2.10577, y: 0.13, z: -0.94256}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 557083105}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2041668646
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2041668644}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f32d702d20c76d64fbc44158b99ec717, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CursorChanger
-  cursorTexture: {fileID: 2800000, guid: c6e5e6f180958554db8e9d9fbcedd686, type: 3}
-  hoverCursorTexture: {fileID: 2800000, guid: 38efd4733888cc944920aea86143a711, type: 3}
-  hotSpot: {x: 0, y: 0}
 --- !u!1001 &2041897636
 PrefabInstance:
   m_ObjectHideFlags: 0

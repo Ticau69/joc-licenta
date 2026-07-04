@@ -45,6 +45,8 @@ GameObject:
   - component: {fileID: 7725954157565589170}
   - component: {fileID: 2464162427556147948}
   - component: {fileID: 4078071285717043773}
+  - component: {fileID: 306181921259089340}
+  - component: {fileID: -4935876543915590239}
   m_Layer: 0
   m_Name: shelf-end
   m_TagString: Untagged
@@ -192,6 +194,43 @@ MonoBehaviour:
   - {fileID: 5131579800564398928}
   fullThreshold: 0.66
   halfThreshold: 0.33
+--- !u!208 &306181921259089340
+NavMeshObstacle:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492550886394690779}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Shape: 1
+  m_Extents: {x: 0.4, y: 0.4, z: 0.2}
+  m_MoveThreshold: 0.1
+  m_Carve: 0
+  m_CarveOnlyStationary: 1
+  m_Center: {x: 0, y: 0.4, z: -0.201}
+  m_TimeToStationary: 0.5
+--- !u!65 &-4935876543915590239
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1492550886394690779}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 0.79999995, y: 0.8000001, z: 0.4}
+  m_Center: {x: 0, y: 0.40000004, z: -0.20110948}
 --- !u!1 &1696790384798664673
 GameObject:
   m_ObjectHideFlags: 0

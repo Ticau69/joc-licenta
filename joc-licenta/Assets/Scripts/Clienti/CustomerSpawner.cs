@@ -6,7 +6,6 @@ public class CustomerSpawner : MonoBehaviour
     [Header("Customer Prefabs")]
     [Tooltip("Adaugă aici toate modelele 3D de clienți (băieți, fete, diferiți etc.)")]
     [SerializeField] private List<CustomerAI> customerPrefabs = new List<CustomerAI>();
-    private List<CustomerAI> _customerPool = new List<CustomerAI>();
 
     [Header("Spawn/Exit Points")]
     [SerializeField] private Transform[] spawnPoints;
@@ -36,14 +35,27 @@ public class CustomerSpawner : MonoBehaviour
     private float _refreshTimer;
     private float _lastNoSpawnLogTime;
 
-    // OPTIMIZARE: Ținem minte clienții activi ca să nu mai folosim FindObjectsByType
-    private List<CustomerAI> _activeCustomers = new List<CustomerAI>();
+    // Clienți activi (în magazin acum). Evită FindObjectsByType.
+    private readonly List<CustomerAI> _activeCustomers = new List<CustomerAI>();
 
-    // OPTIMIZARE: Ținem minte dacă avem case de marcat pentru a nu căuta constant prin scenă
-    private bool _isStoreReady = false;
-    private bool _endOfDayTriggered = false;
-    private bool _hasOpenedToday = false;
-    private float _forceEvictTimer = 0f;
+    // OPTIMIZARE: coadă de clienți inactivi gata de reciclare — extragere O(1),
+    // în loc de scanarea liniară a întregului pool la fiecare spawn.
+    private readonly Queue<CustomerAI> _inactivePool = new Queue<CustomerAI>();
+
+    // OPTIMIZARE: NavMeshAgent cache-uit per client, ca să nu mai facem
+    // GetComponent la fiecare reciclare (constant în timp, dar inutil repetat).
+    private readonly Dictionary<CustomerAI, UnityEngine.AI.NavMeshAgent> _agentCache =
+        new Dictionary<CustomerAI, UnityEngine.AI.NavMeshAgent>();
+
+    // Cache-uit o dată pe frame, ca să nu apelăm GetAllShelves() de 2 ori
+    // (o dată în CanSpawnCustomers, o dată în LogNoSpawnReasonOccasionally).
+    private IReadOnlyList<WorkStation> _shelvesCacheThisFrame;
+    private int _shelvesCacheFrame = -1;
+
+    private bool _isStoreReady;
+    private bool _endOfDayTriggered;
+    private bool _hasOpenedToday;
+    private float _forceEvictTimer;
     private const float FORCE_EVICT_AFTER = 15f; // secunde după închidere
 
     private void Start()
@@ -53,9 +65,8 @@ public class CustomerSpawner : MonoBehaviour
                 ? EmployeeManager.Instance
                 : FindFirstObjectByType<EmployeeManager>();
 
-        if (employeeManager != null)
-            _registry = employeeManager.StationRegistry;
-
+        // Sursa de adevăr e mereu WorkStationRegistry.Instance; nu mai citim
+        // inutil employeeManager.StationRegistry doar ca să-l suprascriem imediat.
         _registry = WorkStationRegistry.Instance;
         if (_registry == null)
         {
@@ -81,30 +92,24 @@ public class CustomerSpawner : MonoBehaviour
         if (_refreshTimer <= 0f)
         {
             RefreshRegistryAndCache();
-
-
-
             _refreshTimer = registryRefreshInterval;
         }
 
-        // 3. --- LOGICA DE ÎNCHIDERE (Mutată deasupra acelui 'return' fatal) ---
+        // 2. --- LOGICA DE ÎNCHIDERE ---
         if (TimeManager.Instance != null)
         {
             int currentHour = TimeManager.Instance.CurrentHour;
             int openH = TimeManager.Instance.openHour;
             int closeH = TimeManager.Instance.closeHour;
 
-            // 3.1 Cât timp e ziuă (ex: 08:00 - 21:59), magazinul este oficial DESCHIS
             if (currentHour >= openH && currentHour < closeH)
             {
                 _hasOpenedToday = true;
-                _endOfDayTriggered = false; // Resetăm trigger-ul pentru raport
+                _endOfDayTriggered = false;
             }
 
-            // 3.2 E timpul închiderii? (Trecut de 22:00 SAU între 00:00 și 08:00)
             bool isClosedTime = (currentHour >= closeH || currentHour < openH);
 
-            // 3.3 Dacă e ora de închidere, magazinul A FOST deschis azi, și nu mai sunt clienți
             if (isClosedTime && _hasOpenedToday)
             {
                 if (_activeCustomers.Count == 0 && !_endOfDayTriggered)
@@ -116,39 +121,35 @@ public class CustomerSpawner : MonoBehaviour
                 }
                 else if (_activeCustomers.Count > 0 && !_endOfDayTriggered)
                 {
-                    // Clienți blocați — numărăm timeout-ul
                     _forceEvictTimer += Time.deltaTime;
 
                     if (_forceEvictTimer >= FORCE_EVICT_AFTER)
                     {
                         Debug.LogWarning($"[CustomerSpawner] {_activeCustomers.Count} clienți blocați după închidere — forțăm ieșirea!");
 
-                        // Forțăm toți clienții să iasă
                         foreach (var c in _activeCustomers)
                         {
                             if (c != null && c.gameObject.activeInHierarchy)
                             {
-                                // Trimitem clientul direct la exit
-                                var ai = c.GetComponent<CustomerAI>();
-                                if (ai != null) ai.ForceExit();
-                                else c.gameObject.SetActive(false);
+                                // 'c' e deja CustomerAI — GetComponent<CustomerAI>() aici
+                                // doar ar fi întors aceeași referință, degeaba.
+                                c.ForceExit();
                             }
                         }
                         _activeCustomers.Clear();
-                        // Trigger-ul va fi detectat în frame-ul următor
                     }
                 }
             }
         }
 
-        // 4. Verificăm dacă mai avem voie să spawnăm
+        // 3. Verificăm dacă mai avem voie să spawnăm
         if (!CanSpawnCustomers())
         {
             LogNoSpawnReasonOccasionally();
-            return; // Dacă e închis, se oprește aici (dar abia DUPĂ ce a verificat dacă au ieșit clienții)
+            return;
         }
 
-        // 5. Spawnăm clienți
+        // 4. Spawnăm clienți
         _spawnTimer -= Time.deltaTime;
         if (_spawnTimer <= 0f)
         {
@@ -164,26 +165,41 @@ public class CustomerSpawner : MonoBehaviour
     {
         _registry.RefreshAllStations();
 
-        // 1. Aflăm ce avem efectiv în magazin
         bool hasRegisters = _registry.GetAnyCashRegister() != null;
 
-        var shelves = _registry.GetAllShelves();
+        var shelves = GetShelvesCached();
         bool hasShelves = shelves != null && shelves.Count > 0;
 
-        // 2. Trecem prin "filtrele" din Inspector
         bool registerOk = !requireAtLeastOneCashRegister || hasRegisters;
         bool shelfOk = !requireAtLeastOneShelf || hasShelves;
 
-        // 3. Salvăm verdictul final! Magazinul e gata DOAR dacă ambele condiții sunt îndeplinite.
         _isStoreReady = registerOk && shelfOk;
 
         for (int i = _activeCustomers.Count - 1; i >= 0; i--)
         {
-            if (_activeCustomers[i] == null || !_activeCustomers[i].gameObject.activeInHierarchy)
+            var c = _activeCustomers[i];
+            if (c == null || !c.gameObject.activeInHierarchy)
             {
                 _activeCustomers.RemoveAt(i);
+
+                // Dacă a fost dezactivat "din afară" (nu prin fluxul nostru de
+                // reciclare), îl băgăm înapoi în pool ca să nu se piardă.
+                if (c != null && !_inactivePool.Contains(c))
+                    _inactivePool.Enqueue(c);
             }
         }
+    }
+
+    // Cache simplu per-frame pentru lista de rafturi, ca să nu o cerem de
+    // 2 ori în același frame (CanSpawnCustomers + LogNoSpawnReasonOccasionally).
+    private IReadOnlyList<WorkStation> GetShelvesCached()
+    {
+        if (_shelvesCacheFrame != Time.frameCount)
+        {
+            _shelvesCacheThisFrame = _registry.GetAllShelves();
+            _shelvesCacheFrame = Time.frameCount;
+        }
+        return _shelvesCacheThisFrame;
     }
 
     private bool CanSpawnCustomers()
@@ -199,7 +215,7 @@ public class CustomerSpawner : MonoBehaviour
 
         if (requireAtLeastOneShelf)
         {
-            var shelves = _registry.GetAllShelves();
+            var shelves = GetShelvesCached();
             if (shelves == null || shelves.Count == 0)
                 return false;
         }
@@ -230,7 +246,7 @@ public class CustomerSpawner : MonoBehaviour
 
         if (requireAtLeastOneShelf)
         {
-            var shelves = _registry.GetAllShelves();
+            var shelves = GetShelvesCached();
             if (shelves == null || shelves.Count == 0)
                 reason += "no shelves; ";
         }
@@ -249,54 +265,67 @@ public class CustomerSpawner : MonoBehaviour
     private void SpawnOne()
     {
         Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
-        CustomerAI customerToSpawn = null;
+        CustomerAI customerToSpawn;
 
-        // 1. CĂUTĂM UN CLIENT RECICLABIL
-        // Verificăm dacă avem vreun client invizibil/dezactivat în pool
-        foreach (var c in _customerPool)
+        // 1. Extragere O(1) dintr-un client reciclabil, dacă există.
+        // (Curățăm și eventuale referințe distruse între timp, apărute din
+        // scene reload sau Destroy extern.)
+        customerToSpawn = null;
+        while (_inactivePool.Count > 0)
         {
-            if (c != null && !c.gameObject.activeInHierarchy)
+            var candidate = _inactivePool.Dequeue();
+            if (candidate != null)
             {
-                customerToSpawn = c;
+                customerToSpawn = candidate;
                 break;
             }
         }
 
-        // 2. CREĂM UNUL NOU (Doar dacă e absolut necesar)
+        // 2. Creăm unul nou doar dacă pool-ul nu avea niciunul disponibil.
         if (customerToSpawn == null)
         {
             CustomerAI selectedPrefab = customerPrefabs[Random.Range(0, customerPrefabs.Count)];
             GameObject go = Instantiate(selectedPrefab.gameObject, sp.position, sp.rotation);
             customerToSpawn = go.GetComponent<CustomerAI>();
 
-            // Îl adăugăm în lista generală ca să îl putem recicla mai târziu
-            _customerPool.Add(customerToSpawn);
+            // Cache-uim NavMeshAgent o singură dată, la creare — nu la fiecare reciclare.
+            _agentCache[customerToSpawn] = customerToSpawn.GetComponent<UnityEngine.AI.NavMeshAgent>();
         }
 
-        // 3. PREGĂTIM CLIENTUL PENTRU NOUA ZI DE CUMPĂRĂTURI
-        if (customerToSpawn != null)
-        {
-            // Dacă folosești NavMeshAgent, trebuie dezactivat înainte de teleportare, 
-            // altfel agentul îl va trage înapoi la vechea poziție!
-            UnityEngine.AI.NavMeshAgent agent = customerToSpawn.GetComponent<UnityEngine.AI.NavMeshAgent>();
-            if (agent != null) agent.enabled = false;
+        if (customerToSpawn == null) return;
 
-            customerToSpawn.transform.position = sp.position;
-            customerToSpawn.transform.rotation = sp.rotation;
-            customerToSpawn.gameObject.SetActive(true);
+        // 3. Pregătim clientul pentru noua zi de cumpărături.
+        _agentCache.TryGetValue(customerToSpawn, out var agent);
 
-            if (agent != null) agent.enabled = true;
+        // Dezactivăm agentul înainte de teleportare, altfel te trage înapoi
+        // la vechea poziție.
+        if (agent != null) agent.enabled = false;
 
-            int randomBudget = Random.Range(minCustomerBudget, maxCustomerBudget + 1);
+        customerToSpawn.transform.SetPositionAndRotation(sp.position, sp.rotation);
+        customerToSpawn.gameObject.SetActive(true);
 
-            // Initialize va "curăța" mintea AI-ului exact cum ai programat tu
-            customerToSpawn.Initialize(_registry, exitPoint, randomBudget);
+        if (agent != null) agent.enabled = true;
 
-            // Îl trecem la lista de clienți activi (care sunt în magazin)
-            if (!_activeCustomers.Contains(customerToSpawn))
-            {
-                _activeCustomers.Add(customerToSpawn);
-            }
-        }
+        int randomBudget = Random.Range(minCustomerBudget, maxCustomerBudget + 1);
+        customerToSpawn.Initialize(_registry, exitPoint, randomBudget);
+
+        _activeCustomers.Add(customerToSpawn);
+    }
+
+    /// <summary>
+    /// Apelată de CustomerAI (sau de sistemul care îl dezactivează) când
+    /// clientul termină și iese din magazin — îl întoarce în pool imediat,
+    /// în loc să aștepte următorul RefreshRegistryAndCache().
+    /// Opțional: leagă acest apel de un eveniment OnCustomerExited din CustomerAI
+    /// dacă vrei reciclare instant fără să aștepți refresh-ul periodic.
+    /// </summary>
+    public void ReturnToPool(CustomerAI customer)
+    {
+        if (customer == null) return;
+
+        _activeCustomers.Remove(customer);
+
+        if (!_inactivePool.Contains(customer))
+            _inactivePool.Enqueue(customer);
     }
 }

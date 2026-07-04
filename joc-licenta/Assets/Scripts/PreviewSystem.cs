@@ -148,6 +148,9 @@ public class PreviewSystem : MonoBehaviour
         Renderer[] renderers = previewObject.GetComponentsInChildren<Renderer>();
         foreach (Renderer renderer in renderers)
         {
+            // NOU: Sărim peste SpriteRenderer ca să nu îi stricăm textura de săgeată!
+            if (renderer is SpriteRenderer) continue;
+
             Material[] materials = renderer.materials;
             for (int i = 0; i < materials.Length; i++)
             {
@@ -176,6 +179,24 @@ public class PreviewSystem : MonoBehaviour
         Color c = validity ? Color.white : Color.red;
         c.a = 0.5f;
         previewMaterialInstance.color = c;
+
+        if (previewObject != null)
+        {
+            try
+            {
+                SpriteRenderer[] sprites = previewObject.GetComponentsInChildren<SpriteRenderer>();
+                foreach (SpriteRenderer sr in sprites)
+                {
+                    Color arrowColor = validity ? Color.cyan : Color.red;
+                    arrowColor.a = 0.8f;
+                    sr.color = arrowColor;
+                }
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("Eroare la colorarea săgeții, dar cursorul continuă să meargă! Detalii: " + e.Message);
+            }
+        }
     }
 
     private void ApplyFeedbackToCursor(bool validity)

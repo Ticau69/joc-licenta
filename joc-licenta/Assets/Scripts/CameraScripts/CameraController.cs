@@ -81,6 +81,14 @@ public class CameraController : MonoBehaviour
     void Update()
     {
         float dt = Time.unscaledDeltaTime;
+
+        bool hasInput = _moveInput != Vector2.zero || _rotateInput != 0f
+                        || Mathf.Abs(_input.CameraControl.Zoom.ReadValue<float>()) > 0.01f;
+        bool isMoving = _moveVelocity.sqrMagnitude > 0.0001f
+                        || Mathf.Abs(_rotateVelocity) > 0.01f;
+
+        if (!hasInput && !isMoving) return;
+
         HandleRotation(dt);
         HandleMovement(dt);
     }

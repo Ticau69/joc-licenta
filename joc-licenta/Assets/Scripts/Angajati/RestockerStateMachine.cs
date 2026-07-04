@@ -31,6 +31,8 @@ public class RestockerStateMachine
     private readonly int maxCarryCapacity;
     private readonly Employee owner;
     private string lastReportedProblem = null;
+    private bool _destinationSetForShelf = false;
+    private bool _destinationSetForStorage = false;
 
     public RestockerStateMachine(Employee owner, int maxCapacity)
     {
@@ -102,27 +104,38 @@ public class RestockerStateMachine
         if (secondaryTarget == null)
         {
             currentState = State.Idle;
+            _destinationSetForShelf = false;
             return;
         }
 
-        agent.SetDestination(secondaryTarget.position);
+        if (!_destinationSetForShelf)
+        {
+            agent.SetDestination(secondaryTarget.position);
+            _destinationSetForShelf = true;
+        }
 
         if (!agent.pathPending && agent.remainingDistance < owner.DestinationThreshold)
         {
             currentState = State.WorkingAtLocation;
+            _destinationSetForShelf = false;
             workTimer = 0;
         }
     }
 
     private void HandleMovingToStorage(NavMeshAgent agent, Transform workStation, ref float workTimer)
     {
-        agent.SetDestination(workStation.position);
+        if (!_destinationSetForStorage)
+        {
+            agent.SetDestination(workStation.position);
+            _destinationSetForStorage = true;
+        }
 
         float threshold = agent.stoppingDistance + owner.StorageThresholdOffset + 0.8f;
 
         if (!agent.pathPending && agent.remainingDistance <= threshold)
         {
             currentState = State.WorkingAtLocation;
+            _destinationSetForStorage = false;
             workTimer = 0;
         }
     }
@@ -153,6 +166,7 @@ public class RestockerStateMachine
                 AssignTarget(shelf);
                 currentTask = TaskType.Clearing;
                 currentState = State.MovingToShelf;
+                _destinationSetForShelf = false;
                 return; // Am găsit de muncă, ieșim instant
             }
         }
@@ -173,6 +187,7 @@ public class RestockerStateMachine
                         owner.myWorkStation = rackWithMarfa.transform;
                         currentTask = TaskType.Restocking;
                         currentState = State.MovingToStorage;
+                        _destinationSetForStorage = false;
                         ClearProblem();
                         return; // Am găsit de muncă, ieșim instant
                     }

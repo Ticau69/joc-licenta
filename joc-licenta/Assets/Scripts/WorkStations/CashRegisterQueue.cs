@@ -199,20 +199,16 @@ public class CashRegisterQueue : MonoBehaviour
     {
         if (_ws.interactionPoint == null) return false;
 
-        var employees = FindObjectsByType<Employee>(FindObjectsSortMode.None);
-        foreach (var e in employees)
+        if (AssignedCashier != null && AssignedCashier.gameObject.activeInHierarchy)
         {
-            if (e == null) continue;
-            if (e.role != EmployeeRole.Cashier) continue;
-            if (e.myWorkStation == null) continue;
+            float d = Vector3.Distance(
+                AssignedCashier.transform.position,
+                _ws.interactionPoint.position
+            );
 
-            float dStation = Vector3.Distance(e.myWorkStation.position, _ws.interactionPoint.position);
-            if (dStation > 0.75f) continue;
-
-            float d = Vector3.Distance(e.transform.position, _ws.interactionPoint.position);
             if (d <= cashierDetectRadius)
             {
-                _currentCashier = e; // NOU: Salvăm referința la casierul care lucrează aici
+                _currentCashier = AssignedCashier;
                 return true;
             }
         }
