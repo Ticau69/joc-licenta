@@ -15,7 +15,7 @@ MonoBehaviour:
   allProducts:
   - productName: Paine
     type: 1
-    compatibleShelfTypes: 00000000
+    compatibleShelfTypes: 04000000
     icon: {fileID: 0}
     displayPrefab: {fileID: 3655396040265903751, guid: 112029b065b22754ebd457ed743c7f4c, type: 3}
     baseCost: 3
@@ -53,5 +53,40 @@ MonoBehaviour:
     compatibleShelfTypes: 02000000
     icon: {fileID: 0}
     displayPrefab: {fileID: 0}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Suc Natural
+    type: 7
+    compatibleShelfTypes: 00000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 4138060148498976348, guid: 8877e032084b6e148b58589c279f4bfb, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Conserva
+    type: 4
+    compatibleShelfTypes: 00000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 919132149155446097, guid: bd415ed7f86db1e46a54deadec5df87d, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Doza de Cola
+    type: 6
+    compatibleShelfTypes: 00000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 919132149155446097, guid: bd415ed7f86db1e46a54deadec5df87d, type: 3}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Pui Congelat
+    type: 12
+    compatibleShelfTypes: 02000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 0}
+    baseCost: 2
+    baseSellPrice: 2
+  - productName: Ananas
+    type: 14
+    compatibleShelfTypes: 04000000
+    icon: {fileID: 0}
+    displayPrefab: {fileID: 919132149155446097, guid: 78eccbcc39768284e9a47a482495d760, type: 3}
     baseCost: 2
     baseSellPrice: 2

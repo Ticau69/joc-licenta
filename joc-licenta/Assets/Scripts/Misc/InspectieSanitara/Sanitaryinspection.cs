@@ -29,7 +29,7 @@ public class SanitaryInspection : MonoBehaviour
 
     // ── Runtime ───────────────────────────────────────────────────────────────
     private int _lastInspectionHour = -99;
-    private int _lastInspectionDay  = -99;
+    private int _lastInspectionDay = -99;
 
     // ── Unity lifecycle ───────────────────────────────────────────────────────
 
@@ -58,7 +58,7 @@ public class SanitaryInspection : MonoBehaviour
         if (TimeManager.Instance == null) return;
 
         int currentHour = TimeManager.Instance.CurrentHour;
-        int currentDay  = TimeManager.Instance.CurrentDay;
+        int currentDay = TimeManager.Instance.CurrentDay;
 
         // 1. Magazinul trebuie să fie deschis
         bool isOpen = currentHour >= TimeManager.Instance.openHour &&
@@ -96,7 +96,7 @@ public class SanitaryInspection : MonoBehaviour
 
         foreach (var ws in shelves)
         {
-            if (ws.stationType == StationType.Shelf)        hasShelf = true;
+            if (ws.stationType == StationType.Shelf) hasShelf = true;
             if (ws.stationType == StationType.CashRegister) hasCashRegister = true;
             if (hasShelf && hasCashRegister) break;
         }
@@ -115,7 +115,7 @@ public class SanitaryInspection : MonoBehaviour
         if (CleanlinessManager.Instance == null) return;
 
         _lastInspectionHour = TimeManager.Instance.CurrentHour;
-        _lastInspectionDay  = TimeManager.Instance.CurrentDay;
+        _lastInspectionDay = TimeManager.Instance.CurrentDay;
 
         float dirtPercent = CleanlinessManager.Instance.DirtPercent;
         bool isDirty = CleanlinessManager.Instance.IsOverThreshold;
@@ -146,7 +146,7 @@ public class SanitaryInspection : MonoBehaviour
 
         if (FinanceManager.Instance != null)
             FinanceManager.Instance.RegisterTransaction(
-                TransactionCategory.Facturi_Utilitati, fine);
+                TransactionCategory.Amenzi, fine);
 
         // Notificăm jucătorul
         if (ServiceLocator.Instance.TryGet(out IEventBus eventBus))

@@ -38,6 +38,12 @@ public class ObjectPlacer : MonoBehaviour
         // Aplicăm recursiv pe părinte (Root) și pe toți copiii (Mesh, Collider, RaftWorkStation_Pos etc.)
         SetLayerRecursively(root, targetLayer);
 
+        SpriteRenderer[] spriteRenderers = newObject.GetComponentsInChildren<SpriteRenderer>();
+        foreach (var sr in spriteRenderers)
+        {
+            sr.enabled = false;
+        }
+
         // Opțional: Dacă vrei să păstrezi Y-ul original (să nu intre în pământ dacă pivotul e jos)
         // Comentează linia de mai sus și folosește:
         // newObject.transform.localPosition = new Vector3(-localCenter.x, 0, -localCenter.z);

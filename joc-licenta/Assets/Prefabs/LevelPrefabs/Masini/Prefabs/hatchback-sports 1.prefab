@@ -782,7 +782,7 @@ MonoBehaviour:
   - {fileID: 1194819522104912800}
   taillightRenderers:
   - {fileID: 2002228270148741854}
-  - {fileID: 2002228270148741854}
+  - {fileID: 1781189884096050396}
   taillightLights: []
   headlightEmissionDay: {r: 0, g: 0, b: 0, a: 1}
   headlightEmissionNight: {r: 4, g: 4, b: 3, a: 1}

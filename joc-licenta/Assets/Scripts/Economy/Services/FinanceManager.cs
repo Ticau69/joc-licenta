@@ -10,7 +10,7 @@ public enum TransactionCategory
     Marfa_Depozit,
     Constructii_Teren,
     Mobilier_Echipamente,
-    Facturi_Utilitati
+    Amenzi,
 }
 
 public class FinanceManager : MonoBehaviour
@@ -159,7 +159,7 @@ public class FinanceManager : MonoBehaviour
             TransactionCategory.Marfa_Depozit => new Color(1f, 0.6f, 0.2f),    // Portocaliu
             TransactionCategory.Constructii_Teren => new Color(0.8f, 0.2f, 0.2f), // Roșu
             TransactionCategory.Mobilier_Echipamente => new Color(0.6f, 0.4f, 0.8f), // Mov
-            TransactionCategory.Facturi_Utilitati => new Color(0.8f, 0.8f, 0.2f), // Galben
+            TransactionCategory.Amenzi => new Color(1f, 0f, 0f), // Roșu
             _ => Color.gray
         };
     }

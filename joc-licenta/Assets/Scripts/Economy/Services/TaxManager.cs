@@ -98,7 +98,7 @@ public class TaxManager : MonoBehaviour
 
         if (FinanceManager.Instance != null)
             FinanceManager.Instance.RegisterTransaction(
-                TransactionCategory.Facturi_Utilitati, taxAmount);
+                TransactionCategory.Amenzi, taxAmount);
 
         Debug.Log($"[TVA] Vânzare: {totalPaidByCustomer} RON | TVA: {taxAmount} RON | Net: {playerRevenue} RON");
 

@@ -13,6 +13,7 @@ public enum ProductType
     Conserve,
     // --- Produse Frigider ---
     Cola,
+    DozaDeCola,
     Apa,
     SucNatural,
     Iaurt,
@@ -20,7 +21,9 @@ public enum ProductType
     Inghetata,
     PizzaCongelata,
     PuiCongelat,
+    // --- Produse Raft Fructe/Legume ---
     Banane,
+    Ananas,
 }
 
 public enum ShelfType
@@ -29,6 +32,7 @@ public enum ShelfType
     Fridge,         // Frigider
     Freezer,         // Congelator
     CosFructe,
+    RaftLegume,
 }
 
 /// <summary>
@@ -44,6 +48,7 @@ public class WorkStation : MonoBehaviour
 
     [Header("Navigation")]
     public Transform interactionPoint;
+    public Transform interactionPointSecondary;
 
     [Header("Shelf Configuration")]
     public ShelfType shelfVariant;
@@ -266,8 +271,33 @@ public class WorkStation : MonoBehaviour
 
     // ── HELPERS ───────────────────────────────────────────────────────────────
 
-    public Vector3 GetStandPosition() =>
-        interactionPoint != null ? interactionPoint.position : transform.position;
+    public Vector3 GetStandPosition()
+    {
+        if (interactionPoint != null) return interactionPoint.position;
+        if (interactionPointSecondary != null) return interactionPointSecondary.position;
+
+        return transform.position;
+    }
+
+    public Vector3 GetClosestStandPosition(Vector3 requesterPosition)
+    {
+        // Dacă nu avem niciun punct setat, returnăm centrul raftului
+        if (interactionPoint == null && interactionPointSecondary == null)
+            return transform.position;
+
+        // Dacă avem doar unul din ele, îl returnăm pe cel valid
+        if (interactionPoint != null && interactionPointSecondary == null)
+            return interactionPoint.position;
+
+        if (interactionPoint == null && interactionPointSecondary != null)
+            return interactionPointSecondary.position;
+
+        // Dacă ambele există, calculăm distanța pentru a vedea care e mai aproape de client/angajat
+        float dist1 = Vector3.Distance(requesterPosition, interactionPoint.position);
+        float dist2 = Vector3.Distance(requesterPosition, interactionPointSecondary.position);
+
+        return (dist1 < dist2) ? interactionPoint.position : interactionPointSecondary.position;
+    }
 
     // ── PROPERTIES ────────────────────────────────────────────────────────────
 

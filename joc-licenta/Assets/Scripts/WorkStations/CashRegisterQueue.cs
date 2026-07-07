@@ -135,7 +135,7 @@ public class CashRegisterQueue : MonoBehaviour
 
             if (checkoutParticleSystem != null)
             {
-                checkoutParticleSystem.Stop();
+                checkoutParticleSystem.Play();
             }
 
             first.OnCheckoutComplete();

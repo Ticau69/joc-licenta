@@ -61,10 +61,42 @@ public class ToolTipController : MonoBehaviour
         toolTip.style.display = DisplayStyle.Flex;
     }
 
-    public void ShowPlacementInfo(string text, Vector2 screenPosition)
+    public void ShowPlacementInfo(string text, Vector2 mousePos)
     {
-        isPlacementMode = true;
-        ShowTooltip(text, screenPosition); // fără Offset adăugat aici, e adăugat în ShowTooltip
+        // 1. Setează textul (cum o faci deja)
+        toolTipText.text = text;
+
+        // 2. Obține dimensiunile Tooltip-ului (acestea depind de sistemul UI folosit)
+        // Dacă folosești UI Toolkit, e ceva de genul:
+        float tooltipWidth = toolTip.layout.width;
+        float tooltipHeight = toolTip.layout.height;
+
+        // (Dacă lățimea este 0 la primul cadru, poți folosi o valoare fixă estimată, ex: 200f)
+        if (tooltipWidth == 0) tooltipWidth = 200f;
+        if (tooltipHeight == 0) tooltipHeight = 100f;
+
+        // 3. Adăugăm un mic offset ca să nu acopere cursorul
+        float xPos = mousePos.x + 15f;
+        float yPos = mousePos.y + 15f; // (Sau -15f în funcție de sistemul tău de coordonate)
+
+        // 4. LIMITAREA (Clamping) pe orizontală (X)
+        if (xPos + tooltipWidth > Screen.width)
+        {
+            // Forțăm tooltip-ul să stea lipit de marginea din dreapta a ecranului
+            xPos = Screen.width - tooltipWidth;
+        }
+
+        // 5. LIMITAREA (Clamping) pe verticală (Y)
+        if (yPos + tooltipHeight > Screen.height)
+        {
+            // Forțăm tooltip-ul să stea deasupra mouse-ului dacă e prea jos
+            yPos = Screen.height - tooltipHeight;
+        }
+
+        // 6. Aplică noile coordonate limitate elementului tău UI
+        // Ex pentru UI Toolkit:
+        toolTip.style.left = xPos;
+        toolTip.style.top = Screen.height - yPos; // UI Toolkit inversează axa Y
     }
 
     public void HidePlacementInfo()

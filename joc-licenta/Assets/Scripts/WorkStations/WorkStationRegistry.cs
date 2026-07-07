@@ -23,6 +23,7 @@ public class WorkStationRegistry
     private List<CashRegisterQueue> cashRegisterQueues = new();
     private List<WorkStation> storages = new();
     private List<WorkStation> shelves = new();
+    private HashSet<WorkStation> _assignedCashRegisters = new HashSet<WorkStation>();
     private readonly List<WorkStation> _queryBuffer = new(16);
 
     public void RefreshAllStations()
@@ -48,10 +49,29 @@ public class WorkStationRegistry
         cashRegisterQueues = Object.FindObjectsByType<CashRegisterQueue>(FindObjectsInactive.Include, FindObjectsSortMode.None).ToList();
     }
 
+    public void ResetAssignments()
+    {
+        _assignedCashRegisters.Clear();
+    }
+
     public WorkStation GetAnyCashRegister()
     {
         CleanNullStations(cashRegisters);
-        return cashRegisters.Count > 0 ? cashRegisters[0] : null;
+        if (cashRegisters.Count == 0) return null;
+
+        // Căutăm o casă de marcat care nu a fost încă asignată niciunui casier
+        foreach (WorkStation station in cashRegisters)
+        {
+            if (!_assignedCashRegisters.Contains(station))
+            {
+                _assignedCashRegisters.Add(station); // O marcăm ca fiind ocupată
+                return station;
+            }
+        }
+
+        // Dacă TOATE casele sunt ocupate (ai mai mulți angajați decât case),
+        // returnăm prima casă ca măsură de siguranță (fall-back)
+        return cashRegisters[0];
     }
 
     public IReadOnlyList<WorkStation> GetAllShelves()

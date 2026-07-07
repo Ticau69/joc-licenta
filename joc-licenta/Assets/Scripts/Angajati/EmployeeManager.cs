@@ -158,6 +158,7 @@ public class EmployeeManager : MonoBehaviour
 
             Debug.Log($"--- [LOAD EMPLOYEES 5] SUCCES! Echipa a fost reîncărcată fizic! ---");
             RefreshStations();
+            WorkStationRegistry.Instance.ResetAssignments();
         }
         catch (System.Exception ex)
         {
@@ -327,8 +328,9 @@ public class EmployeeManager : MonoBehaviour
 
         foreach (var queue in allQueues)
         {
-            // Casa fara casier asignat sau cu casier invalid (plecat)
-            if (queue.AssignedCashier == null || !queue.AssignedCashier.gameObject.activeInHierarchy)
+            // ELIMINAT: Verificarea de activeInHierarchy. 
+            // Acum verificăm STRICT dacă locul este complet gol.
+            if (queue.AssignedCashier == null)
             {
                 freeRegister = queue;
                 break;

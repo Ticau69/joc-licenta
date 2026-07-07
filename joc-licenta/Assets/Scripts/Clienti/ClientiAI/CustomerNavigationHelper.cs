@@ -97,7 +97,7 @@ public class CustomerNavigationHelper : MonoBehaviour
     /// </summary>
     public void NavigateToShelf(WorkStation shelf, Action onArrival)
     {
-        SetDestination(shelf.GetStandPosition());
+        SetDestination(shelf.GetClosestStandPosition(transform.position));
         _onArrivalCallback = onArrival;
     }
 

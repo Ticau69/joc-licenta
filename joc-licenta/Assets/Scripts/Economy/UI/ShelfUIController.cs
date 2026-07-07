@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UIElements;
 using System.Linq;
+using System.Text.RegularExpressions;
 
 public class ShelfUIController : MonoBehaviour
 {
@@ -127,11 +128,29 @@ public class ShelfUIController : MonoBehaviour
     }
 
     // -----------------------------------------------------------------------
+    public static string FormatName(string input)
+    {
+        // 1. O plasă de siguranță în caz că textul este gol
+        if (string.IsNullOrEmpty(input)) return input;
+
+        // 2. Punem un spațiu între orice literă mică și o literă mare
+        // Ex: "RaftLegume" devine "Raft Legume"
+        string spacedText = Regex.Replace(input, "([a-z])([A-Z])", "$1 $2");
+
+        // 3. Transformăm totul în litere mici
+        // Ex: "Raft Legume" devine "raft legume"
+        string lowerText = spacedText.ToLower();
+
+        // 4. Facem DOAR prima literă să fie majusculă
+        // Ex: "raft legume" devine "Raft legume"
+        return char.ToUpper(lowerText[0]) + lowerText.Substring(1);
+    }
+
     private void RefreshUI()
     {
         if (_currentSelectedShelf == null || _objectNameLabel == null) return;
 
-        _objectNameLabel.text = _currentSelectedShelf.shelfVariant.ToString();
+        _objectNameLabel.text = FormatName(_currentSelectedShelf.shelfVariant.ToString());
 
         UpdateStatusLabels();
         UpdateDropdown();

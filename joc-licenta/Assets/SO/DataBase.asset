@@ -97,7 +97,7 @@ MonoBehaviour:
     <Icon>k__BackingField: {fileID: 0}
     <ID>k__BackingField: 7
     <Category>k__BackingField: 0
-    <Prefab>k__BackingField: {fileID: 8877612173429674220, guid: 197911817510e8646a9a576d2242e7ff, type: 3}
+    <Prefab>k__BackingField: {fileID: 3403455788417246428, guid: 3efd7e26f9878b74d86c0903842f6747, type: 3}
     <Size>k__BackingField: {x: 1, y: 1}
     <IsDoor>k__BackingField: 0
     <Cost>k__BackingField: 200
@@ -130,7 +130,7 @@ MonoBehaviour:
     <PowerConsumption>k__BackingField: 0
     <UnlockLevel>k__BackingField: 1
     <StationType>k__BackingField: 2
-    <ShelfVariant>k__BackingField: 0
+    <ShelfVariant>k__BackingField: 4
   - <Name>k__BackingField: Cos pentru fructe
     <ObjDescription>k__BackingField: Raft pentru depozitarea produselor in depozit
     <Icon>k__BackingField: {fileID: 0}

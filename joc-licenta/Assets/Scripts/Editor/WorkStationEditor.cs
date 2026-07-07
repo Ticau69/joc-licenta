@@ -6,6 +6,7 @@ public class WorkStationEditor : Editor
 {
     private SerializedProperty _stationType;
     private SerializedProperty _interactionPoint;
+    private SerializedProperty _interactionPointSecondary;
     private SerializedProperty _shelfVariant;
     private SerializedProperty _productDatabase;
     private SerializedProperty _slotProduct;
@@ -25,6 +26,7 @@ public class WorkStationEditor : Editor
     {
         _stationType = serializedObject.FindProperty("stationType");
         _interactionPoint = serializedObject.FindProperty("interactionPoint");
+        _interactionPointSecondary = serializedObject.FindProperty("interactionPointSecondary");
         _shelfVariant = serializedObject.FindProperty("shelfVariant");
         _productDatabase = serializedObject.FindProperty("productDatabase");
         _slotProduct = serializedObject.FindProperty("slotProduct");
@@ -45,6 +47,7 @@ public class WorkStationEditor : Editor
         DrawSectionHeader("Station Configuration", Color.white);
         DrawProp(_stationType);
         DrawProp(_interactionPoint);
+        DrawProp(_interactionPointSecondary);
         EditorGUILayout.Space(6);
 
         // ── Conditionat pe tip ────────────────────────────────────────────────
